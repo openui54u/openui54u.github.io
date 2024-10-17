@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gyroscope Web App with Timer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding-top: 50px;
+        }
+        #status, #timer {
+            margin-top: 20px;
+            font-size: 18px;
+            color: green;
+        }
+        
+        #x-value {
+            color: red
+        }
+         #y-value {
+            color: green
+        }
+         #z-value {
+            color: blue
+        }
+        
+        input, button {
+            font-size: 16px;
+            padding: 10px;
+            margin: 10px;
+        }
+        input {
+            max-width: 10vw;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+        }
+        #manual-start-btn, #manual-stop-btn {
+            background-color: lightblue;
+            margin: 5px;
+        }
+        .bar-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .bar {
+            width: 20px;
+            margin: 0 5px;
+            background-color: blue;
+            transition: height 0.1s;
+        }
+        #bar-x {
+            background-color: red;
+        }
+        #bar-y {
+            background-color: green;
+        }
+        #bar-z {
+            background-color: blue;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gyroscopic Timer</h1>
+    <p>Set acceleration threshold (XYZ-axis):</p>
+    <input type="number" id="accel-threshold" value="3" step="1">-
+    <input type="number" id="accel-threshold-Stop" value="20" step="1">
+    <button id="start-stop-btn">Start Monitoring (Gyro)</button>
+    <button id="tare-btn">Tare (Gyro)</button>
+    <button id="manual-start-btn">Manual Start</button>
+    <button id="manual-stop-btn" disabled>Manual Stop</button>
+    
+    <p id="status">Status: Not Started</p>
+    <p id="timer">Timer: 00:00:00:000</p>
+    
+    <div class="bar-container">
+        <div id="bar-x" class="bar"></div>
+        <div id="bar-y" class="bar"></div>
+        <div id="bar-z" class="bar"></div>
+    </div>
+    
+    <p>X: <span id="x-value">0.00</span> m/s²</p>
+    <p>Y: <span id="y-value">0.00</span> m/s²</p>
+    <p>Z: <span id="z-value">0.00</span> m/s²</p>
+
+    <script>
+        let monitoring = false;
+        let motionHandlerX, motionHandlerY, motionHandlerZ;
+        let threshold = 2; // Default acceleration threshold
+        let thresholdStop = 3; // Default acceleration threshold
+        let startTime = null;
+        let intervalID = null;
+        let isManuallyStarted = false;
+        let tareValues = { x: 0, y: 0, z: 0 }; // Tare values for x, y, z
+        let Accel = {x: 0, y: 0, z: 0};
+
+        const statusText = document.getElementById('status');
+        const timerDisplay = document.getElementById('timer');
+        const accelInput = document.getElementById('accel-threshold');
+        const accelInputStop = document.getElementById('accel-threshold-Stop');
+        const startStopButton = document.getElementById('start-stop-btn');
+        const tareButton        = document.getElementById('tare-btn');
+        const manualStartButton = document.getElementById('manual-start-btn');
+        const manualStopButton = document.getElementById('manual-stop-btn');
+        const barX = document.getElementById('bar-x');
+        const barY = document.getElementById('bar-y');
+        const barZ = document.getElementById('bar-z');
+        const xValueDisplay = document.getElementById('x-value');
+        const yValueDisplay = document.getElementById('y-value');
+        const zValueDisplay = document.getElementById('z-value');
+
+        // Timer Function to update display in hours:minutes:seconds:microseconds
+        function startTimer() {
+            startTime = Date.now();
+            intervalID = setInterval(() => {
+                const currentTime = Date.now();
+                const elapsedTime = currentTime - startTime;
+
+                const hours = Math.floor(elapsedTime / 3600000).toString().padStart(2, '0');
+                const minutes = Math.floor((elapsedTime % 3600000) / 60000).toString().padStart(2, '0');
+                const seconds = Math.floor((elapsedTime % 60000) / 1000).toString().padStart(2, '0');
+                const milliseconds = (elapsedTime % 1000).toString().padStart(3, '0');
+
+                timerDisplay.innerText = `Timer: ${hours}:${minutes}:${seconds}:${milliseconds}`;
+            }, 10); // Update every 10 milliseconds
+        }
+
+        function stopTimer() {
+            clearInterval(intervalID);
+            intervalID = null;
+        }
+
+        // Request permission for iOS devices
+        function requestGyroPermission() {
+            if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                return DeviceMotionEvent.requestPermission()
+                    .then(response => {
+                        if (response === 'granted') {
+                            return true;
+                        } else {
+                            alert("Permission not granted for motion sensors.");
+                            return false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error requesting permission:", error);
+                        return false;
+                    });
+            }
+            return Promise.resolve(true); // Non-iOS devices don't need permission
+        }
+
+        // Function to start monitoring motion
+        function startMonitoring() {
+            threshold = parseFloat(accelInput.value);
+            thresholdStop = parseFloat(accelInputStop.value);
+            monitoring = true;
+            startStopButton.innerText = 'Stop Monitoring (Gyro)';
+            statusText.innerText = 'Status: Monitoring started.';
+            
+            barX.style.height = '10px';
+            barY.style.height = '10px';
+            barZ.style.height = '10px';
+            timerDisplay.innerText = `Timer: 00:00:00:000`;
+
+            motionHandlerX = function (event) {
+                const xAccel = event.accelerationIncludingGravity.x - tareValues.x;
+                xValueDisplay.innerText = xAccel.toFixed(2);
+                barX.style.height = Math.max(0, xAccel * 10) + 'px'; // Adjust scaling factor if needed
+                Accel.x = event.accelerationIncludingGravity.x;
+
+                if (xAccel >= threshold && xAccel < thresholdStop) {
+                    console.log(`Detected forward movement on X with acceleration: ${xAccel}`);
+                    statusText.innerText = `Forward X movement detected! Acceleration: ${xAccel.toFixed(2)} m/s²`;
+                    if (!intervalID) {
+                        startTimer();
+                        manualStartButton.disabled = true;
+                        manualStopButton.disabled = false;
+                    }
+                    
+                    
+                }
+                if (xAccel >= thresholdStop) {
+                    if (intervalID) {
+                        stopTimer();
+                        manualStartButton.disabled = false;
+                        manualStopButton.disabled = true;
+                        stopMonitoring();
+                        startStopButton.innerText = 'Start Monitoring (Gyro)';
+                    }
+                }
+            };
+
+            motionHandlerY = function (event) {
+                const yAccel = event.accelerationIncludingGravity.y - tareValues.y;
+                yValueDisplay.innerText = yAccel.toFixed(2);
+                barY.style.height = Math.max(0, yAccel * 10) + 'px'; // Adjust scaling factor if needed
+                Accel.y = event.accelerationIncludingGravity.y;
+
+                if (yAccel >= threshold && yAccel < thresholdStop) {
+                    console.log(`Detected forward movement on Y with acceleration: ${yAccel}`);
+                    statusText.innerText = `Forward Y movement detected! Acceleration: ${yAccel.toFixed(2)} m/s²`;
+                    if (!intervalID) {
+                        startTimer();
+                        manualStartButton.disabled = true;
+                        manualStopButton.disabled = false;
+                    }
+                }
+                if (yAccel >= thresholdStop) {
+                    if (intervalID) {
+                        stopTimer();
+                        manualStartButton.disabled = false;
+                        manualStopButton.disabled = true;
+                        stopMonitoring();
+                        startStopButton.innerText = 'Start Monitoring (Gyro)';
+                    }
+                }
+            };
+
+            motionHandlerZ = function (event) {
+                const zAccel = event.accelerationIncludingGravity.z - tareValues.z;
+                zValueDisplay.innerText = zAccel.toFixed(2);
+                barZ.style.height = Math.max(0, zAccel * 10) + 'px'; // Adjust scaling factor if needed
+
+                Accel.z = event.accelerationIncludingGravity.z;
+                
+                if (zAccel >= threshold && zAccel < thresholdStop) {
+                    console.log(`Detected forward movement on Z with acceleration: ${zAccel}`);
+                    statusText.innerText = `Forward Z movement detected! Acceleration: ${zAccel.toFixed(2)} m/s²`;
+                    if (!intervalID) {
+                        startTimer();
+                        manualStartButton.disabled = true;
+                        manualStopButton.disabled = false;
+                    }
+                }
+                if (zAccel >= thresholdStop) {
+                    if (intervalID) {
+                        stopTimer();
+                        manualStartButton.disabled = false;
+                        manualStopButton.disabled = true;
+                        stopMonitoring();
+                        startStopButton.innerText = 'Start Monitoring (Gyro)';
+                    }
+                }
+            };
+
+            
+            window.addEventListener('devicemotion', motionHandlerX);
+            window.addEventListener('devicemotion', motionHandlerY);
+            window.addEventListener('devicemotion', motionHandlerZ);
+
+
+        }
+        
+
+
+        // Function to stop monitoring motion
+        function stopMonitoring() {
+            if (monitoring) {
+                window.removeEventListener('devicemotion', motionHandlerX);
+                window.removeEventListener('devicemotion', motionHandlerY);
+                window.removeEventListener('devicemotion', motionHandlerZ);
+                statusText.innerText = 'Status: Monitoring stopped.';
+                stopTimer();
+                monitoring = false;
+                startStopButton.innerText = 'Start Monitoring (Gyro)';
+                               
+            }
+        }
+
+        // Handle button click (start/stop motion-based monitoring)
+        startStopButton.addEventListener('click', async function () {
+            if (!monitoring) {
+                const permissionGranted = await requestGyroPermission();
+                if (permissionGranted) {
+                                        
+                    startMonitoring();
+//                    startStopButton.innerText = 'Stop Monitoring (Gyro)';
+            
+                }
+            } else {
+                stopMonitoring();
+//                startStopButton.innerText = 'Start Monitoring (Gyro)';
+            }
+        });
+
+        // Manual Start Button click handler
+        manualStartButton.addEventListener('click', function () {
+            if (!intervalID) {
+                startTimer();
+                statusText.innerText = 'Status: Timer manually started.';
+                manualStartButton.disabled = true;
+                manualStopButton.disabled = false;
+                isManuallyStarted = true;
+            }
+        });
+        
+ tareButton.addEventListener('click', function () {
+            if (!intervalID) {
+                // Capture tare values based on the last captured motion data
+                if (Accel.x){
+                tareValues.x = Accel.x; // This line may need to be adjusted based on your needs
+                tareValues.y = Accel.y;
+                tareValues.z = Accel.z;
+                }
+
+                console.log(`Tare values set: X: ${tareValues.x}, Y: ${tareValues.y}, Z: ${tareValues.z}`);
+
+                // Reset bars and time
+                barX.style.height = '10px';
+                barY.style.height = '10px';
+                barZ.style.height = '10px';
+                timerDisplay.innerText = `Timer: 00:00:00:000`;
+
+                xValueDisplay.innerText = '0.00';
+                yValueDisplay.innerText = '0.00';
+                zValueDisplay.innerText = '0.00';
+            }
+        });
+        
+
+        // Manual Stop Button click handler
+        manualStopButton.addEventListener('click', function () {
+            if (intervalID) {
+                stopTimer();
+                statusText.innerText = 'Status: Timer manually stopped.';
+                manualStartButton.disabled = false;
+                manualStopButton.disabled = true;
+                isManuallyStarted = false;
+            }
+        });
+    </script>
+</body>
+</html>
