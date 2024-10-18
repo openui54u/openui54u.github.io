@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IoT Motion Tracker</title>
+    <title>IoT Motion Tracker with Auto Tare</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
             text-align: center;
             margin: 50px;
+            background-color: white; /* Default background */
         }
-        #connectBtn, #startBtn, #useGyroBtn {
+        #connectBtn, #startBtn, #gyroBtn {
             padding: 15px 30px;
             font-size: 18px;
             margin: 20px;
@@ -27,16 +28,21 @@
             background-color: green;
             color: white;
         }
+        #gyroBtn {
+            background-color: orange;
+            color: white;
+        }
         #startBtn.running {
             background-color: red;
-        }
-        #useGyroBtn {
-            background-color: purple;
-            color: white;
         }
         #output {
             margin-top: 30px;
             font-size: 18px;
+        }
+        #tareValues {
+            margin-top: 20px;
+            font-size: 18px;
+            color: blue;
         }
         canvas {
             margin-top: 30px;
@@ -46,15 +52,12 @@
 </head>
 <body>
 
-    <h1>IoT Device Motion Tracker</h1>
+    <h1>IoT Device Motion Tracker with Auto Tare</h1>
 
-    <!-- Buttons for connecting and starting/stopping the data transmission -->
+    <!-- Buttons for connecting, starting/stopping the data transmission, and using the internal gyroscope -->
     <button id="connectBtn">CONNECT</button>
-    <button id="useGyroBtn">USE INTERNAL GYROSCOPE</button>
     <button id="startBtn">START</button>
-
-    <!-- Status -->
-    <p id="statusDisplay">Status: Not connected</p>
+    <button id="gyroBtn">USE INTERNAL GYROSCOPE</button>
 
     <!-- Output area for displaying data -->
     <div id="output">
@@ -68,6 +71,13 @@
         <p><strong>Total Zero Speed Time:</strong> <span id="zeroSpeedTime">0</span> s</p>
     </div>
 
+    <!-- Display Tare values -->
+    <div id="tareValues">
+        <p><strong>Tare X:</strong> <span id="tareX">0</span></p>
+        <p><strong>Tare Y:</strong> <span id="tareY">0</span></p>
+        <p><strong>Tare Z:</strong> <span id="tareZ">0</span></p>
+    </div>
+
     <!-- Canvas for the motion graph -->
     <canvas id="motionChart"></canvas>
     <!-- Canvas for the elliptical foot motion graph -->
@@ -78,33 +88,21 @@
     <script>
         let isRunning = false;
         let useInternalGyro = false;
-        let intervalId;
-        let gyroIntervalId;
-        let zeroSpeedCount = 0;
-        let totalZeroSpeedTime = 0;
-        let totalDistance = 0;
-        let timeElapsed = 0;
-        const zeroSpeedThreshold = 0.05; // Speed considered as "zero"
-        let lastMotionUpdate = 0;
+        let tareComplete = false;
+        let tareValues = { x: 0, y: 0, z: 0 };
+        let tareCount = 0;
+        let tareSum = { x: 0, y: 0, z: 0 };
+        let measurements = [];
 
-        // Data for the motion and charts
-        const motionData = { labels: [], datasets: [{ label: 'Foot Motion (X)', borderColor: 'rgb(255, 99, 132)', data: [] }, { label: 'Foot Motion (Y)', borderColor: 'rgb(54, 162, 235)', data: [] }, { label: 'Foot Motion (Z)', borderColor: 'rgb(75, 192, 192)', data: [] }] };
-        const ellipseData = { datasets: [{ label: 'Foot Ellipse (X vs Y)', borderColor: 'rgb(75, 192, 192)', data: [], fill: false, tension: 0 }] };
-        const verticalZData = { datasets: [{ label: 'Vertical Position vs Z', borderColor: 'rgb(255, 206, 86)', data: [], fill: false, tension: 0 }] };
+        // Get elements for Tare values display
+        const tareXDisplay = document.getElementById('tareX');
+        const tareYDisplay = document.getElementById('tareY');
+        const tareZDisplay = document.getElementById('tareZ');
 
-        const ctx = document.getElementById('motionChart').getContext('2d');
-        const motionChart = new Chart(ctx, { type: 'line', data: motionData, options: { responsive: true, scales: { x: { display: true, title: { display: true, text: 'Time (s)' } }, y: { display: true, title: { display: true, text: 'Position (m)' } } } } });
-
-        const ellipseCtx = document.getElementById('ellipseChart').getContext('2d');
-        const ellipseChart = new Chart(ellipseCtx, { type: 'line', data: ellipseData, options: { responsive: true, scales: { x: { display: true, title: { display: true, text: 'Distance from Hip (m)' } }, y: { display: true, title: { display: true, text: 'Vertical Position (m)' } } } } });
-
-        const verticalZCtx = document.getElementById('verticalZChart').getContext('2d');
-        const verticalZChart = new Chart(verticalZCtx, { type: 'line', data: verticalZData, options: { responsive: true, scales: { x: { display: true, title: { display: true, text: 'Z Position (m)' } }, y: { display: true, title: { display: true, text: 'Vertical Position (m)' } } } } });
-
+        // Get other elements
         const connectBtn = document.getElementById('connectBtn');
         const startBtn = document.getElementById('startBtn');
-        const useGyroBtn = document.getElementById('useGyroBtn');
-        const statusDisplay = document.getElementById('statusDisplay');
+        const gyroBtn = document.getElementById('gyroBtn');
         const xOutput = document.getElementById('x');
         const yOutput = document.getElementById('y');
         const zOutput = document.getElementById('z');
@@ -113,148 +111,100 @@
         const distanceOutput = document.getElementById('distance');
         const zeroSpeedCountOutput = document.getElementById('zeroSpeedCount');
         const zeroSpeedTimeOutput = document.getElementById('zeroSpeedTime');
+        const body = document.body;
 
+        // Auto Tare function: calculate the average of the first 10 measurements
+        function autoTare() {
+            body.style.backgroundColor = 'blue'; // Change background to blue during Tare
+            console.log('Auto Tare in progress...');
+
+            tareSum = { x: 0, y: 0, z: 0 };
+            tareCount = 0;
+            tareComplete = false;
+
+            // Collect the first 10 measurements
+            let tareInterval = setInterval(() => {
+                if (measurements.length >= 10) {
+                    clearInterval(tareInterval);
+                    tareValues.x = tareSum.x / 10;
+                    tareValues.y = tareSum.y / 10;
+                    tareValues.z = tareSum.z / 10;
+
+                    // Update Tare display
+                    tareXDisplay.textContent = tareValues.x.toFixed(2);
+                    tareYDisplay.textContent = tareValues.y.toFixed(2);
+                    tareZDisplay.textContent = tareValues.z.toFixed(2);
+
+                    tareComplete = true;
+                    body.style.backgroundColor = 'white'; // Switch back to white when Tare is complete
+                    console.log('Tare complete. Values:', tareValues);
+                }
+            }, 100); // Sample every 100ms
+        }
+
+        // Handle DeviceMotion event for internal gyroscope
         function useDeviceMotion() {
             if (window.DeviceMotionEvent) {
-                window.addEventListener('devicemotion', function(event) {
-                    const now = Date.now();
-                    if (now - lastMotionUpdate > 100) { // Throttle the updates to every 100ms
-                        lastMotionUpdate = now;
+                window.addEventListener('devicemotion', event => {
+                    const x = event.accelerationIncludingGravity.x || 0;
+                    const y = event.accelerationIncludingGravity.y || 0;
+                    const z = event.accelerationIncludingGravity.z || 0;
 
-                        const x = event.accelerationIncludingGravity.x.toFixed(2);
-                        const y = event.accelerationIncludingGravity.y.toFixed(2);
-                        const z = event.accelerationIncludingGravity.z.toFixed(2);
+                    if (!tareComplete) {
+                        // During Tare process, accumulate the first 10 measurements
+                        tareSum.x += x;
+                        tareSum.y += y;
+                        tareSum.z += z;
+                        tareCount++;
+                        measurements.push({ x, y, z });
+                    } else {
+                        // Adjust by Tare values
+                        const adjX = (x - tareValues.x).toFixed(2);
+                        const adjY = (y - tareValues.y).toFixed(2);
+                        const adjZ = (z - tareValues.z).toFixed(2);
 
-                        const speed = Math.sqrt(x * x + y * y + z * z).toFixed(2);
-                        const acceleration = event.acceleration.x.toFixed(2);
+                        // Update UI
+                        xOutput.textContent = adjX;
+                        yOutput.textContent = adjY;
+                        zOutput.textContent = adjZ;
 
-                        relativeSpeedOutput.textContent = speed;
-                        accOutput.textContent = acceleration;
-
-                        totalDistance += Math.abs(speed * 0.1);
-                        distanceOutput.textContent = totalDistance.toFixed(2);
-
-                        xOutput.textContent = x;
-                        yOutput.textContent = y;
-                        zOutput.textContent = z;
-
-                        if (Math.abs(speed) < zeroSpeedThreshold) {
-                            zeroSpeedCount++;
-                            totalZeroSpeedTime += 0.1;
-                        }
-
-                        zeroSpeedCountOutput.textContent = zeroSpeedCount;
-                        zeroSpeedTimeOutput.textContent = totalZeroSpeedTime.toFixed(1);
-
-                        motionData.labels.push((timeElapsed += 0.1).toFixed(1));
-                        motionData.datasets[0].data.push(x);
-                        motionData.datasets[1].data.push(y);
-                        motionData.datasets[2].data.push(z);
-                        motionChart.update();
+                        // TODO: Add further calculations for speed, distance, etc. if needed
                     }
                 });
             } else {
-                alert('DeviceMotion not supported on this device.');
+                console.error('DeviceMotionEvent is not supported on this device');
             }
         }
 
-        useGyroBtn.addEventListener('click', () => {
-            useInternalGyro = true;
-            statusDisplay.textContent = 'Status: Using Internal Gyroscope';
-            console.log('Using internal gyroscope.');
-        });
-
+        // Start or stop data transmission
         startBtn.addEventListener('click', () => {
             if (isRunning) {
-                clearInterval(intervalId);
-                clearInterval(gyroIntervalId);
                 isRunning = false;
                 startBtn.textContent = 'START';
-                                startBtn.classList.remove('running');
+                startBtn.classList.remove('running');
                 console.log('Stopped data transmission');
-                statusDisplay.textContent = 'Status: Stopped';
             } else {
                 isRunning = true;
                 startBtn.textContent = 'RUNNING';
                 startBtn.classList.add('running');
-                statusDisplay.textContent = 'Status: Running';
+                console.log('Started data transmission');
 
                 if (useInternalGyro) {
-                    console.log('Starting internal gyroscope data...');
-                    // Use internal gyroscope
-                    useDeviceMotion();
-                } else {
-                    console.log('Starting mock elliptical foot motion...');
-                    // Simulate the mock elliptical foot motion during running
-                    intervalId = setInterval(() => {
-                        timeElapsed += 0.1; // Simulate running cycle time (0.1 seconds step)
-                        const { x, y, z } = generateMockEllipticalData(timeElapsed);
-
-                        // Update data for the motion graph
-                        motionData.labels.push(timeElapsed.toFixed(1));
-                        motionData.datasets[0].data.push(x);
-                        motionData.datasets[1].data.push(y);
-                        motionData.datasets[2].data.push(z);
-                        motionChart.update();
-
-                        // Update data for the elliptical foot motion graph
-                        ellipseData.datasets[0].data.push({ x: x, y: y });
-                        ellipseChart.update();
-
-                        // Update data for the vertical Z graph
-                        verticalZData.datasets[0].data.push({ x: z, y: y });
-                        verticalZChart.update();
-
-                        // Calculate relative speed
-                        const speed = Math.sqrt((x * x) + (y * y) + (z * z)).toFixed(2);
-                        relativeSpeedOutput.textContent = speed; // Display speed in output
-
-                        // Mock distance (simple accumulation)
-                        totalDistance += Math.abs(speed * 0.1); // Increment distance based on speed
-                        distanceOutput.textContent = totalDistance.toFixed(2);
-
-                        // Calculate acceleration based on previous speed
-                        const acceleration = Math.abs((speed - parseFloat(relativeSpeedOutput.textContent)) / 0.1).toFixed(2);
-                        accOutput.textContent = acceleration; // Show acceleration on the output
-
-                        // Update zero speed counter and time
-                        if (Math.abs(speed) < zeroSpeedThreshold) {
-                            zeroSpeedCount++;
-                            totalZeroSpeedTime += 0.1; // Increment zero speed time in seconds
-                        }
-
-                        // Update the output values on the webpage
-                        xOutput.textContent = x;
-                        yOutput.textContent = y;
-                        zOutput.textContent = z;
-                        zeroSpeedCountOutput.textContent = zeroSpeedCount;
-                        zeroSpeedTimeOutput.textContent = totalZeroSpeedTime.toFixed(1);
-
-                    }, 100); // Update every 100 milliseconds
+                    autoTare(); // Perform auto Tare before using internal gyroscope
+                    useDeviceMotion(); // Start capturing motion data
                 }
             }
         });
 
-        // Simulate elliptical foot motion during running (mock data generator)
-        function generateMockEllipticalData(t) {
-            const a = 0.5; // Horizontal (x-axis) radius in meters
-            const b = 0.3;  // Vertical (y-axis) radius in meters
-            // Simulating running motion (an ellipse with some instability)
-            const x = a * Math.cos(t) + (Math.random() - 0.5) * 0.1;  // Add slight instability
-            const y = b * Math.sin(t) + (Math.random() - 0.5) * 0.05;  // Slight vertical instability
-            const z = (Math.random() - 0.5) * 0.1; // Simulating slight lateral motion for z-axis
-            return { x: x.toFixed(2), y: y.toFixed(2), z: z.toFixed(2) };
-        }
+        // Handle internal gyroscope button click
+        gyroBtn.addEventListener('click', () => {
+            useInternalGyro = true;
+            console.log('Internal gyroscope enabled');
+        });
 
-        connectBtn.addEventListener('click', async () => {
-            try {
-                console.log('Simulating Bluetooth connection...');
-                statusDisplay.textContent = 'Status: Connected';
-                // In actual IoT setup, implement Bluetooth connection logic here
-            } catch (error) {
-                console.error('Connection failed', error);
-                statusDisplay.textContent = 'Status: Connection Failed';
-            }
+        // Mock Bluetooth connection
+        connectBtn.addEventListener('click', () => {
+            console.log('Simulating Bluetooth connection...');
         });
     </script>
 </body>
