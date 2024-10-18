@@ -11,7 +11,7 @@
             text-align: center;
             margin: 50px;
         }
-        #connectBtn, #startBtn, #internalGyroBtn {
+        #connectBtn, #startBtn, #useGyroBtn {
             padding: 15px 30px;
             font-size: 18px;
             margin: 20px;
@@ -30,13 +30,9 @@
         #startBtn.running {
             background-color: red;
         }
-        #internalGyroBtn {
-            background-color: orange;
+        #useGyroBtn {
+            background-color: purple;
             color: white;
-        }
-        #status {
-            margin-top: 10px;
-            font-size: 20px;
         }
         #output {
             margin-top: 30px;
@@ -53,12 +49,12 @@
     <h1>IoT Device Motion Tracker</h1>
 
     <!-- Buttons for connecting and starting/stopping the data transmission -->
-    <button id="connectBtn">CONNECT BLUETOOTH</button>
-    <button id="internalGyroBtn">USE INTERNAL GYROSCOPE</button>
+    <button id="connectBtn">CONNECT</button>
+    <button id="useGyroBtn">USE INTERNAL GYROSCOPE</button>
     <button id="startBtn">START</button>
 
-    <!-- Status message -->
-    <div id="status">Status: Not Connected</div>
+    <!-- Status -->
+    <p id="statusDisplay">Status: Not connected</p>
 
     <!-- Output area for displaying data -->
     <div id="output">
@@ -81,110 +77,34 @@
 
     <script>
         let isRunning = false;
-        let usingInternalGyro = false;
+        let useInternalGyro = false;
         let intervalId;
+        let gyroIntervalId;
         let zeroSpeedCount = 0;
         let totalZeroSpeedTime = 0;
         let totalDistance = 0;
         let timeElapsed = 0;
         const zeroSpeedThreshold = 0.05; // Speed considered as "zero"
+        let lastMotionUpdate = 0;
 
-        // Data for the mock elliptical foot motion
-        const motionData = {
-            labels: [], // Time labels
-            datasets: [
-                {
-                    label: 'Foot Motion (X)',
-                    borderColor: 'rgb(255, 99, 132)',
-                    data: [],
-                    fill: false,
-                },
-                {
-                    label: 'Foot Motion (Y)',
-                    borderColor: 'rgb(54, 162, 235)',
-                    data: [],
-                    fill: false,
-                },
-                {
-                    label: 'Foot Motion (Z)',
-                    borderColor: 'rgb(75, 192, 192)',
-                    data: [],
-                    fill: false,
-                }
-            ]
-        };
+        // Data for the motion and charts
+        const motionData = { labels: [], datasets: [{ label: 'Foot Motion (X)', borderColor: 'rgb(255, 99, 132)', data: [] }, { label: 'Foot Motion (Y)', borderColor: 'rgb(54, 162, 235)', data: [] }, { label: 'Foot Motion (Z)', borderColor: 'rgb(75, 192, 192)', data: [] }] };
+        const ellipseData = { datasets: [{ label: 'Foot Ellipse (X vs Y)', borderColor: 'rgb(75, 192, 192)', data: [], fill: false, tension: 0 }] };
+        const verticalZData = { datasets: [{ label: 'Vertical Position vs Z', borderColor: 'rgb(255, 206, 86)', data: [], fill: false, tension: 0 }] };
 
-        const ellipseData = {
-            datasets: [
-                {
-                    label: 'Foot Ellipse (X vs Y)',
-                    borderColor: 'rgb(75, 192, 192)',
-                    data: [],
-                    fill: false,
-                    tension: 0 // Set tension to 0 for direct line between points
-                }
-            ]
-        };
-
-        const verticalZData = {
-            datasets: [
-                {
-                    label: 'Vertical Position vs Z',
-                    borderColor: 'rgb(255, 206, 86)',
-                    data: [],
-                    fill: false,
-                    tension: 0 // Set tension to 0 for direct line between points
-                }
-            ]
-        };
-
-        // Chart.js configuration for the motion graph
         const ctx = document.getElementById('motionChart').getContext('2d');
-        const motionChart = new Chart(ctx, {
-            type: 'line',
-            data: motionData,
-            options: {
-                responsive: true,
-                scales: {
-                    x: { display: true, title: { display: true, text: 'Time (s)' } },
-                    y: { display: true, title: { display: true, text: 'Position (m)' } }
-                }
-            }
-        });
+        const motionChart = new Chart(ctx, { type: 'line', data: motionData, options: { responsive: true, scales: { x: { display: true, title: { display: true, text: 'Time (s)' } }, y: { display: true, title: { display: true, text: 'Position (m)' } } } } });
 
-        // Chart.js configuration for the elliptical foot motion graph
         const ellipseCtx = document.getElementById('ellipseChart').getContext('2d');
-        const ellipseChart = new Chart(ellipseCtx, {
-            type: 'line',
-            data: ellipseData,
-            options: {
-                responsive: true,
-                scales: {
-                    x: { display: true, title: { display: true, text: 'Distance from Hip (m)' } },
-                    y: { display: true, title: { display: true, text: 'Vertical Position (m)' } }
-                }
-            }
-        });
+        const ellipseChart = new Chart(ellipseCtx, { type: 'line', data: ellipseData, options: { responsive: true, scales: { x: { display: true, title: { display: true, text: 'Distance from Hip (m)' } }, y: { display: true, title: { display: true, text: 'Vertical Position (m)' } } } } });
 
-        // Chart.js configuration for the vertical position vs z-axis graph
         const verticalZCtx = document.getElementById('verticalZChart').getContext('2d');
-        const verticalZChart = new Chart(verticalZCtx, {
-            type: 'line',
-            data: verticalZData,
-            options: {
-                responsive: true,
-                scales: {
-                    x: { display: true, title: { display: true, text: 'Z Position (m)' } },
-                    y: { display: true, title: { display: true, text: 'Vertical Position (m)' } }
-                }
-            }
-        });
+        const verticalZChart = new Chart(verticalZCtx, { type: 'line', data: verticalZData, options: { responsive: true, scales: { x: { display: true, title: { display: true, text: 'Z Position (m)' } }, y: { display: true, title: { display: true, text: 'Vertical Position (m)' } } } } });
 
-        // Get elements
         const connectBtn = document.getElementById('connectBtn');
-        const internalGyroBtn = document.getElementById('internalGyroBtn');
         const startBtn = document.getElementById('startBtn');
-        const statusDisplay = document.getElementById('status');
+        const useGyroBtn = document.getElementById('useGyroBtn');
+        const statusDisplay = document.getElementById('statusDisplay');
         const xOutput = document.getElementById('x');
         const yOutput = document.getElementById('y');
         const zOutput = document.getElementById('z');
@@ -194,90 +114,94 @@
         const zeroSpeedCountOutput = document.getElementById('zeroSpeedCount');
         const zeroSpeedTimeOutput = document.getElementById('zeroSpeedTime');
 
-        // Handle using internal gyroscope
-        internalGyroBtn.addEventListener('click', () => {
-            statusDisplay.textContent = 'Status: Using Internal Gyroscope';
-            usingInternalGyro = true;
-            console.log('Using Internal Gyroscope for data.');
+        function useDeviceMotion() {
+            if (window.DeviceMotionEvent) {
+                window.addEventListener('devicemotion', function(event) {
+                    const now = Date.now();
+                    if (now - lastMotionUpdate > 100) { // Throttle the updates to every 100ms
+                        lastMotionUpdate = now;
 
-            window.addEventListener('devicemotion', (event) => {
-                if (isRunning && usingInternalGyro) {
-                    const acceleration = event.accelerationIncludingGravity;
-                    const x = acceleration.x.toFixed(2);
-                    const y = acceleration.y.toFixed(2);
-                    const z = acceleration.z.toFixed(2);
+                        const x = event.accelerationIncludingGravity.x.toFixed(2);
+                        const y = event.accelerationIncludingGravity.y.toFixed(2);
+                        const z = event.accelerationIncludingGravity.z.toFixed(2);
 
-                    // Update the chart and outputs with internal gyro data
-                    motionData.labels.push(timeElapsed.toFixed(1));
-                    motionData.datasets[0].data.push(x);
-                    motionData.datasets[1].data.push(y);
-                    motionData.datasets[2].data.push(z);
-                    motionChart.update();
+                        const speed = Math.sqrt(x * x + y * y + z * z).toFixed(2);
+                        const acceleration = event.acceleration.x.toFixed(2);
 
-                    ellipseData.datasets[0].data.push({ x: x, y: y });
-                    ellipseChart.update();
+                        relativeSpeedOutput.textContent = speed;
+                        accOutput.textContent = acceleration;
 
-                    verticalZData.datasets[0].data.push({ x: z, y: y });
-                    verticalZChart.update();
+                        totalDistance += Math.abs(speed * 0.1);
+                        distanceOutput.textContent = totalDistance.toFixed(2);
 
-                    // Update UI with motion data
-                    xOutput.textContent = x;
-                    yOutput.textContent = y;
-                    zOutput.textContent = z;
+                        xOutput.textContent = x;
+                        yOutput.textContent = y;
+                        zOutput.textContent = z;
 
-                    // Calculate speed and distance
-                    const speed = Math.sqrt((x * x) + (y * y) + (z * z)).toFixed(2);
-                    relativeSpeedOutput.textContent = speed;
-                    totalDistance += Math.abs(speed * 0.1);
-                    distanceOutput.textContent = totalDistance.toFixed(2);
+                        if (Math.abs(speed) < zeroSpeedThreshold) {
+                            zeroSpeedCount++;
+                            totalZeroSpeedTime += 0.1;
+                        }
 
-                                      // Check for zero speed events
-                    if (Math.abs(speed) < zeroSpeedThreshold) {
-                        zeroSpeedCount++;
-                        totalZeroSpeedTime += 0.1; // Increment zero speed time in seconds
+                        zeroSpeedCountOutput.textContent = zeroSpeedCount;
+                        zeroSpeedTimeOutput.textContent = totalZeroSpeedTime.toFixed(1);
+
+                        motionData.labels.push((timeElapsed += 0.1).toFixed(1));
+                        motionData.datasets[0].data.push(x);
+                        motionData.datasets[1].data.push(y);
+                        motionData.datasets[2].data.push(z);
+                        motionChart.update();
                     }
+                });
+            } else {
+                alert('DeviceMotion not supported on this device.');
+            }
+        }
 
-                    // Update the output values on the webpage
-                    zeroSpeedCountOutput.textContent = zeroSpeedCount;
-                    zeroSpeedTimeOutput.textContent = totalZeroSpeedTime.toFixed(1);
-                }
-            });
+        useGyroBtn.addEventListener('click', () => {
+            useInternalGyro = true;
+            statusDisplay.textContent = 'Status: Using Internal Gyroscope';
+            console.log('Using internal gyroscope.');
         });
 
-        // Start or stop data transmission when the START button is pressed
         startBtn.addEventListener('click', () => {
             if (isRunning) {
-                // If currently running, stop the data transmission
+                clearInterval(intervalId);
+                clearInterval(gyroIntervalId);
                 isRunning = false;
                 startBtn.textContent = 'START';
-                startBtn.classList.remove('running');
+                                startBtn.classList.remove('running');
                 console.log('Stopped data transmission');
+                statusDisplay.textContent = 'Status: Stopped';
             } else {
-                // If not running, start the data transmission
                 isRunning = true;
                 startBtn.textContent = 'RUNNING';
                 startBtn.classList.add('running');
-                console.log('Started data transmission');
-                timeElapsed = 0;
+                statusDisplay.textContent = 'Status: Running';
 
-                if (!usingInternalGyro) {
-                    // Simulate the elliptical foot motion during running (Mock Data)
+                if (useInternalGyro) {
+                    console.log('Starting internal gyroscope data...');
+                    // Use internal gyroscope
+                    useDeviceMotion();
+                } else {
+                    console.log('Starting mock elliptical foot motion...');
+                    // Simulate the mock elliptical foot motion during running
                     intervalId = setInterval(() => {
                         timeElapsed += 0.1; // Simulate running cycle time (0.1 seconds step)
                         const { x, y, z } = generateMockEllipticalData(timeElapsed);
 
-                        // Update the motion graph with mock data
+                        // Update data for the motion graph
                         motionData.labels.push(timeElapsed.toFixed(1));
                         motionData.datasets[0].data.push(x);
                         motionData.datasets[1].data.push(y);
                         motionData.datasets[2].data.push(z);
                         motionChart.update();
 
-                        // Update the elliptical foot motion graph with mock data
+                        // Update data for the elliptical foot motion graph
                         ellipseData.datasets[0].data.push({ x: x, y: y });
                         ellipseChart.update();
 
-                        // Update the vertical Z graph with mock data
+                        // Update data for the vertical Z graph
                         verticalZData.datasets[0].data.push({ x: z, y: y });
                         verticalZChart.update();
 
@@ -311,29 +235,27 @@
             }
         });
 
-        // Mock Bluetooth connection function
-        connectBtn.addEventListener('click', async () => {
-            try {
-                // Simulate Bluetooth connection and receiving data
-                console.log('Connected to Bluetooth device');
-                statusDisplay.textContent = 'Status: Connected to Bluetooth';
-            } catch (error) {
-                console.error('Connection failed', error);
-                statusDisplay.textContent = 'Status: Connection failed';
-            }
-        });
-
-        // Simulate elliptical foot motion during running (for mock data)
+        // Simulate elliptical foot motion during running (mock data generator)
         function generateMockEllipticalData(t) {
             const a = 0.5; // Horizontal (x-axis) radius in meters
             const b = 0.3;  // Vertical (y-axis) radius in meters
-            
             // Simulating running motion (an ellipse with some instability)
             const x = a * Math.cos(t) + (Math.random() - 0.5) * 0.1;  // Add slight instability
             const y = b * Math.sin(t) + (Math.random() - 0.5) * 0.05;  // Slight vertical instability
             const z = (Math.random() - 0.5) * 0.1; // Simulating slight lateral motion for z-axis
             return { x: x.toFixed(2), y: y.toFixed(2), z: z.toFixed(2) };
         }
+
+        connectBtn.addEventListener('click', async () => {
+            try {
+                console.log('Simulating Bluetooth connection...');
+                statusDisplay.textContent = 'Status: Connected';
+                // In actual IoT setup, implement Bluetooth connection logic here
+            } catch (error) {
+                console.error('Connection failed', error);
+                statusDisplay.textContent = 'Status: Connection Failed';
+            }
+        });
     </script>
 </body>
 </html>
