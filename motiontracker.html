@@ -34,6 +34,10 @@
             background-color: orange;
             color: white;
         }
+        #status {
+            margin-top: 10px;
+            font-size: 20px;
+        }
         #output {
             margin-top: 30px;
             font-size: 18px;
@@ -48,10 +52,13 @@
 
     <h1>IoT Device Motion Tracker</h1>
 
-    <!-- Buttons for connecting, starting/stopping the data transmission, and using the internal gyroscope -->
-    <button id="connectBtn">CONNECT</button>
+    <!-- Buttons for connecting and starting/stopping the data transmission -->
+    <button id="connectBtn">CONNECT BLUETOOTH</button>
+    <button id="internalGyroBtn">USE INTERNAL GYROSCOPE</button>
     <button id="startBtn">START</button>
-    <button id="internalGyroBtn">Use Internal Gyroscope</button>
+
+    <!-- Status message -->
+    <div id="status">Status: Not Connected</div>
 
     <!-- Output area for displaying data -->
     <div id="output">
@@ -74,6 +81,7 @@
 
     <script>
         let isRunning = false;
+        let usingInternalGyro = false;
         let intervalId;
         let zeroSpeedCount = 0;
         let totalZeroSpeedTime = 0;
@@ -174,8 +182,9 @@
 
         // Get elements
         const connectBtn = document.getElementById('connectBtn');
-        const startBtn = document.getElementById('startBtn');
         const internalGyroBtn = document.getElementById('internalGyroBtn');
+        const startBtn = document.getElementById('startBtn');
+        const statusDisplay = document.getElementById('status');
         const xOutput = document.getElementById('x');
         const yOutput = document.getElementById('y');
         const zOutput = document.getElementById('z');
@@ -185,71 +194,60 @@
         const zeroSpeedCountOutput = document.getElementById('zeroSpeedCount');
         const zeroSpeedTimeOutput = document.getElementById('zeroSpeedTime');
 
-        // Use internal gyroscope/accelerometer
+        // Handle using internal gyroscope
         internalGyroBtn.addEventListener('click', () => {
-            if (window.DeviceMotionEvent) {
-                window.addEventListener('devicemotion', (event) => {
-                    const acc = event.accelerationIncludingGravity;
+            statusDisplay.textContent = 'Status: Using Internal Gyroscope';
+            usingInternalGyro = true;
+            console.log('Using Internal Gyroscope for data.');
 
-                    if (acc) {
-                        const x = acc.x.toFixed(2);
-                        const y = acc.y.toFixed(2);
-                        const z = acc.z.toFixed(2);
-                        const speed = Math.sqrt(x * x + y * y + z * z).toFixed(2);
+            window.addEventListener('devicemotion', (event) => {
+                if (isRunning && usingInternalGyro) {
+                    const acceleration = event.accelerationIncludingGravity;
+                    const x = acceleration.x.toFixed(2);
+                    const y = acceleration.y.toFixed(2);
+                    const z = acceleration.z.toFixed(2);
 
-                        // Update the output values on the webpage
-                        xOutput.textContent = x;
-                        yOutput.textContent = y;
-                        zOutput.textContent = z;
-                        relativeSpeedOutput.textContent = speed;
-                        
-                        // Mock distance calculation
-                        totalDistance += Math.abs(speed * 0.1); 
-                        distanceOutput.textContent = totalDistance.toFixed(2);
+                    // Update the chart and outputs with internal gyro data
+                    motionData.labels.push(timeElapsed.toFixed(1));
+                    motionData.datasets[0].data.push(x);
+                    motionData.datasets[1].data.push(y);
+                    motionData.datasets[2].data.push(z);
+                    motionChart.update();
 
-                        // Acceleration
-                        const acceleration = Math.abs((speed - parseFloat(relativeSpeedOutput.textContent)) / 0.1).toFixed(2);
-                        accOutput.textContent = acceleration;
+                    ellipseData.datasets[0].data.push({ x: x, y: y });
+                    ellipseChart.update();
 
-                        // Handle zero speed
-                        if (Math.abs(speed) < zeroSpeedThreshold) {
-                            zeroSpeedCount++;
-                            totalZeroSpeedTime += 0.1;
-                        }
+                    verticalZData.datasets[0].data.push({ x: z, y: y });
+                    verticalZChart.update();
 
-                        zeroSpeedCountOutput.textContent = zeroSpeedCount;
-                        zeroSpeedTimeOutput.textContent = totalZeroSpeedTime.toFixed(1);
+                    // Update UI with motion data
+                    xOutput.textContent = x;
+                    yOutput.textContent = y;
+                    zOutput.textContent = z;
 
-                        // Update charts
-                        timeElapsed += 0.1;
-                        motionData.labels.push(timeElapsed.toFixed(1));
-                        motionData.datasets[0].data.push(x);
-                        motionData.datasets[1].data.push(y);
-                        motionData.datasets[2].data.push(z);
-                        motionChart.update();
+                    // Calculate speed and distance
+                    const speed = Math.sqrt((x * x) + (y * y) + (z * z)).toFixed(2);
+                    relativeSpeedOutput.textContent = speed;
+                    totalDistance += Math.abs(speed * 0.1);
+                    distanceOutput.textContent = totalDistance.toFixed(2);
+
+                                      // Check for zero speed events
+                    if (Math.abs(speed) < zeroSpeedThreshold) {
+                        zeroSpeedCount++;
+                        totalZeroSpeedTime += 0.1; // Increment zero speed time in seconds
                     }
-                });
-            } else {
-                alert("DeviceMotionEvent is not supported on this device.");
-            }
-        });
 
-        // Mock Bluetooth connection function
-                connectBtn.addEventListener('click', async () => {
-            try {
-                // Simulate Bluetooth connection and receiving data
-                console.log('Connected to Bluetooth device');
-                // Mock data reception and start receiving data
-            } catch (error) {
-                console.error('Connection failed', error);
-            }
+                    // Update the output values on the webpage
+                    zeroSpeedCountOutput.textContent = zeroSpeedCount;
+                    zeroSpeedTimeOutput.textContent = totalZeroSpeedTime.toFixed(1);
+                }
+            });
         });
 
         // Start or stop data transmission when the START button is pressed
         startBtn.addEventListener('click', () => {
             if (isRunning) {
                 // If currently running, stop the data transmission
-                clearInterval(intervalId);
                 isRunning = false;
                 startBtn.textContent = 'START';
                 startBtn.classList.remove('running');
@@ -260,57 +258,72 @@
                 startBtn.textContent = 'RUNNING';
                 startBtn.classList.add('running');
                 console.log('Started data transmission');
+                timeElapsed = 0;
 
-                intervalId = setInterval(() => {
-                    // Simulate the elliptical foot motion during running
-                    timeElapsed += 0.1; // Simulate running cycle time (0.1 seconds step)
-                    const { x, y, z } = generateMockEllipticalData(timeElapsed);
+                if (!usingInternalGyro) {
+                    // Simulate the elliptical foot motion during running (Mock Data)
+                    intervalId = setInterval(() => {
+                        timeElapsed += 0.1; // Simulate running cycle time (0.1 seconds step)
+                        const { x, y, z } = generateMockEllipticalData(timeElapsed);
 
-                    // Update data for the motion graph
-                    motionData.labels.push(timeElapsed.toFixed(1));
-                    motionData.datasets[0].data.push(x);
-                    motionData.datasets[1].data.push(y);
-                    motionData.datasets[2].data.push(z);
-                    motionChart.update();
+                        // Update the motion graph with mock data
+                        motionData.labels.push(timeElapsed.toFixed(1));
+                        motionData.datasets[0].data.push(x);
+                        motionData.datasets[1].data.push(y);
+                        motionData.datasets[2].data.push(z);
+                        motionChart.update();
 
-                    // Update data for the elliptical foot motion graph
-                    ellipseData.datasets[0].data.push({ x: x, y: y });
-                    ellipseChart.update();
+                        // Update the elliptical foot motion graph with mock data
+                        ellipseData.datasets[0].data.push({ x: x, y: y });
+                        ellipseChart.update();
 
-                    // Update data for the vertical Z graph
-                    verticalZData.datasets[0].data.push({ x: z, y: y });
-                    verticalZChart.update();
+                        // Update the vertical Z graph with mock data
+                        verticalZData.datasets[0].data.push({ x: z, y: y });
+                        verticalZChart.update();
 
-                    // Calculate relative speed
-                    const speed = Math.sqrt((x * x) + (y * y) + (z * z)).toFixed(2);
-                    relativeSpeedOutput.textContent = speed; // Display speed in output
+                        // Calculate relative speed
+                        const speed = Math.sqrt((x * x) + (y * y) + (z * z)).toFixed(2);
+                        relativeSpeedOutput.textContent = speed; // Display speed in output
 
-                    // Mock distance (simple accumulation)
-                    totalDistance += Math.abs(speed * 0.1); // Increment distance based on speed
-                    distanceOutput.textContent = totalDistance.toFixed(2);
+                        // Mock distance (simple accumulation)
+                        totalDistance += Math.abs(speed * 0.1); // Increment distance based on speed
+                        distanceOutput.textContent = totalDistance.toFixed(2);
 
-                    // Calculate acceleration based on previous speed
-                    const acceleration = Math.abs((speed - parseFloat(relativeSpeedOutput.textContent)) / 0.1).toFixed(2);
-                    accOutput.textContent = acceleration; // Show acceleration on the output
+                        // Calculate acceleration based on previous speed
+                        const acceleration = Math.abs((speed - parseFloat(relativeSpeedOutput.textContent)) / 0.1).toFixed(2);
+                        accOutput.textContent = acceleration; // Show acceleration on the output
 
-                    // Update zero speed counter and time
-                    if (Math.abs(speed) < zeroSpeedThreshold) {
-                        zeroSpeedCount++;
-                        totalZeroSpeedTime += 0.1; // Increment zero speed time in seconds
-                    }
+                        // Update zero speed counter and time
+                        if (Math.abs(speed) < zeroSpeedThreshold) {
+                            zeroSpeedCount++;
+                            totalZeroSpeedTime += 0.1; // Increment zero speed time in seconds
+                        }
 
-                    // Update the output values on the webpage
-                    xOutput.textContent = x;
-                    yOutput.textContent = y;
-                    zOutput.textContent = z;
-                    zeroSpeedCountOutput.textContent = zeroSpeedCount;
-                    zeroSpeedTimeOutput.textContent = totalZeroSpeedTime.toFixed(1);
+                        // Update the output values on the webpage
+                        xOutput.textContent = x;
+                        yOutput.textContent = y;
+                        zOutput.textContent = z;
+                        zeroSpeedCountOutput.textContent = zeroSpeedCount;
+                        zeroSpeedTimeOutput.textContent = totalZeroSpeedTime.toFixed(1);
 
-                }, 100); // Update every 100 milliseconds
+                    }, 100); // Update every 100 milliseconds
+                }
             }
         });
 
-        // Simulate elliptical foot motion during running
+        // Mock Bluetooth connection function
+        connectBtn.addEventListener('click', async () => {
+            try {
+                // Simulate Bluetooth connection and receiving data
+                console.log('Connected to Bluetooth device');
+                statusDisplay.textContent = 'Status: Connected to Bluetooth';
+            } catch (error) {
+                console.error('Connection failed', error);
+                statusDisplay.textContent = 'Status: Connection failed';
+            }
+        });
+
+        // Simulate elliptical foot motion during running (for mock data)
         function generateMockEllipticalData(t) {
             const a = 0.5; // Horizontal (x-axis) radius in meters
             const b = 0.3;  // Vertical (y-axis) radius in meters
