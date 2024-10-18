@@ -93,6 +93,97 @@
         let tareCount = 0;
         let tareSum = { x: 0, y: 0, z: 0 };
         let measurements = [];
+        let intervalId;
+        let timeElapsed = 0;
+
+        // Chart.js data configuration for motion and ellipse graphs
+        const motionData = {
+            labels: [],
+            datasets: [
+                {
+                    label: 'Foot Motion (X)',
+                    borderColor: 'rgb(255, 99, 132)',
+                    data: [],
+                    fill: false,
+                },
+                {
+                    label: 'Foot Motion (Y)',
+                    borderColor: 'rgb(54, 162, 235)',
+                    data: [],
+                    fill: false,
+                },
+                {
+                    label: 'Foot Motion (Z)',
+                    borderColor: 'rgb(75, 192, 192)',
+                    data: [],
+                    fill: false,
+                }
+            ]
+        };
+
+        const ellipseData = {
+            datasets: [
+                {
+                    label: 'Foot Ellipse (X vs Y)',
+                    borderColor: 'rgb(75, 192, 192)',
+                    data: [],
+                    fill: false,
+                    tension: 0
+                }
+            ]
+        };
+
+        const verticalZData = {
+            datasets: [
+                {
+                    label: 'Vertical Position vs Z',
+                    borderColor: 'rgb(255, 206, 86)',
+                    data: [],
+                    fill: false,
+                    tension: 0
+                }
+            ]
+        };
+
+        // Chart.js configurations for the motion, ellipse, and vertical position graphs
+        const motionChartCtx = document.getElementById('motionChart').getContext('2d');
+        const motionChart = new Chart(motionChartCtx, {
+            type: 'line',
+            data: motionData,
+            options: {
+                responsive: true,
+                scales: {
+                    x: { display: true, title: { display: true, text: 'Time (s)' } },
+                    y: { display: true, title: { display: true, text: 'Position (m)' } }
+                }
+            }
+        });
+
+        const ellipseChartCtx = document.getElementById('ellipseChart').getContext('2d');
+        const ellipseChart = new Chart(ellipseChartCtx, {
+            type: 'line',
+            data: ellipseData,
+            options: {
+                responsive: true,
+                scales: {
+                    x: { display: true, title: { display: true, text: 'Distance from Hip (m)' } },
+                    y: { display: true, title: { display: true, text: 'Vertical Position (m)' } }
+                }
+            }
+        });
+
+        const verticalZChartCtx = document.getElementById('verticalZChart').getContext('2d');
+        const verticalZChart = new Chart(verticalZChartCtx, {
+            type: 'line',
+            data: verticalZData,
+            options: {
+                responsive: true,
+                scales: {
+                    x: { display: true, title: { display: true, text: 'Z Position (m)' } },
+                    y: { display: true, title: { display: true, text: 'Vertical Position (m)' } }
+                }
+            }
+        });
 
         // Get elements for Tare values display
         const tareXDisplay = document.getElementById('tareX');
@@ -112,6 +203,11 @@
         const zeroSpeedCountOutput = document.getElementById('zeroSpeedCount');
         const zeroSpeedTimeOutput = document.getElementById('zeroSpeedTime');
         const body = document.body;
+
+        let totalDistance = 0;
+        let zeroSpeedCount = 0;
+        let totalZeroSpeedTime = 0;
+        const zeroSpeedThreshold = 0.05;
 
         // Auto Tare function: calculate the average of the first 10 measurements
         function autoTare() {
@@ -135,7 +231,7 @@
                     tareYDisplay.textContent = tareValues.y.toFixed(2);
                     tareZDisplay.textContent = tareValues.z.toFixed(2);
 
-                    tareComplete = true;
+                                       tareComplete = true;
                     body.style.backgroundColor = 'white'; // Switch back to white when Tare is complete
                     console.log('Tare complete. Values:', tareValues);
                 }
@@ -158,22 +254,51 @@
                         tareCount++;
                         measurements.push({ x, y, z });
                     } else {
-                        // Adjust by Tare values
+                        // Adjust by Tare values after Tare is complete
                         const adjX = (x - tareValues.x).toFixed(2);
                         const adjY = (y - tareValues.y).toFixed(2);
                         const adjZ = (z - tareValues.z).toFixed(2);
 
-                        // Update UI
+                        // Update UI with adjusted values
                         xOutput.textContent = adjX;
                         yOutput.textContent = adjY;
                         zOutput.textContent = adjZ;
 
-                        // TODO: Add further calculations for speed, distance, etc. if needed
+                        // Update chart data
+                        updateCharts(adjX, adjY, adjZ);
                     }
                 });
             } else {
                 console.error('DeviceMotionEvent is not supported on this device');
             }
+        }
+
+        // Update charts with the new adjusted values
+        function updateCharts(x, y, z) {
+            timeElapsed += 0.1; // Simulate time progression (assuming 100ms intervals)
+            motionChart.data.labels.push(timeElapsed.toFixed(1));
+            motionChart.data.datasets[0].data.push(x);
+            motionChart.data.datasets[1].data.push(y);
+            motionChart.data.datasets[2].data.push(z);
+
+            ellipseChart.data.datasets[0].data.push({ x, y });
+            verticalZChart.data.datasets[0].data.push({ x: z, y });
+
+            // Remove old data to keep charts clean
+            if (motionChart.data.labels.length > 100) {
+                motionChart.data.labels.shift();
+                motionChart.data.datasets.forEach(dataset => dataset.data.shift());
+            }
+            if (ellipseChart.data.datasets[0].data.length > 100) {
+                ellipseChart.data.datasets[0].data.shift();
+            }
+            if (verticalZChart.data.datasets[0].data.length > 100) {
+                verticalZChart.data.datasets[0].data.shift();
+            }
+
+            motionChart.update();
+            ellipseChart.update();
+            verticalZChart.update();
         }
 
         // Start or stop data transmission
@@ -183,6 +308,7 @@
                 startBtn.textContent = 'START';
                 startBtn.classList.remove('running');
                 console.log('Stopped data transmission');
+                clearInterval(intervalId); // Stop data transmission
             } else {
                 isRunning = true;
                 startBtn.textContent = 'RUNNING';
