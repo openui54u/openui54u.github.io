@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stereoscopic Photography Calculator</title>
+    <meta name="version" content="31">
+    <meta name="date" content="2024-06-12 10:00:00">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .slider-container {
+            margin-bottom: 20px;
+        }
+        .slider-container label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .slider-container input {
+            width: 100%;
+        }
+        .result {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .advanced-options {
+            display: none;
+        }
+        @media (max-width: 600px) {
+            h1 {
+                font-size: 1.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<h1>Stereoscopic Photography Calculator</h1>
+
+<div class="slider-container">
+    <label for="ia">Interaxial Base (IA) in cm: <span id="iaValue">19</span></label>
+    <input type="range" id="ia" min="1" max="100" value="19" step="0.1" oninput="calculateDisparity()">
+</div>
+
+<div class="slider-container">
+    <label for="distance">Distance to Subject in meters: <span id="distanceValue">3</span></label>
+    <input type="range" id="distance" min="0.0001" max="2" value="1" step="0.0001" oninput="calculateDisparity()">
+</div>
+
+<div class="slider-container">
+    <label for="farDistance">Far Distance in meters: <span id="farDistanceValue">10</span></label>
+    <input type="range" id="farDistance" min="0.001" max="3" value="1" step="0.0001" oninput="calculateDisparity()">
+</div>
+
+<div class="slider-container">
+    <label for="lens">Lens Focal Length in mm: <span id="lensValue">50</span></label>
+    <input type="range" id="lens" min="10" max="800" value="50" step="1" oninput="calculateDisparity()">
+</div>
+
+<button onclick="toggleAdvancedOptions()">Advanced Options</button>
+<div id="advancedOptions" class="advanced-options">
+    <div class="slider-container">
+        <label for="tvSize">TV Screen Size in inches: <span id="tvSizeValue">52</span></label>
+        <input type="range" id="tvSize" min="10" max="100" value="52" step="1" oninput="calculateDisparity()">
+    </div>
+
+    <div class="slider-container">
+        <label for="eyeSeparation">Eye Separation (IO) in cm: <span id="eyeSeparationValue">6.3</span></label>
+        <input type="range" id="eyeSeparation" min="5.5" max="7.3" value="6.3" step="0.1" oninput="calculateDisparity()">
+    </div>
+    
+    <div class="slider-container">
+        <label for="viewerDistance">Viewer Distance to Screen in meters: <span id="viewerDistanceValue">2</span> (Multiplier: <span id="viewerDistanceMultiplier">1.5</span>)</label>
+        <input type="range" id="viewerDistance" min="0.5" max="5" value="1.5" step="0.1" oninput="calculateDisparity()">
+    </div>
+    
+    <div class="slider-container">
+        <label for="convergenceDistance">Convergence Distance in meters: <span id="convergenceDistanceValue">10000</span></label>
+        <input type="range" id="convergenceDistance" min="0.001" max="4" value="3" step="0.0011" oninput="calculateDisparity()">
+    </div>
+</div>
+
+<div class="result" id="result"></div>
+
+<script>
+    function toggleAdvancedOptions() {
+        const advancedOptions = document.getElementById('advancedOptions');
+        const displayStyle = advancedOptions.style.display === 'none' ? 'block' : 'none';
+        advancedOptions.style.display = displayStyle;
+    }
+
+ function calculateDisparity() {
+    const ia = parseFloat(document.getElementById('ia').value);
+    const distanceLog = parseFloat(document.getElementById('distance').value);
+    const farDistanceLog = parseFloat(document.getElementById('farDistance').value);
+    const lens = parseFloat(document.getElementById('lens').value);
+    const tvSize = parseFloat(document.getElementById('tvSize').value);
+    const eyeSeparation = parseFloat(document.getElementById('eyeSeparation').value);
+    const convergenceDistanceLog = parseFloat(document.getElementById('convergenceDistance').value);
+    const viewerDistanceMultiplier = parseFloat(document.getElementById('viewerDistance').value);
+
+    const distance = Math.pow(10, distanceLog);
+    const farDistance = Math.pow(10, farDistanceLog);
+    const convergenceDistance = Math.pow(10, convergenceDistanceLog);
+
+    const diagonal = tvSize * 2.54;
+    const screenWidth = Math.sqrt(16 * 16 / (16 * 16 + 9 * 9)) * diagonal;
+
+    const viewerDistance = viewerDistanceMultiplier * diagonal;
+
+     
+     
+     
+    // Calculate the horizontal field of view (FOV) in degrees
+    const sensorWidth = 36; // assuming full-frame sensor width in mm
+    const horizontalFov = 2 * Math.atan((sensorWidth / 2) / lens) * (180 / Math.PI);
+
+    // Calculate horizontal magnification factor relative to screen width
+    const horizontalMagnification = screenWidth / (2 * Math.tan(horizontalFov / 2));
+
+    // Calculate convergence angle in radians
+    const convergenceAngle = 2 * Math.atan((ia / 2) / convergenceDistance);
+
+    // Calculate absolute vertical disparity in centimeters
+    const verticalDisparity = eyeSeparation * Math.tan(convergenceAngle / 2);
+    const absoluteVerticalDisparityCm = verticalDisparity * horizontalMagnification;
+
+    // Calculate disparity for display on screen
+    const disparity = (ia * (farDistance - distance)) / (farDistance * distance);
+    const magnification = lens / 36;
+    const disparityCm = disparity * magnification * screenWidth / 100;
+    const disparityPercent = (disparityCm / screenWidth) * 100;
+    const disparityFraction = 100 / disparityPercent;
+
+    // Calculate parallax angle (Theta) in degrees
+    const theta = 2 * Math.atan((disparityCm / 2) / (viewerDistance * 100)) * (180 / Math.PI);
+
+    // Calculate vertical disparity and vertical parallax angle
+    const verticalDisparityCm = verticalDisparity * Math.abs(distance - farDistance) / farDistance;
+    const verticalParallaxAngle = Math.atan(verticalDisparityCm / viewerDistance) * (180 / Math.PI);
+
+    // Put the results back into the sliders.
+     
+    document.getElementById('iaValue').innerText = ia;
+    document.getElementById('distanceValue').innerText = distance.toFixed(2);
+    document.getElementById('farDistanceValue').innerText = farDistance.toFixed(2);
+    document.getElementById('lensValue').innerText = lens;
+    document.getElementById('tvSizeValue').innerText = tvSize;
+    document.getElementById('eyeSeparationValue').innerText = eyeSeparation;
+    document.getElementById('viewerDistanceValue').innerText = (viewerDistance / 100).toFixed(2);
+     document.getElementById('viewerDistanceMultiplier').innerText = viewerDistanceMultiplier;
+    document.getElementById('convergenceDistanceValue').innerText = convergenceDistance.toFixed(2);
+     
+    // Display results
+    const disparityColor = disparityPercent > 3 ? 'red' : disparityPercent > 2 ? 'orange' : 'black';
+    const thetaColor = Math.abs(theta) > 2 ? 'red' : Math.abs(theta) > 1.5 ? 'orange' : 'black';
+    const verticalDisparityColor = verticalDisparityCm > 7 ? 'red' : 'black';
+    const verticalThetaColor = Math.abs(verticalParallaxAngle) > 2 ? 'red' : Math.abs(verticalParallaxAngle) > 1 ? 'orange' : 'black';
+
+    const fov = horizontalFov; // Use horizontal FOV as the overall FOV
+
+    document.getElementById('result').innerHTML = `
+        Disparity on Screen: <span style="color: ${disparityColor}">${disparityCm.toFixed(2)} cm</span><br>
+        Disparity Percentage: <span style="color: ${disparityColor}">${disparityPercent.toFixed(2)}%</span><br>
+        Disparity as a Fraction: <span style="color: ${disparityColor}">1/${disparityFraction.toFixed(2)}</span><br>
+        Parallax Angle (Theta): <span style="color: ${thetaColor}">${theta.toFixed(2)} degrees</span><br>
+        Vertical Disparity: <span style="color: ${verticalDisparityColor}">${verticalDisparityCm.toFixed(2)} cm</span><br>
+        Absolute Vertical Disparity: ${absoluteVerticalDisparityCm.toFixed(2)} cm<br>
+        Viewer Distance: ${(viewerDistance / 100).toFixed(2)} meters (Multiplier: ${viewerDistanceMultiplier})<br>
+        Vertical Parallax Angle: <span style="color: ${verticalThetaColor}">${verticalParallaxAngle.toFixed(2)} degrees</span><br>
+        Field of View (FOV): ${fov.toFixed(2)} degrees
+    `;
+}
+
+calculateDisparity();
+
+
+
+
+</script>
+<br>
+Key Factors Influencing Disparity Degree<br>
+Interaxial Distance (IA): This is the distance between the two cameras. A larger IA will increase the disparity because the cameras are capturing more offset perspectives of the same scene.
+<br>
+Convergence Distance: This is the distance at which the cameras converge. When the cameras are toed-in (not parallel), the convergence point creates an angular difference between the left and right images. If this convergence distance is close, the disparity degree will be higher.
+<br>
+Distance to Subject: The closer the subject is to the cameras, the larger the disparity will be. This is because the parallax (difference in viewpoints) is more pronounced at shorter distances.
+<br>
+Far Distance: When considering far distances, the disparity decreases because the perspectives from both cameras become more similar as objects are further away.
+<br>
+Focal Length of the Lens: A longer focal length can amplify the effect of disparity, as it zooms into the scene more, making the differences between the two viewpoints more apparent. 
+  <br>  
+    Horizontal Field of View (FOV): Calculated based on the lens focal length to determine how much of the scene the camera captures horizontally.
+<br>
+Horizontal Magnification Factor: Adjusted to scale the physical disparity captured by the lens to what's displayed on the screen, considering the screen size.
+<br>
+Absolute Vertical Disparity: Recalculated to accurately reflect the physical offset perceived on the screen, factoring in both lens FOV and display dimensions.
+    
+    
+    
+</body>
+</html>
