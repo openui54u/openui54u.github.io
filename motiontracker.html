@@ -11,7 +11,7 @@
             text-align: center;
             margin: 50px;
         }
-        #connectBtn, #startBtn {
+        #connectBtn, #startBtn, #internalGyroBtn {
             padding: 15px 30px;
             font-size: 18px;
             margin: 20px;
@@ -30,6 +30,10 @@
         #startBtn.running {
             background-color: red;
         }
+        #internalGyroBtn {
+            background-color: orange;
+            color: white;
+        }
         #output {
             margin-top: 30px;
             font-size: 18px;
@@ -44,9 +48,10 @@
 
     <h1>IoT Device Motion Tracker</h1>
 
-    <!-- Buttons for connecting and starting/stopping the data transmission -->
+    <!-- Buttons for connecting, starting/stopping the data transmission, and using the internal gyroscope -->
     <button id="connectBtn">CONNECT</button>
     <button id="startBtn">START</button>
+    <button id="internalGyroBtn">Use Internal Gyroscope</button>
 
     <!-- Output area for displaying data -->
     <div id="output">
@@ -170,6 +175,7 @@
         // Get elements
         const connectBtn = document.getElementById('connectBtn');
         const startBtn = document.getElementById('startBtn');
+        const internalGyroBtn = document.getElementById('internalGyroBtn');
         const xOutput = document.getElementById('x');
         const yOutput = document.getElementById('y');
         const zOutput = document.getElementById('z');
@@ -179,17 +185,65 @@
         const zeroSpeedCountOutput = document.getElementById('zeroSpeedCount');
         const zeroSpeedTimeOutput = document.getElementById('zeroSpeedTime');
 
-        // Simulate elliptical foot motion during running
-        function generateMockEllipticalData(t) {
-            const a = 0.5; // Horizontal (x-axis) radius in meters
-            const b = 0.3;  // Vertical (y-axis) radius in meters
-            
-            // Simulating running motion (an ellipse with some instability)
-            const x = a * Math.cos(t) + (Math.random() - 0.5) * 0.1;  // Add slight instability
-            const y = b * Math.sin(t) + (Math.random() - 0.5) * 0.05;  // Slight vertical instability
-            const z = (Math.random() - 0.5) * 0.1; // Simulating slight lateral motion for z-axis
-            return { x: x.toFixed(2), y: y.toFixed(2), z: z.toFixed(2) };
-        }
+        // Use internal gyroscope/accelerometer
+        internalGyroBtn.addEventListener('click', () => {
+            if (window.DeviceMotionEvent) {
+                window.addEventListener('devicemotion', (event) => {
+                    const acc = event.accelerationIncludingGravity;
+
+                    if (acc) {
+                        const x = acc.x.toFixed(2);
+                        const y = acc.y.toFixed(2);
+                        const z = acc.z.toFixed(2);
+                        const speed = Math.sqrt(x * x + y * y + z * z).toFixed(2);
+
+                        // Update the output values on the webpage
+                        xOutput.textContent = x;
+                        yOutput.textContent = y;
+                        zOutput.textContent = z;
+                        relativeSpeedOutput.textContent = speed;
+                        
+                        // Mock distance calculation
+                        totalDistance += Math.abs(speed * 0.1); 
+                        distanceOutput.textContent = totalDistance.toFixed(2);
+
+                        // Acceleration
+                        const acceleration = Math.abs((speed - parseFloat(relativeSpeedOutput.textContent)) / 0.1).toFixed(2);
+                        accOutput.textContent = acceleration;
+
+                        // Handle zero speed
+                        if (Math.abs(speed) < zeroSpeedThreshold) {
+                            zeroSpeedCount++;
+                            totalZeroSpeedTime += 0.1;
+                        }
+
+                        zeroSpeedCountOutput.textContent = zeroSpeedCount;
+                        zeroSpeedTimeOutput.textContent = totalZeroSpeedTime.toFixed(1);
+
+                        // Update charts
+                        timeElapsed += 0.1;
+                        motionData.labels.push(timeElapsed.toFixed(1));
+                        motionData.datasets[0].data.push(x);
+                        motionData.datasets[1].data.push(y);
+                        motionData.datasets[2].data.push(z);
+                        motionChart.update();
+                    }
+                });
+            } else {
+                alert("DeviceMotionEvent is not supported on this device.");
+            }
+        });
+
+        // Mock Bluetooth connection function
+                connectBtn.addEventListener('click', async () => {
+            try {
+                // Simulate Bluetooth connection and receiving data
+                console.log('Connected to Bluetooth device');
+                // Mock data reception and start receiving data
+            } catch (error) {
+                console.error('Connection failed', error);
+            }
+        });
 
         // Start or stop data transmission when the START button is pressed
         startBtn.addEventListener('click', () => {
@@ -256,16 +310,17 @@
             }
         });
 
-        // Mock Bluetooth connection function
-        connectBtn.addEventListener('click', async () => {
-            try {
-                // Simulate Bluetooth connection and receiving data
-                console.log('Connected to Bluetooth device');
-                // Mock data reception and start receiving data
-            } catch (error) {
-                console.error('Connection failed', error);
-            }
-        });
+        // Simulate elliptical foot motion during running
+        function generateMockEllipticalData(t) {
+            const a = 0.5; // Horizontal (x-axis) radius in meters
+            const b = 0.3;  // Vertical (y-axis) radius in meters
+            
+            // Simulating running motion (an ellipse with some instability)
+            const x = a * Math.cos(t) + (Math.random() - 0.5) * 0.1;  // Add slight instability
+            const y = b * Math.sin(t) + (Math.random() - 0.5) * 0.05;  // Slight vertical instability
+            const z = (Math.random() - 0.5) * 0.1; // Simulating slight lateral motion for z-axis
+            return { x: x.toFixed(2), y: y.toFixed(2), z: z.toFixed(2) };
+        }
     </script>
 </body>
 </html>
