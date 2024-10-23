@@ -233,209 +233,128 @@
                     tareYDisplay.textContent = tareValues.y.toFixed(2);
                     tareZDisplay.textContent = tareValues.z.toFixed(2);
 
-                                       tareComplete = true;
+                    tareComplete = true;
                     body.style.backgroundColor = 'white'; // Switch back to white when Tare is complete
                     console.log('Tare complete. Values:', tareValues);
                 }
             }, 100); // Sample every 100ms
         }
 
-        // Handle DeviceMotion event for internal gyroscope
-        function useDeviceMotion() {
-            if (window.DeviceMotionEvent) {
-                window.addEventListener('devicemotion', event => {
-                    const x = event.accelerationIncludingGravity.x || 0;
-                    const y = event.accelerationIncludingGravity.y || 0;
-                    const z = event.accelerationIncludingGravity.z || 0;
+               // Handle DeviceMotion event for internal gyroscope
+        function handleMotionEvent(event) {
+            const acc = event.accelerationIncludingGravity;
+            const gyroX = acc.x - tareValues.x;
+            const gyroY = acc.y - tareValues.y;
+            const gyroZ = acc.z - tareValues.z;
 
-                    if (!tareComplete) {
-                        // During Tare process, accumulate the first 10 measurements
-                        tareSum.x += x;
-                        tareSum.y += y;
-                        tareSum.z += z;
-                        tareCount++;
-                        measurements.push({ x, y, z });
-                    } else {
-                        // Adjust by Tare values after Tare is complete
-                        const adjX = (x - tareValues.x).toFixed(2);
-                        const adjY = (y - tareValues.y).toFixed(2);
-                        const adjZ = (z - tareValues.z).toFixed(2);
+            xOutput.textContent = gyroX.toFixed(2);
+            yOutput.textContent = gyroY.toFixed(2);
+            zOutput.textContent = gyroZ.toFixed(2);
 
-                        // Update UI with adjusted values
-                        xOutput.textContent = adjX;
-                        yOutput.textContent = adjY;
-                        zOutput.textContent = adjZ;
+            const acceleration = Math.sqrt(gyroX ** 2 + gyroY ** 2 + gyroZ ** 2).toFixed(2);
+            accOutput.textContent = acceleration;
 
-                        // Update chart data
-                        updateCharts(adjX, adjY, adjZ);
-                    }
+            if (!tareComplete && tareCount < 10) {
+                tareSum.x += acc.x;
+                tareSum.y += acc.y;
+                tareSum.z += acc.z;
+                tareCount++;
+            }
+
+            if (tareComplete) {
+                const timeStep = 0.1; // 100ms
+                const speed = parseFloat(acceleration) * timeStep;
+                const isStationary = speed < zeroSpeedThreshold;
+
+                if (!isStationary) {
+                    totalDistance += speed * timeStep;
+                } else {
+                    zeroSpeedCount++;
+                    totalZeroSpeedTime += timeStep;
+                }
+
+                relativeSpeedOutput.textContent = speed.toFixed(2);
+                distanceOutput.textContent = totalDistance.toFixed(2);
+                zeroSpeedCountOutput.textContent = zeroSpeedCount;
+                zeroSpeedTimeOutput.textContent = totalZeroSpeedTime.toFixed(2);
+
+                // Store measurement
+                measurements.push({
+                    x: gyroX,
+                    y: gyroY,
+                    z: gyroZ,
+                    distance: totalDistance
                 });
-            } else {
-                console.error('DeviceMotionEvent is not supported on this device');
+
+                if (measurements.length > maxPoints) {
+                    measurements.shift();
+                }
+
+                // Update charts
+                updateCharts();
             }
         }
 
-        // Update charts with the new adjusted values
-        function updateCharts(x, y, z) {
-            timeElapsed += 0.1; // Simulate time progression (assuming 100ms intervals)
-            motionChart.data.labels.push(timeElapsed.toFixed(1));
-            motionChart.data.datasets[0].data.push(x);
-            motionChart.data.datasets[1].data.push(y);
-            motionChart.data.datasets[2].data.push(z);
+        // Update the charts with the latest data
+        function updateCharts() {
+            const latestTime = timeElapsed.toFixed(1);
+            motionData.labels.push(latestTime);
+            ellipseData.datasets[0].data.push({ x: measurements[measurements.length - 1].x, y: measurements[measurements.length - 1].y });
+            verticalZData.datasets[0].data.push({ x: measurements[measurements.length - 1].z, y: measurements[measurements.length - 1].distance });
 
-            ellipseChart.data.datasets[0].data.push({ x, y });
-            verticalZChart.data.datasets[0].data.push({ x: z, y });
+            if (motionData.labels.length > maxPoints) {
+                motionData.labels.shift();
+                motionData.datasets.forEach(dataset => dataset.data.shift());
+            }
 
-            // Remove old data to keep charts clean
-            if (motionChart.data.labels.length > maxPoints) {
-                motionChart.data.labels.shift();
-                motionChart.data.datasets.forEach(dataset => dataset.data.shift());
-            }
-            if (ellipseChart.data.datasets[0].data.length > maxPoints) {
-                ellipseChart.data.datasets[0].data.shift();
-            }
-            if (verticalZChart.data.datasets[0].data.length > maxPoints) {
-                verticalZChart.data.datasets[0].data.shift();
-            }
+            motionData.datasets[0].data.push(measurements[measurements.length - 1].x);
+            motionData.datasets[1].data.push(measurements[measurements.length - 1].y);
+            motionData.datasets[2].data.push(measurements[measurements.length - 1].z);
 
             motionChart.update();
             ellipseChart.update();
             verticalZChart.update();
         }
 
-        // Start or stop data transmission
+        // Event listener for the connect button
+        connectBtn.addEventListener('click', () => {
+            if (useInternalGyro) {
+                window.addEventListener('devicemotion', handleMotionEvent);
+                connectBtn.textContent = 'Connected (Gyroscope)';
+            } else {
+                // Add external sensor connection logic here
+                console.log('Connecting to external IoT sensor...');
+            }
+        });
+
+        // Event listener for the start button
         startBtn.addEventListener('click', () => {
+            isRunning = !isRunning;
             if (isRunning) {
-                isRunning = false;
+                startBtn.textContent = 'STOP';
+                startBtn.classList.add('running');
+                autoTare();
+            } else {
                 startBtn.textContent = 'START';
                 startBtn.classList.remove('running');
-                console.log('Stopped data transmission');
-                clearInterval(intervalId); // Stop data transmission
-            } else {
-                isRunning = true;
-                startBtn.textContent = 'RUNNING';
-                startBtn.classList.add('running');
-                console.log('Started data transmission');
-
-                if (useInternalGyro) {
-                    
-                    // Simple beep
-                    beep(
-                        // Set the duration to 0.2 second (200 milliseconds)
-                        200,
-                        // Set the frequency of the note to A4 (440 Hz)
-                        440,
-                        // Set the volume of the beep to 100%
-                        100
-                    );
-                    
-                    
-             if (!isRunning) {
-                const permissionGranted = await requestGyroPermission();
-                if (permissionGranted) {
-                                        
-                    autoTare(); // Perform auto Tare before using internal gyroscope
-                    useDeviceMotion(); // Start capturing motion data
-            
-                }
-            } else {
-// stop
-            }
-
-                }
+                clearInterval(intervalId);
             }
         });
 
-        // Handle internal gyroscope button click
+        // Event listener for the internal gyroscope button
         gyroBtn.addEventListener('click', () => {
-            useInternalGyro = true;
-            console.log('Internal gyroscope enabled');
-        });
-
-        // Mock Bluetooth connection
-        connectBtn.addEventListener('click', () => {
-            console.log('Simulating Bluetooth connection...');
-        });
-        
-        
-// The browser will limit the number of concurrent audio contexts
-// So be sure to re-use them whenever you can
-const myAudioContext = new AudioContext();
-
-/**
- * Helper function to emit a beep sound in the browser using the Web Audio API.
- * 
- * @param {number} duration - The duration of the beep sound in milliseconds.
- * @param {number} frequency - The frequency of the beep sound.
- * @param {number} volume - The volume of the beep sound.
- * 
- * @returns {Promise} - A promise that resolves when the beep sound is finished.
- */
-        
- // Request permission for iOS devices
-        function requestGyroPermission() {
-            if (typeof DeviceMotionEvent.requestPermission === 'function') {
-                return DeviceMotionEvent.requestPermission()
-                    .then(response => {
-                        if (response === 'granted') {
-                            return true;
-                        } else {
-                            alert("Permission not granted for motion sensors.");
-                            return false;
-                        }
-                    })
-                    .catch(error => {
-                        console.error("Error requesting permission:", error);
-                        return false;
-                    });
+            useInternalGyro = !useInternalGyro;
+            if (useInternalGyro) {
+                gyroBtn.textContent = 'USING INTERNAL GYROSCOPE';
+                body.style.backgroundColor = 'lightorange'; // Indicate that the internal gyroscope is being used
+            } else {
+                gyroBtn.textContent = 'USE INTERNAL GYROSCOPE';
+                body.style.backgroundColor = 'white';
             }
-            return Promise.resolve(true); // Non-iOS devices don't need permission
-        }       
-        
-        
-function beep(duration, frequency, volume){
-    return new Promise((resolve, reject) => {
-        // Set default duration if not provided
-        duration = duration || 200;
-        frequency = frequency || 440;
-        volume = volume || 100;
-
-        try{
-            let oscillatorNode = myAudioContext.createOscillator();
-            let gainNode = myAudioContext.createGain();
-            oscillatorNode.connect(gainNode);
-
-            // Set the oscillator frequency in hertz
-            oscillatorNode.frequency.value = frequency;
-
-            // Set the type of oscillator
-            oscillatorNode.type= "square";
-            gainNode.connect(myAudioContext.destination);
-
-            // Set the gain to the volume
-            gainNode.gain.value = volume * 0.01;
-
-            // Start audio with the desired duration
-            oscillatorNode.start(myAudioContext.currentTime);
-            oscillatorNode.stop(myAudioContext.currentTime + duration * 0.001);
-
-            // Resolve the promise when the sound is finished
-            oscillatorNode.onended = () => {
-                resolve();
-            };
-        }catch(error){
-            reject(error);
-        }
-    });
-}
-
-
-
-        
-        
-        
-        
-        
+        });
     </script>
 </body>
 </html>
+
+
+       
