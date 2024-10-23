@@ -329,8 +329,19 @@
                         100
                     );
                     
+                    
+             if (!isRunning) {
+                const permissionGranted = await requestGyroPermission();
+                if (permissionGranted) {
+                                        
                     autoTare(); // Perform auto Tare before using internal gyroscope
                     useDeviceMotion(); // Start capturing motion data
+            
+                }
+            } else {
+// stop
+            }
+
                 }
             }
         });
@@ -360,6 +371,28 @@ const myAudioContext = new AudioContext();
  * 
  * @returns {Promise} - A promise that resolves when the beep sound is finished.
  */
+        
+ // Request permission for iOS devices
+        function requestGyroPermission() {
+            if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                return DeviceMotionEvent.requestPermission()
+                    .then(response => {
+                        if (response === 'granted') {
+                            return true;
+                        } else {
+                            alert("Permission not granted for motion sensors.");
+                            return false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error requesting permission:", error);
+                        return false;
+                    });
+            }
+            return Promise.resolve(true); // Non-iOS devices don't need permission
+        }       
+        
+        
 function beep(duration, frequency, volume){
     return new Promise((resolve, reject) => {
         // Set default duration if not provided
