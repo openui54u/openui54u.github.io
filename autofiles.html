@@ -35,7 +35,8 @@
                     const fileNameWithoutExtension = file.replace('.html', '');
                     const button = document.createElement('button');
                     button.textContent = fileNameWithoutExtension;
-                    button.onclick = () => window.location.href = file;
+                    button.onclick = () => window.open(file, '_blank');      
+                                        //window.location.href = file;
                     buttonContainer.appendChild(button);
                 });
             })
