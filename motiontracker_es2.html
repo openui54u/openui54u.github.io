@@ -51,26 +51,31 @@
         const battery = document.getElementById('battery');
         const temperature = document.getElementById('temperature');
 
-        // Function to connect to a Bluetooth device and list available services
-        async function connectAndListServices() {
-            try {
-                const device = await navigator.bluetooth.requestDevice({
-                    acceptAllDevices: true
-                });
+       // Function to connect to a Bluetooth device and list available services
+async function connectAndListServices() {
+    try {
+        const device = await navigator.bluetooth.requestDevice({
+            acceptAllDevices: true
+        });
 
-                const server = await device.gatt.connect();
-                console.log('Connected to GATT server');
+        const server = await device.gatt.connect();
+        console.log('Connected to GATT server');
 
-                const services = await server.getPrimaryServices();
-                console.log('Services found:');
-                services.forEach(service => {
-                    console.log('Service UUID:', service.uuid);
-                });
-
-            } catch (error) {
-                console.error('Error connecting or retrieving services:', error);
-            }
+        const services = await server.getPrimaryServices();
+        if (services.length === 0) {
+            console.log('No services found on the device.');
+            return; // Early return if no services
         }
+
+        console.log('Services found:');
+        services.forEach(service => {
+            console.log('Service UUID:', service.uuid);
+        });
+
+    } catch (error) {
+        console.error('Error connecting or retrieving services:', error);
+    }
+}
 
         connectBtn.addEventListener('click', connectAndListServices);
     </script>
