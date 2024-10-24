@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eddystone Beacon Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+        }
+        #connectBtn {
+            padding: 15px 30px;
+            font-size: 18px;
+            margin: 20px;
+            cursor: pointer;
+            border: none;
+            border-radius: 10px;
+            background-color: blue;
+            color: white;
+        }
+        #output {
+            margin-top: 30px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Eddystone Beacon Tracker</h1>
+
+    <button id="connectBtn">CONNECT TO EDDYSTONE BEACON</button>
+
+    <div id="output">
+        <p><strong>Beacon Data:</strong></p>
+        <p id="beaconType">Type: Unknown</p>
+        <p id="beaconId">ID: N/A</p>
+        <p id="beaconURL">URL: N/A</p>
+        <p id="battery">Battery: N/A</p>
+        <p id="temperature">Temperature: N/A</p>
+    </div>
+
+    <script>
+        const connectBtn = document.getElementById('connectBtn');
+        const output = document.getElementById('output');
+        const beaconType = document.getElementById('beaconType');
+        const beaconId = document.getElementById('beaconId');
+        const beaconURL = document.getElementById('beaconURL');
+        const battery = document.getElementById('battery');
+        const temperature = document.getElementById('temperature');
+
+        // Eddystone Frame Types
+        const EDDYSTONE_UID = 0x00;
+        const EDDYSTONE_URL = 0x10;
+        const EDDYSTONE_TLM = 0x20;
+
+        // URL decoding map
+        const urlSchemePrefixes = [
+            "http://www.", "https://www.", "http://", "https://"
+        ];
+
+        const urlExpansions = [
+            ".com/", ".org/", ".edu/", ".net/", ".info/", ".biz/", ".gov/"
+        ];
+
+        // Function to decode URL from Eddystone URL frame
+        function decodeEddystoneURL(data) {
+            let url = urlSchemePrefixes[data[0]];
+            for (let i = 1; i < data.length; i++) {
+                const charCode = data[i];
+                if (charCode < urlExpansions.length) {
+                    url += urlExpansions[charCode];
+                } else {
+                    url += String.fromCharCode(charCode);
+                }
+            }
+            return url;
+        }
+
+        // Function to handle Eddystone packet
+        function handleEddystonePacket(advertisementData) {
+            const data = new Uint8Array(advertisementData);
+            const frameType = data[0];
+
+            switch (frameType) {
+                case EDDYSTONE_UID:
+                    // Parse Eddystone-UID
+                    const namespace = Array.from(data.slice(2, 12)).map(b => b.toString(16).padStart(2, '0')).join('');
+                    const instance = Array.from(data.slice(12, 18)).map(b => b.toString(16).padStart(2, '0')).join('');
+                    beaconType.textContent = 'Type: Eddystone-UID';
+                    beaconId.textContent = `Namespace: ${namespace}, Instance: ${instance}`;
+                    break;
+
+                case EDDYSTONE_URL:
+                    // Parse Eddystone-URL
+                    const url = decodeEddystoneURL(data.slice(2));
+                    beaconType.textContent = 'Type: Eddystone-URL';
+                    beaconURL.textContent = `URL: ${url}`;
+                    break;
+
+                case EDDYSTONE_TLM:
+                    // Parse Eddystone-TLM
+                    const batteryVoltage = (data[2] << 8) | data[3];
+                    const temp = data[4] + data[5] / 256;
+                    beaconType.textContent = 'Type: Eddystone-TLM';
+                    battery.textContent = `Battery Voltage: ${batteryVoltage} mV`;
+                    temperature.textContent = `Temperature: ${temp.toFixed(1)} °C`;
+                    break;
+
+                default:
+                    beaconType.textContent = 'Type: Unknown';
+                    console.log('Unknown Eddystone frame type');
+            }
+        }
+
+        // Function to connect to any Bluetooth device
+        async function connectToEddystoneBeacon() {
+            try {
+                const beaconDevice = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true
+                });
+
+                console.log('Device selected:', beaconDevice.name);
+
+                // Connect to the GATT server
+                const server = await beaconDevice.gatt.connect();
+                const service = await server.getPrimaryService('0000feaa-0000-1000-8000-00805f9b34fb'); // Eddystone Service UUID
+                const characteristic = await service.getCharacteristic('feaa');
+
+                // Listen for characteristic changes (advertising packets)
+                characteristic.startNotifications();
+                characteristic.addEventListener('characteristicvaluechanged', (event) => {
+                    const value = event.target.value;
+                    handleEddystonePacket(value.buffer);
+                });
+            } catch (error) {
+                console.log('Error connecting to Bluetooth device:', error);
+            }
+        }
+
+        connectBtn.addEventListener('click', connectToEddystoneBeacon);
+    </script>
+
+</body>
+</html>
