@@ -31,7 +31,7 @@
 
     <h1>Eddystone Beacon Tracker</h1>
 
-    <button id="connectBtn">SCAN FOR BEACON</button>
+    <button id="connectBtn">CONNECT TO BEACON</button>
 
     <div id="output">
         <p><strong>Beacon Data:</strong></p>
@@ -50,88 +50,81 @@
         const battery = document.getElementById('battery');
         const temperature = document.getElementById('temperature');
 
-        // Eddystone Frame Types
-        const EDDYSTONE_UID = 0x00;
-        const EDDYSTONE_URL = 0x10;
-        const EDDYSTONE_TLM = 0x20;
-
-        // URL decoding map
-        const urlSchemePrefixes = ["http://www.", "https://www.", "http://", "https://"];
-        const urlExpansions = [".com/", ".org/", ".edu/", ".net/", ".info/", ".biz/", ".gov/"];
-
-        // Function to decode URL from Eddystone URL frame
-        function decodeEddystoneURL(data) {
-            let url = urlSchemePrefixes[data[0]];
-            for (let i = 1; i < data.length; i++) {
-                const charCode = data[i];
-                if (charCode < urlExpansions.length) {
-                    url += urlExpansions[charCode];
-                } else {
-                    url += String.fromCharCode(charCode);
-                }
-            }
-            return url;
-        }
-
-        // Function to handle Eddystone packet
-        function handleEddystonePacket(dataView) {
-            const frameType = dataView.getUint8(0);
-
-            switch (frameType) {
-                case EDDYSTONE_UID:
-                    const namespace = Array.from(new Uint8Array(dataView.buffer.slice(2, 12)))
-                        .map(b => b.toString(16).padStart(2, '0')).join('');
-                    const instance = Array.from(new Uint8Array(dataView.buffer.slice(12, 18)))
-                        .map(b => b.toString(16).padStart(2, '0')).join('');
-                    beaconType.textContent = 'Type: Eddystone-UID';
-                    beaconId.textContent = `Namespace: ${namespace}, Instance: ${instance}`;
-                    break;
-
-                case EDDYSTONE_URL:
-                    const url = decodeEddystoneURL(new Uint8Array(dataView.buffer.slice(2)));
-                    beaconType.textContent = 'Type: Eddystone-URL';
-                    beaconURL.textContent = `URL: ${url}`;
-                    break;
-
-                case EDDYSTONE_TLM:
-                    const batteryVoltage = (dataView.getUint8(2) << 8) | dataView.getUint8(3);
-                    const temp = dataView.getUint8(4) + dataView.getUint8(5) / 256;
-                    beaconType.textContent = 'Type: Eddystone-TLM';
-                    battery.textContent = `Battery Voltage: ${batteryVoltage} mV`;
-                    temperature.textContent = `Temperature: ${temp.toFixed(1)} °C`;
-                    break;
-
-                default:
-                    beaconType.textContent = 'Type: Unknown';
-                    console.log('Unknown Eddystone frame type');
-            }
-        }
-
-        // Function to start BLE scan and handle advertising packets
-        async function startBLEScan() {
+        // Function to list GATT services
+        async function connectToDeviceAndListServices() {
             try {
-                const options = {
-                    filters: [{ namePrefix: 'HolyIOT' }],
-                    keepRepeatedDevices: true
-                };
-
-                const scan = await navigator.bluetooth.requestLEScan(options);
-
-                navigator.bluetooth.addEventListener('advertisementreceived', event => {
-                    console.log('Advertisement received:', event);
-
-                    const dataView = new DataView(event.manufacturerData.get(0xfeaa).buffer);
-                    handleEddystonePacket(dataView);
+                const beaconDevice = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: ['battery_service', 'device_information'] // Common services to start
                 });
 
+                console.log('Device selected:', beaconDevice.name);
+
+                // Connect to GATT server
+                const server = await beaconDevice.gatt.connect();
+
+                // Get all services from the connected device
+                const services = await server.getPrimaryServices();
+                
+                // Log each service's UUID
+                console.log('Available services:');
+                services.forEach(service => {
+                    console.log('Service UUID:', service.uuid);
+                });
+
+                // Now you can explore characteristics of each service
+                // Example: check battery level if available
+                const batteryService = services.find(service => service.uuid === 'battery_service');
+                if (batteryService) {
+                    const batteryLevelCharacteristic = await batteryService.getCharacteristic('battery_level');
+                    const batteryLevel = await batteryLevelCharacteristic.readValue();
+                    console.log('Battery Level:', batteryLevel.getUint8(0), '%');
+                    battery.textContent = `Battery: ${batteryLevel.getUint8(0)}%`;
+                } else {
+                    console.log('Battery service not available');
+                }
+
             } catch (error) {
-                console.error('Error during BLE scan:', error);
+                console.error('Error connecting to Bluetooth device:', error);
             }
         }
 
-        // Attach click event listener to start BLE scanning
-        connectBtn.addEventListener('click', startBLEScan);
+        // Function to connect to a Bluetooth device and read Eddystone data
+        async function connectToEddystoneBeacon() {
+            try {
+                const beaconDevice = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: ['0000feaa-0000-1000-8000-00805f9b34fb'] // Eddystone Service UUID
+                });
 
+                console.log('Device selected:', beaconDevice.name);
+
+                // Connect to GATT server
+                const server = await beaconDevice.gatt.connect();
+
+                // Call the function to list services
+                connectToDeviceAndListServices();
+
+                // Get the Eddystone service (UUID: FEAA)
+                const service = await server.getPrimaryService('0000feaa-0000-1000-8000-00805f9b34fb');
+                console.log('Connected to Eddystone service:', service);
+
+                // Get the characteristic for Eddystone data
+                const characteristic = await service.getCharacteristic('feaa');
+
+                // Start listening for notifications
+                characteristic.startNotifications();
+                characteristic.addEventListener('characteristicvaluechanged', (event) => {
+                    const value = event.target.value;
+                    console.log('Characteristic value changed:', value);
+                    // handleEddystonePacket(value.buffer);  // You can implement this to process the packet
+                });
+            } catch (error) {
+                console.error('Error connecting to Bluetooth device:', error);
+            }
+        }
+
+        connectBtn.addEventListener('click', connectToEddystoneBeacon);
     </script>
 
 </body>
