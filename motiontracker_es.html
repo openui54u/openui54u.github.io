@@ -50,58 +50,66 @@
         const battery = document.getElementById('battery');
         const temperature = document.getElementById('temperature');
 
-        // Function to connect to a Bluetooth device and list available services
-        async function connectToDevice() {
-            try {
-                const beaconDevice = await navigator.bluetooth.requestDevice({
-                    acceptAllDevices: true,
-                    optionalServices: ['0000feaa-0000-1000-8000-00805f9b34fb', 'battery_service', 'device_information'] // Specify common services
-                });
+       // Function to connect to a Bluetooth device and list available services
+async function connectToDevice() {
+    try {
+        const beaconDevice = await navigator.bluetooth.requestDevice({
+            acceptAllDevices: true,
+            optionalServices: ['0000feaa-0000-1000-8000-00805f9b34fb', 'battery_service', 'device_information'] // Specify common services
+        });
 
-                console.log('Device selected:', beaconDevice.name);
+        console.log('Device selected:', beaconDevice.name);
 
-                // Connect to GATT server
-                const server = await beaconDevice.gatt.connect();
-                
-                // Get all services from the connected device
-                const services = await server.getPrimaryServices();
-                
-                // Log each service's UUID
-                console.log('Available services:');
+        // Connect to GATT server
+        const server = await beaconDevice.gatt.connect();
+        console.log('Connected to GATT server');
+
+        // Attempt to get all services from the connected device
+        try {
+            const services = await server.getPrimaryServices();
+            console.log('Available services:');
+
+            // Log each service's UUID
+            if (services.length === 0) {
+                console.log('No services found in the device.');
+            } else {
                 services.forEach(service => {
                     console.log('Service UUID:', service.uuid);
                 });
-
-                // Attempt to read the battery level if the battery service is available
-                const batteryService = services.find(service => service.uuid === 'battery_service');
-                if (batteryService) {
-                    const batteryLevelCharacteristic = await batteryService.getCharacteristic('battery_level');
-                    const batteryLevel = await batteryLevelCharacteristic.readValue();
-                    console.log('Battery Level:', batteryLevel.getUint8(0), '%');
-                    battery.textContent = `Battery: ${batteryLevel.getUint8(0)}%`;
-                } else {
-                    console.log('Battery service not available');
-                }
-
-                // Check for Eddystone service and start listening for notifications
-                const eddystoneService = services.find(service => service.uuid === '0000feaa-0000-1000-8000-00805f9b34fb');
-                if (eddystoneService) {
-                    const characteristic = await eddystoneService.getCharacteristic('feaa');
-                    await characteristic.startNotifications();
-                    characteristic.addEventListener('characteristicvaluechanged', (event) => {
-                        const value = event.target.value;
-                        console.log('Eddystone packet received:', value);
-                        handleEddystonePacket(value.buffer);
-                    });
-                } else {
-                    console.log('Eddystone service not available');
-                }
-
-            } catch (error) {
-                console.error('Error connecting to Bluetooth device:', error);
             }
+
+            // Attempt to read the battery level if the battery service is available
+            const batteryService = services.find(service => service.uuid === 'battery_service');
+            if (batteryService) {
+                const batteryLevelCharacteristic = await batteryService.getCharacteristic('battery_level');
+                const batteryLevel = await batteryLevelCharacteristic.readValue();
+                console.log('Battery Level:', batteryLevel.getUint8(0), '%');
+                battery.textContent = `Battery: ${batteryLevel.getUint8(0)}%`;
+            } else {
+                console.log('Battery service not available');
+            }
+
+            // Check for Eddystone service and start listening for notifications
+            const eddystoneService = services.find(service => service.uuid === '0000feaa-0000-1000-8000-00805f9b34fb');
+            if (eddystoneService) {
+                const characteristic = await eddystoneService.getCharacteristic('feaa');
+                await characteristic.startNotifications();
+                characteristic.addEventListener('characteristicvaluechanged', (event) => {
+                    const value = event.target.value;
+                    console.log('Eddystone packet received:', value);
+                    handleEddystonePacket(value.buffer);
+                });
+            } else {
+                console.log('Eddystone service not available');
+            }
+        } catch (error) {
+            console.error('Error retrieving services:', error);
         }
 
+    } catch (error) {
+        console.error('Error connecting to Bluetooth device:', error);
+    }
+}
         // Function to decode Eddystone URL (unchanged)
         function decodeEddystoneURL(data) {
             const urlSchemePrefixes = [
