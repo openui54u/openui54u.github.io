@@ -137,7 +137,7 @@
             try {
                 beaconDevice = await navigator.bluetooth.requestDevice({
                  //   filters: [{ services: ['battery_service'] }] // Use proper service UUID of iBeacon
-                    filters: [{ services: ['0x2C06'] }] // Acceleration UUID of iBeacon
+                    filters: [{ services: ['1b641c9f-bda4-47ab-b1c2-f8f2f62e'] }] // Acceleration UUID of iBeacon
                 });
                 const server = await beaconDevice.gatt.connect();
                 const service = await server.getPrimaryService('battery_service'); // Get the service
