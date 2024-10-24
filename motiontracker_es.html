@@ -44,7 +44,6 @@
 
     <script>
         const connectBtn = document.getElementById('connectBtn');
-        const output = document.getElementById('output');
         const beaconType = document.getElementById('beaconType');
         const beaconId = document.getElementById('beaconId');
         const beaconURL = document.getElementById('beaconURL');
@@ -57,13 +56,8 @@
         const EDDYSTONE_TLM = 0x20;
 
         // URL decoding map
-        const urlSchemePrefixes = [
-            "http://www.", "https://www.", "http://", "https://"
-        ];
-
-        const urlExpansions = [
-            ".com/", ".org/", ".edu/", ".net/", ".info/", ".biz/", ".gov/"
-        ];
+        const urlSchemePrefixes = ["http://www.", "https://www.", "http://", "https://"];
+        const urlExpansions = [".com/", ".org/", ".edu/", ".net/", ".info/", ".biz/", ".gov/"];
 
         // Function to decode URL from Eddystone URL frame
         function decodeEddystoneURL(data) {
@@ -86,7 +80,6 @@
 
             switch (frameType) {
                 case EDDYSTONE_UID:
-                    // Parse Eddystone-UID
                     const namespace = Array.from(data.slice(2, 12)).map(b => b.toString(16).padStart(2, '0')).join('');
                     const instance = Array.from(data.slice(12, 18)).map(b => b.toString(16).padStart(2, '0')).join('');
                     beaconType.textContent = 'Type: Eddystone-UID';
@@ -94,14 +87,12 @@
                     break;
 
                 case EDDYSTONE_URL:
-                    // Parse Eddystone-URL
                     const url = decodeEddystoneURL(data.slice(2));
                     beaconType.textContent = 'Type: Eddystone-URL';
                     beaconURL.textContent = `URL: ${url}`;
                     break;
 
                 case EDDYSTONE_TLM:
-                    // Parse Eddystone-TLM
                     const batteryVoltage = (data[2] << 8) | data[3];
                     const temp = data[4] + data[5] / 256;
                     beaconType.textContent = 'Type: Eddystone-TLM';
@@ -115,37 +106,68 @@
             }
         }
 
-// Function to connect to Eddystone beacon
-async function connectToEddystoneBeacon() {
-    try {
-        const beaconDevice = await navigator.bluetooth.requestDevice({
-            acceptAllDevices: true,
-            optionalServices: ['0000feaa-0000-1000-8000-00805f9b34fb'] // Eddystone Service UUID
-        });
+        // Function to connect to a Bluetooth device and list available services
+        async function connectToDeviceAndListServices() {
+            try {
+                const beaconDevice = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: [] // Allow discovery of all services
+                });
 
-        console.log('Device selected:', beaconDevice.name);
+                console.log('Device selected:', beaconDevice.name);
 
-        // Connect to the GATT server
-        const server = await beaconDevice.gatt.connect();
-        
-        // Get the Eddystone service
-        const service = await server.getPrimaryService('0000feaa-0000-1000-8000-00805f9b34fb'); // Eddystone Service UUID
+                // Connect to the GATT server
+                const server = await beaconDevice.gatt.connect();
+                
+                // Get all services from the connected device
+                const services = await server.getPrimaryServices();
 
-        // Get the characteristic for Eddystone frame data
-        const characteristic = await service.getCharacteristic('feaa');
+                // Log each service's UUID
+                console.log('Available services:');
+                services.forEach(service => {
+                    console.log('Service UUID:', service.uuid);
+                });
 
-        // Start listening for notifications (advertising packets)
-        characteristic.startNotifications();
-        characteristic.addEventListener('characteristicvaluechanged', (event) => {
-            const value = event.target.value;
-            handleEddystonePacket(value.buffer);
-        });
-    } catch (error) {
-        console.error('Error connecting to Bluetooth device:', error);
-    }
-}
+            } catch (error) {
+                console.error('Error connecting to Bluetooth device:', error);
+            }
+        }
+
+        // Function to connect to Eddystone beacon
+        async function connectToEddystoneBeacon() {
+            try {
+                const beaconDevice = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: ['0000feaa-0000-1000-8000-00805f9b34fb'] // Eddystone Service UUID
+                });
+
+                console.log('Device selected:', beaconDevice.name);
+
+                // Connect to the GATT server
+                const server = await beaconDevice.gatt.connect();
+                
+                // First list services for verification
+                await connectToDeviceAndListServices();
+
+                // Get the Eddystone service
+                const service = await server.getPrimaryService('0000feaa-0000-1000-8000-00805f9b34fb'); // Eddystone Service UUID
+
+                // Get the characteristic for Eddystone frame data
+                const characteristic = await service.getCharacteristic('feaa');
+
+                // Start listening for notifications (advertising packets)
+                characteristic.startNotifications();
+                characteristic.addEventListener('characteristicvaluechanged', (event) => {
+                    const value = event.target.value;
+                    handleEddystonePacket(value.buffer);
+                });
+            } catch (error) {
+                console.error('Error connecting to Bluetooth device:', error);
+            }
+        }
 
         connectBtn.addEventListener('click', connectToEddystoneBeacon);
+        
     </script>
 
 </body>
