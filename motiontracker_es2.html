@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eddystone Beacon Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+        }
+        #connectBtn {
+            padding: 15px 30px;
+            font-size: 18px;
+            margin: 20px;
+            cursor: pointer;
+            border: none;
+            border-radius: 10px;
+            background-color: blue;
+            color: white;
+        }
+        #output {
+            margin-top: 30px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Eddystone Beacon Tracker</h1>
+
+    <button id="connectBtn">CONNECT TO EDDYSTONE BEACON</button>
+
+    <div id="output">
+        <p><strong>Beacon Data:</strong></p>
+        <p id="beaconType">Type: Unknown</p>
+        <p id="beaconId">ID: N/A</p>
+        <p id="beaconURL">URL: N/A</p>
+        <p id="battery">Battery: N/A</p>
+        <p id="temperature">Temperature: N/A</p>
+    </div>
+
+    <script>
+        const connectBtn = document.getElementById('connectBtn');
+        const output = document.getElementById('output');
+        const beaconType = document.getElementById('beaconType');
+        const beaconId = document.getElementById('beaconId');
+        const beaconURL = document.getElementById('beaconURL');
+        const battery = document.getElementById('battery');
+        const temperature = document.getElementById('temperature');
+
+        // Function to connect to a Bluetooth device and list available services
+        async function connectAndListServices() {
+            try {
+                const device = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true
+                });
+
+                const server = await device.gatt.connect();
+                console.log('Connected to GATT server');
+
+                const services = await server.getPrimaryServices();
+                console.log('Services found:');
+                services.forEach(service => {
+                    console.log('Service UUID:', service.uuid);
+                });
+
+            } catch (error) {
+                console.error('Error connecting or retrieving services:', error);
+            }
+        }
+
+        connectBtn.addEventListener('click', connectAndListServices);
+    </script>
+
+</body>
+</html>
