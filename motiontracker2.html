@@ -133,22 +133,37 @@
         const body = document.body;
 
         // Function to connect to beacon (iBeacon/other BLE)
-        async function connectToBeacon() {
-            try {
-                beaconDevice = await navigator.bluetooth.requestDevice({
-                 //   filters: [{ services: ['battery_service'] }] // Use proper service UUID of iBeacon
-                 //   filters: [{ services: ['1b641c9f-bda4-47ab-b1c2-f8f2f62e3279'] }] // Acceleration UUID of iBeacon 0x1234
-                      filters: [{ services: ['0x1234'] }] // UUID of iBeacon 
-                });
-                const server = await beaconDevice.gatt.connect();
-                const service = await server.getPrimaryService('battery_service'); // Get the service
-                beaconCharacteristic = await service.getCharacteristic('battery_level'); // Characteristic to track (customize for your beacon)
-                console.log('Connected to Beacon:', beaconDevice.name);
-                startBtn.disabled = false; // Enable start button once connected
-            } catch (error) {
-                console.error('Connection to Beacon failed:', error);
-            }
-        }
+//        async function connectToBeacon() {
+//            try {
+//                beaconDevice = await navigator.bluetooth.requestDevice({
+//                 //   filters: [{ services: ['battery_service'] }] // Use proper service UUID of iBeacon
+//                 //   filters: [{ services: ['1b641c9f-bda4-47ab-b1c2-f8f2f62e3279'] }] // Acceleration UUID of iBeacon 0x1234
+//                      filters: [{ services: ['0x1234'] }] // UUID of iBeacon 
+//                });
+//                const server = await beaconDevice.gatt.connect();
+//                const service = await server.getPrimaryService('battery_service'); // Get the service
+//                beaconCharacteristic = await service.getCharacteristic('battery_level'); // Characteristic to track (customize for your beacon)
+//                console.log('Connected to Beacon:', beaconDevice.name);
+//                startBtn.disabled = false; // Enable start button once connected
+//            } catch (error) {
+//                console.error('Connection to Beacon failed:', error);
+//            }
+//        }
+        
+        async function connectToAnyBluetoothDevice() {
+    try {
+        const beaconDevice = await navigator.bluetooth.requestDevice({
+            acceptAllDevices: true
+        });
+        
+        console.log('Device selected:', beaconDevice.name);
+        // After this, you can connect to the device and explore its services
+    } catch (error) {
+        console.log('Error connecting to Bluetooth device:', error);
+    }
+}
+
+        
 
         // Function to read data from the beacon
         async function readBeaconData() {
@@ -303,7 +318,8 @@
         }
 
         // Button to connect to the beacon
-        connectBtn.addEventListener('click', connectToBeacon);
+//        connectBtn.addEventListener('click', connectToBeacon);
+         connectBtn.addEventListener('click', connectToAnyBluetoothDevice);
 
     </script>
 </body>
