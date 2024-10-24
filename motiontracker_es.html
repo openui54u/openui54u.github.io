@@ -115,30 +115,35 @@
             }
         }
 
-        // Function to connect to any Bluetooth device
-        async function connectToEddystoneBeacon() {
-            try {
-                const beaconDevice = await navigator.bluetooth.requestDevice({
-                    acceptAllDevices: true
-                });
+// Function to connect to Eddystone beacon
+async function connectToEddystoneBeacon() {
+    try {
+        const beaconDevice = await navigator.bluetooth.requestDevice({
+            acceptAllDevices: true,
+            optionalServices: ['0000feaa-0000-1000-8000-00805f9b34fb'] // Eddystone Service UUID
+        });
 
-                console.log('Device selected:', beaconDevice.name);
+        console.log('Device selected:', beaconDevice.name);
 
-                // Connect to the GATT server
-                const server = await beaconDevice.gatt.connect();
-                const service = await server.getPrimaryService('0000feaa-0000-1000-8000-00805f9b34fb'); // Eddystone Service UUID
-                const characteristic = await service.getCharacteristic('feaa');
+        // Connect to the GATT server
+        const server = await beaconDevice.gatt.connect();
+        
+        // Get the Eddystone service
+        const service = await server.getPrimaryService('0000feaa-0000-1000-8000-00805f9b34fb'); // Eddystone Service UUID
 
-                // Listen for characteristic changes (advertising packets)
-                characteristic.startNotifications();
-                characteristic.addEventListener('characteristicvaluechanged', (event) => {
-                    const value = event.target.value;
-                    handleEddystonePacket(value.buffer);
-                });
-            } catch (error) {
-                console.log('Error connecting to Bluetooth device:', error);
-            }
-        }
+        // Get the characteristic for Eddystone frame data
+        const characteristic = await service.getCharacteristic('feaa');
+
+        // Start listening for notifications (advertising packets)
+        characteristic.startNotifications();
+        characteristic.addEventListener('characteristicvaluechanged', (event) => {
+            const value = event.target.value;
+            handleEddystonePacket(value.buffer);
+        });
+    } catch (error) {
+        console.error('Error connecting to Bluetooth device:', error);
+    }
+}
 
         connectBtn.addEventListener('click', connectToEddystoneBeacon);
     </script>
