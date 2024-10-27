@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beacon Scanner</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h1 { color: #333; }
+    .beacon-list { margin-top: 20px; }
+    .beacon-item { padding: 10px; border: 1px solid #ddd; margin-bottom: 10px; cursor: pointer; }
+    #selected-beacon-data { margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <h1>Beacon Scanner</h1>
+  <button onclick="startScanning()">Start Scanning for Beacons</button>
+  <div class="beacon-list" id="beacon-list">
+    <!-- Beacon items will appear here -->
+  </div>
+  <div id="selected-beacon-data">
+    <h2>Selected Beacon Data</h2>
+    <p id="beacon-data">No beacon selected.</p>
+  </div>
+
+  <script>
+    // Variables to hold detected beacons and the selected beacon
+    let beacons = {};
+    let selectedBeacon = null;
+
+    // Start scanning for Eddystone beacons
+    function startScanning() {
+      // Reset the list
+      document.getElementById("beacon-list").innerHTML = '';
+      beacons = {};
+
+      // Check if evothings is available
+      if (!window.evothings) {
+        alert("Evothings/Eddystone plugin not found. Please ensure the Cordova environment is set up correctly.");
+        return;
+      }
+
+      // Start Eddystone scanning
+      evothings.eddystone.startScan(
+        (beacon) => {
+          // If beacon is already in the list, skip adding it
+          if (beacons[beacon.address]) return;
+          
+          // Store beacon in the list
+          beacons[beacon.address] = beacon;
+
+          // Create a clickable element for each beacon found
+          const beaconElement = document.createElement("div");
+          beaconElement.className = "beacon-item";
+          beaconElement.innerText = `Beacon: ${beacon.address}`;
+          beaconElement.onclick = () => selectBeacon(beacon.address);
+          document.getElementById("beacon-list").appendChild(beaconElement);
+        },
+        (error) => {
+          console.error("Eddystone scan failed:", error);
+        }
+      );
+    }
+
+    // Select a beacon and start displaying its data
+    function selectBeacon(address) {
+      selectedBeacon = beacons[address];
+      document.getElementById("beacon-data").innerText = `Selected Beacon: ${address}`;
+
+      // Monitor data for the selected beacon
+      setInterval(() => {
+        if (selectedBeacon) {
+          // Here we display the RSSI (signal strength) and URL if available
+          const dataDisplay = `
+            RSSI: ${selectedBeacon.rssi} dBm\n
+            URL: ${selectedBeacon.url || 'N/A'}
+          `;
+          document.getElementById("beacon-data").innerText = dataDisplay;
+        }
+      }, 1000);
+    }
+  </script>
+</body>
+</html>
