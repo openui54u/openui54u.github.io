@@ -85,12 +85,19 @@
         <div id="bar-z" class="bar" style="width: 0;"></div>
     </div>
     
-    <p>X: <span id="x-value">0.00</span> m/s²</p>
-    <p>Y: <span id="y-value">0.00</span> m/s²</p>
-    <p>Z: <span id="z-value">0.00</span> m/s²</p>
-    <p>Gyroscope X: <span id="gyro-x-value">0.00</span> °/s</p>
-    <p>Gyroscope Y: <span id="gyro-y-value">0.00</span> °/s</p>
-    <p>Gyroscope Z: <span id="gyro-z-value">0.00</span> °/s</p>
+    <p>X: <span id="x-value">0.00</span> m/s²,
+    Y: <span id="y-value">0.00</span> m/s²,
+    Z: <span id="z-value">0.00</span> m/s²</p>
+    
+    <p>Gyroscope X: <span id="gyro-x-value">0.00</span> °/s,
+    Y: <span id="gyro-y-value">0.00</span> °/s,
+    Z: <span id="gyro-z-value">0.00</span> °/s</p>
+    
+    <p>Absolute Orientation: 
+        X: <span id="absolute-x-value">0.00</span>, 
+        Y: <span id="absolute-y-value">0.00</span>, 
+        Z: <span id="absolute-z-value">0.00</span>
+    </p>
 
     <script>
         let monitoring = false;
@@ -117,13 +124,21 @@
         const barX = document.getElementById('bar-x');
         const barY = document.getElementById('bar-y');
         const barZ = document.getElementById('bar-z');
+        
         const xValueDisplay = document.getElementById('x-value');
         const yValueDisplay = document.getElementById('y-value');
         const zValueDisplay = document.getElementById('z-value');
+        
         const gyroXDisplay = document.getElementById('gyro-x-value');
         const gyroYDisplay = document.getElementById('gyro-y-value');
         const gyroZDisplay = document.getElementById('gyro-z-value');
 
+         const absoluteXDisplay = document.getElementById('absolute-x-value');
+        const absoluteYDisplay = document.getElementById('absolute-y-value');
+        const absoluteZDisplay = document.getElementById('absolute-z-value');
+        
+        
+        
         function startTimer() {
             startTime = Date.now();
             intervalID = setInterval(() => {
@@ -169,6 +184,11 @@
             
             magnitudeDisplay.innerText = magnitude.toFixed(2);
 
+          // Display absolute orientation values
+            absoluteXDisplay.innerText = Gyro.x.toFixed(2);
+            absoluteYDisplay.innerText = Gyro.y.toFixed(2);
+            absoluteZDisplay.innerText = Gyro.z.toFixed(2);
+            
             if (magnitude > threshold && !intervalID) {
                 startTimer();
                 statusText.innerText = `Status: Timer started at magnitude ${magnitude.toFixed(2)}`;
