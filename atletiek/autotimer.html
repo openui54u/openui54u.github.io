@@ -190,7 +190,7 @@
   
         
             // Set up gyroscope event handler
-            gyroHandler = function(event) {
+      const      gyroHandler = function(event) {
                 Gyro.x = event.rotationRate.alpha || 0;
                 Gyro.y = event.rotationRate.beta || 0;
                 Gyro.z = event.rotationRate.gamma || 0;
@@ -236,11 +236,11 @@ const magnitude = Math.max(
     
 
     if (magnitude > threshold && !intervalID) {
-        statusText.innerText = `Status: Timer started at Magnitude ${magnitude}`;
+        statusText.innerText = `Status: Timer started at Magnitude ${magnitude.toFixed(2)}`;
         startTimer();
     } else if (magnitude > thresholdStop && intervalID) {
         stopTimer();
-        statusText.innerText = `Status: Timer stopped after ${Math.floor((Date.now() - startTime) / 1000)} seconds at Magnitude ${magnitude}`;
+        statusText.innerText = `Status: Timer stopped after ${Math.floor((Date.now() - startTime) / 1000)} seconds at Magnitude ${magnitude.toFixed(2)}`;
         manualStartButton.disabled = false;
         manualStopButton.disabled = true;
         monitoring = false;
