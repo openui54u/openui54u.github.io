@@ -16,14 +16,14 @@
             color: green;
         }
         
-        #x-value, #gyro-x-value {
-            color: red;
+        #x-value {
+            color: red
         }
-        #y-value, #gyro-y-value {
-            color: green;
+        #y-value {
+            color: green
         }
-        #z-value, #gyro-z-value {
-            color: blue;
+        #z-value {
+            color: blue
         }
         
         input, button {
@@ -67,13 +67,10 @@
 <body>
     <h1>Gyroscopic Timer</h1>
     <p>Set acceleration threshold (XYZ-axis):</p>
-    <input type="number" id="accel-threshold" value="3" step="1">-
+    <input type="number" id="accel-threshold" value="3" step="1">
     <input type="number" id="accel-threshold-Stop" value="20" step="1">
-    <p>Initialization (Tare) Period (seconds):</p>
-    <input type="number" id="init-period" value="5" step="1">
-    
     <button id="start-stop-btn">Start Monitoring (Gyro)</button>
-    <button id="tare-btn">Manual Tare</button>
+    <button id="tare-btn">Tare (Gyro)</button>
     <button id="manual-start-btn">Manual Start</button>
     <button id="manual-stop-btn" disabled>Manual Stop</button>
     
@@ -89,9 +86,6 @@
     <p>X: <span id="x-value">0.00</span> m/s²</p>
     <p>Y: <span id="y-value">0.00</span> m/s²</p>
     <p>Z: <span id="z-value">0.00</span> m/s²</p>
-    <p>Gyroscope X: <span id="gyro-x-value">0.00</span> °/s</p>
-    <p>Gyroscope Y: <span id="gyro-y-value">0.00</span> °/s</p>
-    <p>Gyroscope Z: <span id="gyro-z-value">0.00</span> °/s</p>
 
     <script>
         let monitoring = false;
@@ -100,18 +94,16 @@
         let thresholdStop = 3;
         let startTime = null;
         let intervalID = null;
-        let tareIntervalID = null;
         let isManuallyStarted = false;
-        let tareValues = { x: 0, y: 0, z: 0 }; 
+        let tareValues = { x: 0, y: 0, z: 0 };
         let Accel = {x: 0, y: 0, z: 0};
-        let Gyro = {x: 0, y: 0, z: 0};
-        let initPeriod = 5000;
+        let gyroHandler = null;
+        let gyroValues = { alpha: 0, beta: 0, gamma: 0 };
 
         const statusText = document.getElementById('status');
         const timerDisplay = document.getElementById('timer');
         const accelInput = document.getElementById('accel-threshold');
         const accelInputStop = document.getElementById('accel-threshold-Stop');
-        const initPeriodInput = document.getElementById('init-period');
         const startStopButton = document.getElementById('start-stop-btn');
         const tareButton = document.getElementById('tare-btn');
         const manualStartButton = document.getElementById('manual-start-btn');
@@ -122,9 +114,6 @@
         const xValueDisplay = document.getElementById('x-value');
         const yValueDisplay = document.getElementById('y-value');
         const zValueDisplay = document.getElementById('z-value');
-        const gyroXValueDisplay = document.getElementById('gyro-x-value');
-        const gyroYValueDisplay = document.getElementById('gyro-y-value');
-        const gyroZValueDisplay = document.getElementById('gyro-z-value');
 
         function startTimer() {
             startTime = Date.now();
@@ -138,7 +127,7 @@
                 const milliseconds = (elapsedTime % 1000).toString().padStart(3, '0');
 
                 timerDisplay.innerText = `Timer: ${hours}:${minutes}:${seconds}:${milliseconds}`;
-            }, 10); 
+            }, 10);
         }
 
         function stopTimer() {
@@ -146,118 +135,155 @@
             intervalID = null;
         }
 
-        function tareSensorValues() {
-            tareIntervalID = setTimeout(() => {
-                tareValues = { ...Accel };
-                clearTimeout(tareIntervalID);
-                tareIntervalID = null;
-                statusText.innerText = 'Status: Tare complete.';
-            }, initPeriod);
+        // Permission request function for iOS
+        async function requestPermissions() {
+            if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                const motionPermission = await DeviceMotionEvent.requestPermission();
+                const orientationPermission = await DeviceOrientationEvent.requestPermission();
+
+                if (motionPermission === 'granted' && orientationPermission === 'granted') {
+                    return true;
+                } else {
+                    alert("Permissions not granted for motion sensors.");
+                    return false;
+                }
+            }
+            return true;
         }
 
-        function startMonitoring() {
-            threshold = parseFloat(accelInput.value);
-            thresholdStop = parseFloat(accelInputStop.value);
-            initPeriod = parseFloat(initPeriodInput.value) * 1000;
+        // Gyroscope handler to capture orientation values
+        gyroHandler = function (event) {
+            gyroValues.alpha = event.alpha;
+            gyroValues.beta = event.beta;
+            gyroValues.gamma = event.gamma;
+        };
+
+        // Adjust acceleration values based on gyroscope orientation
+        function adjustForOrientation(accel) {
+            const alphaRad = gyroValues.alpha * (Math.PI / 180);
+            const betaRad = gyroValues.beta * (Math.PI / 180);
+            const gammaRad = gyroValues.gamma * (Math.PI / 180);
+
+            const adjustedX = accel.x - Math.sin(gammaRad) * accel.z;
+            const adjustedY = accel.y - Math.sin(betaRad) * accel.z;
+            const adjustedZ = accel.z - Math.sin(alphaRad) * accel.x;
+
+            return { x: adjustedX, y: adjustedY, z: adjustedZ };
+        }
+
+        async function startMonitoring() {
+            const permissionGranted = await requestPermissions();
+            if (!permissionGranted) return;
+
             monitoring = true;
             startStopButton.innerText = 'Stop Monitoring (Gyro)';
             statusText.innerText = 'Status: Monitoring started.';
+            threshold = parseFloat(accelInput.value);
+            thresholdStop = parseFloat(accelInputStop.value);
 
-            tareSensorValues();
+            tareValues = { x: 0, y: 0, z: 0 };
 
-            motionHandlerX = function (event) {
-                const xAccel = event.accelerationIncludingGravity.x - tareValues.x;
-                xValueDisplay.innerText = xAccel.toFixed(2);
-                barX.style.height = Math.max(0, xAccel * 10) + 'px';
-                Accel.x = event.accelerationIncludingGravity.x;
+            window.addEventListener('devicemotion', (event) => {
+                const rawAccel = {
+                    x: event.accelerationIncludingGravity.x - tareValues.x,
+                    y: event.accelerationIncludingGravity.y - tareValues.y,
+                    z: event.accelerationIncludingGravity.z - tareValues.z
+                };
 
-                if (xAccel >= threshold && xAccel < thresholdStop && !intervalID) {
-                    startTimer();
-                    manualStartButton.disabled = true;
-                    manualStopButton.disabled = false;
+                const adjustedAccel = adjustForOrientation(rawAccel);
+
+                xValueDisplay.innerText = adjustedAccel.x.toFixed(2);
+                yValueDisplay.innerText = adjustedAccel.y.toFixed(2);
+                zValueDisplay.innerText = adjustedAccel.z.toFixed(2);
+
+                barX.style.height = Math.max(0, adjustedAccel.x * 10) + 'px';
+                barY.style.height = Math.max(0, adjustedAccel.y * 10) + 'px';
+                barZ.style.height = Math.max(0, adjustedAccel.z * 10) + 'px';
+
+                if (Math.abs(adjustedAccel.x) >= threshold && Math.abs(adjustedAccel.x) < thresholdStop) {
+                    if (!intervalID) startTimer();
                 }
-                if (xAccel >= thresholdStop && intervalID) {
-                    stopTimer();
-                    manualStartButton.disabled = false;
-                    manualStopButton.disabled = true;
-                    stopMonitoring();
-                }
-            };
 
-            window.addEventListener('devicemotion', motionHandlerX);
-
-            window.addEventListener('deviceorientation', function(event) {
-                const gyroX = event.alpha - Gyro.x;
-                const gyroY = event.beta - Gyro.y;
-                const gyroZ = event.gamma - Gyro.z;
-
-                gyroXValueDisplay.innerText = gyroX.toFixed(2);
-                gyroYValueDisplay.innerText = gyroY.toFixed(2);
-                gyroZValueDisplay.innerText = gyroZ.toFixed(2);
-
-                Gyro = {x: event.alpha, y: event.beta, z: event.gamma};
+                if (Math.abs(adjustedAccel.x) >= thresholdStop && intervalID) stopTimer();
             });
+
+            window.addEventListener('deviceorientation', gyroHandler);
         }
 
         function stopMonitoring() {
             if (monitoring) {
                 window.removeEventListener('devicemotion', motionHandlerX);
-                clearInterval(tareIntervalID);
-                tareIntervalID = null;
-                stopTimer();
+                window.removeEventListener('devicemotion', motionHandlerY);
+                window.removeEventListener('devicemotion', motionHandlerZ);
+                window.removeEventListener('deviceorientation', gyroHandler);
+                clearInterval(intervalID);
+                intervalID = null;
                 monitoring = false;
                 startStopButton.innerText = 'Start Monitoring (Gyro)';
                 statusText.innerText = 'Status: Monitoring stopped.';
-                manualStartButton.disabled = false;
-                manualStopButton.disabled = true;
             }
         }
 
-        // Manual tare function
-        tareButton.addEventListener('click', () => {
-            if (monitoring) {
-                tareValues = { ...Accel }; // Set the current acceleration values as tare values
-                statusText.innerText = 'Status: Manually tared.';
-            }
-        });
-
-        // Start/Stop Monitoring button
-        startStopButton.addEventListener('click', () => {
-            if (monitoring) {
-                stopMonitoring();
+        startStopButton.addEventListener('click', async function () {
+            if (!monitoring) {
+                await startMonitoring();
             } else {
-                startMonitoring();
+                stopMonitoring();
             }
         });
 
-        // Manual start button for timing
-        manualStartButton.addEventListener('click', () => {
-            if (!intervalID && !monitoring) {
+        manualStartButton.addEventListener('click', function () {
+            if (!intervalID) {
                 startTimer();
-                manualStartButton.disabled = true;
+                statusText.innerText = 'Status: Timer manually';
                 manualStopButton.disabled = false;
-                statusText.innerText = 'Status: Timer manually started.';
             }
         });
 
-        // Manual stop button for timing
-        manualStopButton.addEventListener('click', () => {
+        manualStopButton.addEventListener('click', function () {
             if (intervalID) {
                 stopTimer();
-                manualStartButton.disabled = false;
-                manualStopButton.disabled = true;
                 statusText.innerText = 'Status: Timer manually stopped.';
+                manualStopButton.disabled = true;
             }
         });
 
-        // Update acceleration bars
-        function updateBars() {
-            barX.style.height = Math.min(100, Math.abs(Accel.x - tareValues.x) * 10) + 'px';
-            barY.style.height = Math.min(100, Math.abs(Accel.y - tareValues.y) * 10) + 'px';
-            barZ.style.height = Math.min(100, Math.abs(Accel.z - tareValues.z) * 10) + 'px';
+        tareButton.addEventListener('click', function () {
+            // Set tare values to remove gravitational influence
+            tareValues = { ...Accel };
+            statusText.innerText = 'Status: Tare applied.';
+        });
+
+        // Format the bars to adjust dynamically based on acceleration values
+        function updateBars(adjustedAccel) {
+            barX.style.height = Math.min(Math.abs(adjustedAccel.x) * 10, 100) + 'px';
+            barY.style.height = Math.min(Math.abs(adjustedAccel.y) * 10, 100) + 'px';
+            barZ.style.height = Math.min(Math.abs(adjustedAccel.z) * 10, 100) + 'px';
         }
 
-        setInterval(updateBars, 100); // Update bar heights periodically
+        // Function to display values with limited decimal points for better readability
+        function displayValues(adjustedAccel) {
+            xValueDisplay.innerText = adjustedAccel.x.toFixed(2);
+            yValueDisplay.innerText = adjustedAccel.y.toFixed(2);
+            zValueDisplay.innerText = adjustedAccel.z.toFixed(2);
+        }
+
+        async function main() {
+            if (typeof DeviceMotionEvent !== 'undefined' && DeviceMotionEvent.requestPermission) {
+                try {
+                    const granted = await DeviceMotionEvent.requestPermission();
+                    if (granted === 'granted') {
+                        statusText.innerText = 'Status: Ready to start!';
+                    } else {
+                        statusText.innerText = 'Status: Permission denied!';
+                    }
+                } catch (error) {
+                    statusText.innerText = 'Status: Unable to request permission.';
+                }
+            }
+        }
+
+        main();
     </script>
 </body>
 </html>
