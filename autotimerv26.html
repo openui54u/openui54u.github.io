@@ -191,48 +191,6 @@
         startStopButton.addEventListener('click', () => {
             monitoring ? stopMonitoring() : startMonitoring();
         });
-
-        // Manual start and stop button functionality
-        manualStartButton.addEventListener('click', () => {
-            if (!intervalID) {
-                startTimer();
-                statusText.innerText = "Status: Manual timer start.";
-                manualStartButton.disabled = true;
-                manualStopButton.disabled = false;
-            }
-        });
-
-              manualStopButton.addEventListener('click', () => {
-            if (intervalID) {
-                stopTimer();
-                statusText.innerText = "Status: Manual timer stop.";
-                manualStartButton.disabled = false;
-                manualStopButton.disabled = true;
-            }
-        });
-
-        // Tare button functionality
-        tareButton.addEventListener('click', () => {
-            tareValues = { ...Accel };
-            statusText.innerText = "Status: Tare values set.";
-        });
-
-        // Auto-tare functionality
-        autoTareButton.addEventListener('click', () => {
-            autoTareActive = true;
-            statusText.innerText = "Status: Auto-tare in progress...";
-            setTimeout(() => {
-                tareValues = { ...Accel };
-                autoTareActive = false;
-                statusText.innerText = "Status: Auto-tare completed.";
-            }, autoTareDuration);
-        });
-
-        // Disable buttons initially
-        manualStopButton.disabled = true;
-
-        // Ensure monitoring state reflects whether intervalID is active
-        window.addEventListener('beforeunload', stopMonitoring);
     </script>
 </body>
 </html>
