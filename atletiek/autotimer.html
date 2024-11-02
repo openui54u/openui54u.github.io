@@ -65,8 +65,8 @@
 <body>
     <h1>Gyroscopic Timer</h1>
     <p>Set acceleration threshold (XYZ-axis):</p>
-    <input type="number" id="accel-threshold" value="3" step="1">-
-    <input type="number" id="accel-threshold-Stop" value="20" step="1">
+    <input type="number" id="accel-threshold" value="20" step="1">-
+    <input type="number" id="accel-threshold-Stop" value="50" step="1">
     <button id="start-stop-btn">Start Monitoring (Gyro)</button>
     <button id="tare-btn">Tare (Gyro)</button>
     <button id="manual-start-btn">Manual Start</button>
@@ -211,7 +211,7 @@
 
                 // Update bar heights based on adjusted acceleration
                 barX.style.height = Math.min(Math.abs(adjustedAccel.x) * 10, 100) + 'px';
-                                barY.style.height = Math.min(Math.abs(adjustedAccel.y) * 10, 100) + 'px';
+                barY.style.height = Math.min(Math.abs(adjustedAccel.y) * 10, 100) + 'px';
                 barZ.style.height = Math.min(Math.abs(adjustedAccel.z) * 10, 100) + 'px';
 
                 // Check if adjusted acceleration exceeds the threshold to start or stop the timer
@@ -223,9 +223,9 @@
 
                 if (magnitude > threshold && !intervalID) {
                     startTimer();
-                } else if ( ( magnitude > thresholdStop ) && intervalID && !isManuallyStarted) {
+                } else if ( ( magnitude > thresholdStop ) && intervalID ) {
                     stopTimer();
-                    statusText.innerText = 'Status: Timer stopped (Threshold met).';
+                    statusText.innerText = 'Status: Timer stopped';
                     manualStartButton.disabled = false;
                     manualStopButton.disabled = true;
                     monitoring = false;
