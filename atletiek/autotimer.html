@@ -200,6 +200,7 @@
         
 // Set up accelerometer event handler
 // Define the accelerometer event handler separately
+// Adjusted function to update accelerometer and handle threshold checks
 const accelerometerHandler = function(event) {
     Accel.x = event.accelerationIncludingGravity.x - tareValues.x;
     Accel.y = event.accelerationIncludingGravity.y - tareValues.y;
@@ -228,14 +229,13 @@ const accelerometerHandler = function(event) {
         startTimer();
     } else if (magnitude > thresholdStop && intervalID) {
         stopTimer();
-        statusText.innerText = 'Status: Timer stopped';
+        statusText.innerText = `Status: Timer stopped after ${Math.floor((Date.now() - startTime) / 1000)} seconds`;
         manualStartButton.disabled = false;
         manualStopButton.disabled = true;
         monitoring = false;
         startStopButton.innerText = 'Start Monitoring (Gyro)';
     }
 };
-
 
 
         // Function to stop monitoring motion
