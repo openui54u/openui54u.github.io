@@ -36,7 +36,7 @@
             padding: 10px 20px;
             font-size: 18px;
         }
-        #manual-start-btn, #manual-stop-btn {
+        #manual-start-btn, #manual-stop-btn, #start-auto-tare-btn {
             background-color: lightblue;
             margin: 5px;
         }
@@ -46,7 +46,7 @@
             margin-top: 20px;
         }
         .bar {
-            height: 20px; /* Fixed height for horizontal bars */
+            height: 20px;
             margin: 0 5px;
             background-color: blue;
             transition: width 0.1s;
@@ -65,7 +65,7 @@
 <body>
     <h1>Gyroscopic Timer</h1>
     <p>Set acceleration threshold (XYZ-axis):</p>
-    <input type="number" id="accel-threshold" value="20" step="1">-
+    <input type="number" id="accel-threshold" value="20" step="1">
     <input type="number" id="accel-threshold-Stop" value="50" step="1">
     <button id="start-stop-btn">Start Monitoring (Gyro)</button>
     <button id="tare-btn">Tare (Gyro)</button>
@@ -87,25 +87,24 @@
     <p>Gyroscope X: <span id="gyro-x-value">0.00</span> °/s</p>
     <p>Gyroscope Y: <span id="gyro-y-value">0.00</span> °/s</p>
     <p>Gyroscope Z: <span id="gyro-z-value">0.00</span> °/s</p>
-    
-    <div>
-        <h2>Auto Tare Settings</h2>
-        <p>Auto Tare Duration (seconds): <input type="number" id="auto-tare-duration" value="5" step="1"></p>
-        <button id="start-auto-tare-btn">Start Auto Tare</button>
-        <p id="auto-tare-progress">Auto Tare Progress: 0s</p>
-    </div>
+
+    <p>Auto Tare Duration (seconds): <input type="number" id="auto-tare-duration" value="5" min="1"> <button id="start-auto-tare-btn">Start Auto Tare</button></p>
+    <p id="auto-tare-progress"></p>
 
     <script>
         let monitoring = false;
         let motionHandlerX, motionHandlerY, motionHandlerZ;
-        let threshold = 2; // Default acceleration threshold
-        let thresholdStop = 3; // Default acceleration threshold for stopping
+        let threshold = 20; // Default acceleration threshold
+        let thresholdStop = 50; // Default acceleration threshold for stopping
         let startTime = null;
         let intervalID = null;
         let isManuallyStarted = false;
         let tareValues = { x: 0, y: 0, z: 0 }; // Tare values for x, y, z
         let Accel = {x: 0, y: 0, z: 0};
         let Gyro = {x: 0, y: 0, z: 0};
+        let autoTareActive = false;
+        let autoTareDuration = 5000; // Default to 5 seconds
+        let autoTareProgressIntervalID = null;
 
         const statusText = document.getElementById('status');
         const timerDisplay = document.getElementById('timer');
@@ -124,11 +123,8 @@
         const gyroXDisplay = document.getElementById('gyro-x-value');
         const gyroYDisplay = document.getElementById('gyro-y-value');
         const gyroZDisplay = document.getElementById('gyro-z-value');
-        const autoTareProgressDisplay = document.getElementById('auto-tare-progress');
         const autoTareDurationInput = document.getElementById('auto-tare-duration');
-        let autoTareActive = false;
-        let autoTareDuration = 5000; // Default auto tare duration in milliseconds
-        let autoTareProgressIntervalID;
+        const autoTareProgressDisplay = document.getElementById('auto-tare-progress');
 
         // Timer Function to update display in hours:minutes:seconds:milliseconds
         function startTimer() {
@@ -209,113 +205,106 @@
             gyroZDisplay.innerText = Gyro.z.toFixed(2);
         };
 
-                // Set up accelerometer event handler
+        // Set up accelerometer event handler
         const accelerometerHandler = function(event) {
             Accel.x = event.accelerationIncludingGravity.x || 0;
-            Accel.y = event.accelerationIncludingGravity.y || 0;
+                       Accel.y = event.accelerationIncludingGravity.y || 0;
             Accel.z = event.accelerationIncludingGravity.z || 0;
 
+            // Adjust accelerometer values based on gyroscope orientation
             const adjustedAccel = adjustForOrientation(Accel, Gyro);
-            updateDisplays(adjustedAccel);
-            checkThreshold(adjustedAccel);
-        };
 
-        function updateDisplays(adjustedAccel) {
+            // Update displays
             xValueDisplay.innerText = adjustedAccel.x.toFixed(2);
             yValueDisplay.innerText = adjustedAccel.y.toFixed(2);
             zValueDisplay.innerText = adjustedAccel.z.toFixed(2);
 
-            // Update bar widths based on adjusted values
-            barX.style.width = `${Math.abs(adjustedAccel.x) * 10}px`; // Scaling for visibility
-            barY.style.width = `${Math.abs(adjustedAccel.y) * 10}px`;
-            barZ.style.width = `${Math.abs(adjustedAccel.z) * 10}px`;
-        }
-
-        function checkThreshold(adjustedAccel) {
+            // Calculate the magnitudes for bar visualization
             const magnitude = Math.sqrt(adjustedAccel.x ** 2 + adjustedAccel.y ** 2 + adjustedAccel.z ** 2);
-            if (magnitude > threshold) {
-                if (!isManuallyStarted) {
-                    startTimer();
-                    isManuallyStarted = true;
-                }
-            }
+            const maxMagnitude = Math.max(threshold, thresholdStop);
+            const scaledX = Math.min((Math.abs(adjustedAccel.x) / maxMagnitude) * 100, 100);
+            const scaledY = Math.min((Math.abs(adjustedAccel.y) / maxMagnitude) * 100, 100);
+            const scaledZ = Math.min((Math.abs(adjustedAccel.z) / maxMagnitude) * 100, 100);
 
-            // Stop monitoring if the magnitude drops below the thresholdStop
-            if (magnitude < thresholdStop) {
+            // Update bar widths
+            barX.style.width = `${scaledX}%`;
+            barY.style.width = `${scaledY}%`;
+            barZ.style.width = `${scaledZ}%`;
+
+            // Check if the monitoring should stop
+            if (magnitude >= thresholdStop) {
                 stopMonitoring();
+                alert("Monitoring stopped due to exceeding threshold.");
             }
-        }
+        };
 
+        // Function to stop monitoring
         function stopMonitoring() {
             monitoring = false;
             startStopButton.innerText = 'Start Monitoring (Gyro)';
             statusText.innerText = 'Status: Monitoring stopped.';
-
-            // Reset timer display
-            manualStartButton.disabled = false;
-            manualStopButton.disabled = true;
-
             window.removeEventListener('devicemotion', gyroHandler);
             window.removeEventListener('devicemotion', accelerometerHandler);
+            manualStartButton.disabled = false;
+            manualStopButton.disabled = true;
             stopTimer();
         }
 
-        // Tare button functionality
-        tareButton.addEventListener('click', function() {
+        // Function to start Tare
+        function tareGyro() {
             tareValues.x = Gyro.x;
             tareValues.y = Gyro.y;
             tareValues.z = Gyro.z;
-            alert(`Tare values set:\nX: ${tareValues.x.toFixed(2)}\nY: ${tareValues.y.toFixed(2)}\nZ: ${tareValues.z.toFixed(2)}`);
-        });
+            alert("Gyroscope Tared: \nX: " + tareValues.x + "\nY: " + tareValues.y + "\nZ: " + tareValues.z);
+        }
 
-        // Manual start button functionality
-        manualStartButton.addEventListener('click', function() {
-            isManuallyStarted = true;
-            startTimer();
-            manualStopButton.disabled = false;
-            manualStartButton.disabled = true;
-            statusText.innerText = 'Status: Manual monitoring started.';
-        });
-
-        // Manual stop button functionality
-        manualStopButton.addEventListener('click', function() {
-            stopMonitoring();
-            manualStopButton.disabled = true;
-            manualStartButton.disabled = false;
-        });
-
-        // Start Auto Tare functionality
-        document.getElementById('start-auto-tare-btn').addEventListener('click', function() {
-            autoTareDuration = parseInt(autoTareDurationInput.value) * 1000; // Convert to milliseconds
+        // Function to start Auto Tare
+        function startAutoTare() {
             autoTareActive = true;
-            autoTareProgressDisplay.innerText = `Auto Tare Progress: 0s`;
+            autoTareProgressDisplay.innerText = 'Auto Tare in Progress...';
+            const duration = parseInt(autoTareDurationInput.value) * 1000; // Convert seconds to milliseconds
+            const tareStartTime = Date.now();
 
-            let startTime = Date.now();
-            autoTareProgressIntervalID = setInterval(() => {
-                let elapsedTime = Math.floor((Date.now() - startTime) / 1000);
-                autoTareProgressDisplay.innerText = `Auto Tare Progress: ${elapsedTime}s`;
+            const autoTareInterval = setInterval(() => {
+                const elapsed = Date.now() - tareStartTime;
 
-                if (elapsedTime >= (autoTareDuration / 1000)) {
-                    clearInterval(autoTareProgressIntervalID);
+                // Update the auto tare progress on screen
+                autoTareProgressDisplay.innerText = `Auto Tare in Progress... ${Math.floor((elapsed / duration) * 100)}%`;
+
+                // At the end of the duration, stop the auto tare
+                if (elapsed >= duration) {
+                    clearInterval(autoTareInterval);
                     autoTareActive = false;
-                    threshold = Math.max(Math.abs(Accel.x), Math.abs(Accel.y), Math.abs(Accel.z)) * 2; // Set high threshold
-                    thresholdStop = Math.max(Math.abs(Accel.x), Math.abs(Accel.y), Math.abs(Accel.z)); // Set low threshold
-                    alert(`Auto Tare complete. New thresholds set:\nLow: ${thresholdStop}\nHigh: ${threshold}`);
+                    tareGyro(); // Call tare function at the end
+                    autoTareProgressDisplay.innerText = 'Auto Tare Completed.';
                 }
-            }, 1000);
-        });
+            }, 100); // Update progress every 100 ms
+        }
 
-        // Start the monitoring process with permission check
-        startStopButton.addEventListener('click', async function() {
+        // Event listeners
+        startStopButton.addEventListener('click', () => {
             if (monitoring) {
                 stopMonitoring();
             } else {
-                const permissionGranted = await requestGyroPermission();
-                if (permissionGranted) {
-                    startMonitoring();
-                }
+                requestGyroPermission().then(permissionGranted => {
+                    if (permissionGranted) {
+                        startMonitoring();
+                        startTimer();
+                    }
+                });
             }
         });
+
+        tareButton.addEventListener('click', tareGyro);
+        manualStartButton.addEventListener('click', () => {
+            isManuallyStarted = true;
+            startMonitoring();
+        });
+
+        manualStopButton.addEventListener('click', stopMonitoring);
+
+        startAutoTareBtn.addEventListener('click', startAutoTare);
+
     </script>
 </body>
 </html>
