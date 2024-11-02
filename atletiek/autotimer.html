@@ -48,7 +48,7 @@
         }
         .bar {
             height: 20px;
-            margin: 5px 0;
+            margin: 0 5px;
             background-color: blue;
             transition: width 0.1s;
         }
@@ -70,9 +70,10 @@
     <input type="number" id="accel-threshold-Stop" value="50" step="1">
     <button id="start-stop-btn">Start Monitoring (Gyro)</button>
     <button id="tare-btn">Tare (Gyro)</button>
+    <button id="auto-tare-btn">Auto Tare</button>
     <button id="manual-start-btn">Manual Start</button>
     <button id="manual-stop-btn" disabled>Manual Stop</button>
-    <button id="auto-tare-btn">Auto Tare</button>
+   
     
     <p id="status">Status: Not Started</p>
     <p id="timer">Timer: 00:00:00:000</p>
@@ -99,6 +100,7 @@
         let intervalID = null;
         let autoTareActive = false;
         let autoTareDuration = 5000;
+        let tareStartTime = null;
         let tareValues = { x: 0, y: 0, z: 0 };
         let Accel = { x: 0, y: 0, z: 0 };
         let Gyro = { x: 0, y: 0, z: 0 };
@@ -108,15 +110,19 @@
         const magnitudeDisplay = document.getElementById('magnitude-value');
         const startStopButton = document.getElementById('start-stop-btn');
         const tareButton = document.getElementById('tare-btn');
+        const autoTareButton = document.getElementById('auto-tare-btn');
         const manualStartButton = document.getElementById('manual-start-btn');
         const manualStopButton = document.getElementById('manual-stop-btn');
-        const autoTareButton = document.getElementById('auto-tare-btn');
+   
         const barX = document.getElementById('bar-x');
         const barY = document.getElementById('bar-y');
         const barZ = document.getElementById('bar-z');
         const xValueDisplay = document.getElementById('x-value');
         const yValueDisplay = document.getElementById('y-value');
         const zValueDisplay = document.getElementById('z-value');
+        const gyroXDisplay = document.getElementById('gyro-x-value');
+        const gyroYDisplay = document.getElementById('gyro-y-value');
+        const gyroZDisplay = document.getElementById('gyro-z-value');
 
         function startTimer() {
             startTime = Date.now();
@@ -133,7 +139,7 @@
         function stopTimer() {
             clearInterval(intervalID);
             intervalID = null;
-            timerDisplay.innerText = `Timer: 00:00:00:000`;
+            //timerDisplay.innerText = `Timer: 00:00:00:000`;
         }
 
         function adjustForOrientation(accel, gyro) {
@@ -155,11 +161,12 @@
             yValueDisplay.innerText = adjustedAccel.y.toFixed(2);
             zValueDisplay.innerText = adjustedAccel.z.toFixed(2);
 
-            barX.style.width = Math.min(Math.abs(adjustedAccel.x) * 10, 100) + 'px';
-            barY.style.width = Math.min(Math.abs(adjustedAccel.y) * 10, 100) + 'px';
-            barZ.style.width = Math.min(Math.abs(adjustedAccel.z) * 10, 100) + 'px';
+            barX.style.width = Math.min(Math.abs(adjustedAccel.x) * 10, 100) + '%';
+            barY.style.width = Math.min(Math.abs(adjustedAccel.y) * 10, 100) + '%';
+            barZ.style.width = Math.min(Math.abs(adjustedAccel.z) * 10, 100) + '%';
 
             const magnitude = Math.max(Math.abs(adjustedAccel.x), Math.abs(adjustedAccel.y), Math.abs(adjustedAccel.z));
+            
             magnitudeDisplay.innerText = magnitude.toFixed(2);
 
             if (magnitude > threshold && !intervalID) {
@@ -175,7 +182,12 @@
             threshold = parseFloat(document.getElementById('accel-threshold').value);
             thresholdStop = parseFloat(document.getElementById('accel-threshold-Stop').value);
             monitoring = true;
-            window.addEventListener('devicemotion', accelerometerHandler);
+           
+             
+            // Reset timer and display
+            timerDisplay.innerText = `Timer: 00:00:00:000`;
+            window.addEventListener('devicemotion', gyroHandler);
+           window.addEventListener('devicemotion', accelerometerHandler);
             startStopButton.innerText = 'Stop Monitoring (Gyro)';
             statusText.innerText = 'Status: Monitoring started.';
         }
@@ -183,11 +195,25 @@
         function stopMonitoring() {
             monitoring = false;
             stopTimer();
-            window.removeEventListener('devicemotion', accelerometerHandler);
+           
+        window.removeEventListener('devicemotion', gyroHandler);
+           window.removeEventListener('devicemotion', accelerometerHandler);
             startStopButton.innerText = 'Start Monitoring (Gyro)';
             statusText.innerText = 'Status: Monitoring stopped.';
         }
 
+         const gyroHandler = function(event) {
+            Gyro.x = event.rotationRate.alpha || 0;
+            Gyro.y = event.rotationRate.beta || 0;
+            Gyro.z = event.rotationRate.gamma || 0;
+
+            gyroXDisplay.innerText = Gyro.x.toFixed(2);
+            gyroYDisplay.innerText = Gyro.y.toFixed(2);
+            gyroZDisplay.innerText = Gyro.z.toFixed(2);
+        };
+
+       
+        
         startStopButton.addEventListener('click', () => {
             monitoring ? stopMonitoring() : startMonitoring();
         });
@@ -215,6 +241,8 @@
         tareButton.addEventListener('click', () => {
             tareValues = { ...Accel };
             statusText.innerText = "Status: Tare values set.";
+            // Reset timer and display
+            timerDisplay.innerText = `Timer: 00:00:00:000`;
         });
 
         // Auto-tare functionality
