@@ -195,8 +195,9 @@
             };
             
             window.addEventListener('devicemotion', gyroHandler);
-
-            // Set up accelerometer event handler
+        }
+        
+// Set up accelerometer event handler
 // Define the accelerometer event handler separately
 const accelerometerHandler = function(event) {
     Accel.x = event.accelerationIncludingGravity.x - tareValues.x;
@@ -234,8 +235,7 @@ const accelerometerHandler = function(event) {
     }
 };
 
-// In your startMonitoring function, add:
-window.addEventListener('devicemotion', accelerometerHandler);
+
 
         // Function to stop monitoring motion
 function stopMonitoring() {
