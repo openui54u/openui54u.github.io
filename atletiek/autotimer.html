@@ -183,6 +183,12 @@
             manualStartButton.disabled = true;
             manualStopButton.disabled = false;
 
+
+            window.addEventListener('devicemotion', gyroHandler);
+            window.addEventListener('devicemotion', accelerometerHandler);
+        }
+  
+        
             // Set up gyroscope event handler
             gyroHandler = function(event) {
                 Gyro.x = event.rotationRate.alpha || 0;
@@ -193,10 +199,7 @@
                 gyroYDisplay.innerText = Gyro.y.toFixed(2);
                 gyroZDisplay.innerText = Gyro.z.toFixed(2);
             };
-            
-            window.addEventListener('devicemotion', gyroHandler);
-            window.addEventListener('devicemotion', accelerometerHandler);
-        }
+                    
         
 // Set up accelerometer event handler
 // Define the accelerometer event handler separately
