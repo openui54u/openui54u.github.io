@@ -3,97 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gyroscope Web App with Timer</title>
+    <title>Motion Monitoring App</title>
     <style>
         body {
             font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
             text-align: center;
-            padding-top: 50px;
         }
-        #status, #timer {
-            margin-top: 20px;
-            font-size: 18px;
-            color: green;
-        }
-        #x-value, #gyro-x-value {
-            color: red;
-        }
-        #y-value, #gyro-y-value {
-            color: green;
-        }
-        #z-value, #gyro-z-value {
-            color: blue;
-        }
-        input, button {
-            font-size: 16px;
-            padding: 10px;
-            margin: 10px;
-        }
-        input {
-            max-width: 10vw;
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
         button {
-            padding: 10px 20px;
-            font-size: 18px;
-        }
-        #manual-start-btn, #manual-stop-btn {
-            background-color: lightblue;
             margin: 5px;
+            padding: 10px;
+            font-size: 16px;
         }
-        .bar-container {
-            display: flex;
-            justify-content: center;
+        .status {
             margin-top: 20px;
+            font-weight: bold;
         }
-        .bar {
-            height: 20px;
-            margin: 0 5px;
-            background-color: blue;
-            transition: width 0.1s;
+        #timer {
+            font-size: 18px;
+            margin-top: 10px;
         }
-        #bar-x {
-            background-color: red;
-        }
-        #bar-y {
-            background-color: green;
-        }
-        #bar-z {
-            background-color: blue;
+        #magnitude {
+            font-size: 18px;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
-    <h1>Gyroscopic Timer</h1>
-    <p>Set acceleration threshold (XYZ-axis):</p>
-    <input type="number" id="accel-threshold" value="20" step="1">-
-    <input type="number" id="accel-threshold-Stop" value="50" step="1">
-    <button id="start-stop-btn">Start Monitoring (Gyro)</button>
-    <button id="tare-btn">Tare (Gyro)</button>
-    <button id="manual-start-btn">Manual Start</button>
-    <button id="manual-stop-btn" disabled>Manual Stop</button>
-    
-    <p id="status">Status: Not Started</p>
-    <p id="timer">Timer: 00:00:00:000</p>
-    <p id="magnitude-display">Magnitude: 0.00</p>
-    
-    <div class="bar-container">
-        <div id="bar-x" class="bar"></div>
-        <div id="bar-y" class="bar"></div>
-        <div id="bar-z" class="bar"></div>
+    <div class="container">
+        <h1>Motion Monitoring App</h1>
+        <label for="accel-threshold">Acceleration Threshold:</label>
+        <input type="number" id="accel-threshold" value="2" step="0.1"><br>
+        <label for="accel-threshold-Stop">Stop Acceleration Threshold:</label>
+        <input type="number" id="accel-threshold-Stop" value="1" step="0.1"><br>
+
+        <button id="start-stop-btn">Start Monitoring (Gyro)</button>
+        <button id="tare-btn">Tare</button>
+        <button id="manual-start-btn">Start Timer</button>
+        <button id="manual-stop-btn">Stop Timer</button>
+
+        <p id="status" class="status">Status: Ready</p>
+        <p id="timer">Timer: 00:00:00:000</p>
+        <p id="magnitude">Magnitude: 0.00</p>
     </div>
-    
-    <p>X: <span id="x-value">0.00</span> m/s²</p>
-    <p>Y: <span id="y-value">0.00</span> m/s²</p>
-    <p>Z: <span id="z-value">0.00</span> m/s²</p>
-    <p>Gyroscope X: <span id="gyro-x-value">0.00</span> °/s</p>
-    <p>Gyroscope Y: <span id="gyro-y-value">0.00</span> °/s</p>
-    <p>Gyroscope Z: <span id="gyro-z-value">0.00</span> °/s</p>
 
     <script>
         let monitoring = false;
         let motionHandlerX, motionHandlerY, motionHandlerZ;
-        let threshold = 20; // Default acceleration threshold
-        let thresholdStop = 50; // Default acceleration threshold for stopping
+        let threshold = 2; // Default acceleration threshold
+        let thresholdStop = 3; // Default acceleration threshold for stopping
         let startTime = null;
         let intervalID = null;
         let tareValues = { x: 0, y: 0, z: 0 }; // Tare values for x, y, z
@@ -102,24 +72,15 @@
 
         const statusText = document.getElementById('status');
         const timerDisplay = document.getElementById('timer');
-        const magnitudeDisplay = document.getElementById('magnitude-display');
         const accelInput = document.getElementById('accel-threshold');
         const accelInputStop = document.getElementById('accel-threshold-Stop');
         const startStopButton = document.getElementById('start-stop-btn');
         const tareButton = document.getElementById('tare-btn');
         const manualStartButton = document.getElementById('manual-start-btn');
         const manualStopButton = document.getElementById('manual-stop-btn');
-        const barX = document.getElementById('bar-x');
-        const barY = document.getElementById('bar-y');
-        const barZ = document.getElementById('bar-z');
-        const xValueDisplay = document.getElementById('x-value');
-        const yValueDisplay = document.getElementById('y-value');
-        const zValueDisplay = document.getElementById('z-value');
-        const gyroXDisplay = document.getElementById('gyro-x-value');
-        const gyroYDisplay = document.getElementById('gyro-y-value');
-        const gyroZDisplay = document.getElementById('gyro-z-value');
+        const magnitudeDisplay = document.getElementById('magnitude'); // Display for magnitude
 
-        // Timer Function to update display in hours:minutes:seconds:microseconds
+        // Timer Function to update display in hours:minutes:seconds:milliseconds
         function startTimer() {
             startTime = Date.now();
             intervalID = setInterval(() => {
@@ -137,7 +98,7 @@
 
         function stopTimer() {
             clearInterval(intervalID);
-            intervalID = null;
+            intervalID = null; // Reset the interval ID
         }
 
         // Request permission for iOS devices
@@ -180,7 +141,6 @@
 
             // Reset timer and display
             timerDisplay.innerText = `Timer: 00:00:00:000`;
-            magnitudeDisplay.innerText = `Magnitude: 0.00`;
             manualStartButton.disabled = true;
             manualStopButton.disabled = false;
 
@@ -188,34 +148,20 @@
             window.addEventListener('devicemotion', accelerometerHandler);
         }
 
-        // Set up gyroscope event handler
+        // Gyroscope handler
         const gyroHandler = function(event) {
             Gyro.x = event.rotationRate.alpha || 0;
             Gyro.y = event.rotationRate.beta || 0;
             Gyro.z = event.rotationRate.gamma || 0;
-
-            gyroXDisplay.innerText = Gyro.x.toFixed(2);
-            gyroYDisplay.innerText = Gyro.y.toFixed(2);
-            gyroZDisplay.innerText = Gyro.z.toFixed(2);
         };
 
-        // Set up accelerometer event handler
+        // Accelerometer handler
         const accelerometerHandler = function(event) {
             Accel.x = event.accelerationIncludingGravity.x - tareValues.x;
             Accel.y = event.accelerationIncludingGravity.y - tareValues.y;
             Accel.z = event.accelerationIncludingGravity.z - tareValues.z;
 
-            // Adjusted values using gyroscope data to remove positional influence
             const adjustedAccel = adjustForOrientation(Accel, Gyro);
-            
-            xValueDisplay.innerText = adjustedAccel.x.toFixed(2);
-            yValueDisplay.innerText = adjustedAccel.y.toFixed(2);
-            zValueDisplay.innerText = adjustedAccel.z.toFixed(2);
-
-                     // Update bar widths based on adjusted acceleration
-            barX.style.width = `${Math.abs(adjustedAccel.x) * 2}px`; // Scale to fit the display
-            barY.style.width = `${Math.abs(adjustedAccel.y) * 2}px`;
-            barZ.style.width = `${Math.abs(adjustedAccel.z) * 2}px`;
 
             // Calculate the magnitude
             const magnitude = Math.sqrt(
@@ -244,46 +190,20 @@
             }
         };
 
-        // Function to start tare (zeroing out the acceleration values)
-        function tare() {
-            tareValues.x = Accel.x;
-            tareValues.y = Accel.y;
-            tareValues.z = Accel.z;
-            alert(`Tared values: X: ${tareValues.x.toFixed(2)}, Y: ${tareValues.y.toFixed(2)}, Z: ${tareValues.z.toFixed(2)}`);
-        }
+        // Function to stop monitoring motion
+        function stopMonitoring() {
+            monitoring = false;
+            if (intervalID) {
+                stopTimer();
+            }
+            startStopButton.innerText = 'Start Monitoring (Gyro)';
+            statusText.innerText = 'Status: Monitoring stopped.';
+            manualStartButton.disabled = false;
+            manualStopButton.disabled = true;
 
-        // Function to handle auto Tare
-        let autoTareActive = false;
-        let autoTareDuration = 5000; // Duration for auto tare in milliseconds
-        let autoTareStartTime = null;
-
-        function autoTare() {
-            autoTareActive = true;
-            autoTareStartTime = Date.now();
-            const autoTareInterval = setInterval(() => {
-                const elapsedTime = Date.now() - autoTareStartTime;
-
-                // Calculate current values for auto tare
-                tareValues.x += Accel.x;
-                tareValues.y += Accel.y;
-                tareValues.z += Accel.z;
-
-                // Show progress on screen
-                if (elapsedTime < autoTareDuration) {
-                    const progress = ((elapsedTime / autoTareDuration) * 100).toFixed(2);
-                    statusText.innerText = `Auto Tare Progress: ${progress}%`;
-                } else {
-                    // Finalize tare values
-                    tareValues.x /= 10; // Average after 10 readings
-                    tareValues.y /= 10;
-                    tareValues.z /= 10;
-
-                    alert(`Auto Tare Complete: X: ${tareValues.x.toFixed(2)}, Y: ${tareValues.y.toFixed(2)}, Z: ${tareValues.z.toFixed(2)}`);
-                    autoTareActive = false;
-                    clearInterval(autoTareInterval);
-                    statusText.innerText = 'Auto Tare Complete';
-                }
-            }, 100); // Update every 100 milliseconds
+            // Remove the event listeners for accelerometer and gyroscope
+            window.removeEventListener('devicemotion', gyroHandler);
+            window.removeEventListener('devicemotion', accelerometerHandler);
         }
 
         // Button event listeners
@@ -291,12 +211,18 @@
             if (monitoring) {
                 stopMonitoring();
             } else {
-                startMonitoring();
+                requestGyroPermission().then(permissionGranted => {
+                    if (permissionGranted) {
+                        startMonitoring();
+                    } else {
+                        alert('Motion sensor permissions not granted.');
+                    }
+                });
             }
         });
 
         tareButton.addEventListener('click', tare);
-
+        
         manualStartButton.addEventListener('click', () => {
             startTimer(); // Manual start timer
             manualStartButton.disabled = true;
@@ -308,12 +234,6 @@
             manualStopButton.disabled = true;
             manualStartButton.disabled = false;
         });
-
-        // Auto Tare functionality
-        const autoTareButton = document.createElement('button');
-        autoTareButton.innerText = 'Auto Tare';
-        document.body.appendChild(autoTareButton);
-        autoTareButton.addEventListener('click', autoTare);
 
         // Initial request for gyroscope permission
         requestGyroPermission();
