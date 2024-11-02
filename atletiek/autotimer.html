@@ -233,6 +233,7 @@ const magnitude = Math.max(
     
 
     if (magnitude > threshold && !intervalID) {
+        statusText.innerText = `Status: Timer started at Magnitude ${magnitude}`;
         startTimer();
     } else if (magnitude > thresholdStop && intervalID) {
         stopTimer();
@@ -267,6 +268,10 @@ function stopMonitoring() {
             tareValues.y = Accel.y;
             tareValues.z = Accel.z;
             statusText.innerText = 'Status: Tare values set.';
+            
+            if !intervalID{
+             timerDisplay.innerText = `Timer: 00:00:00:000`;
+            }
         }
 
         // Manual start button function
