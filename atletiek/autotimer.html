@@ -219,17 +219,24 @@ const accelerometerHandler = function(event) {
     barZ.style.height = Math.min(Math.abs(adjustedAccel.z) * 10, 100) + 'px';
 
     // Check if adjusted acceleration exceeds the threshold to start or stop the timer
-    const magnitude = Math.sqrt(
-        adjustedAccel.x ** 2 + 
-        adjustedAccel.y ** 2 + 
-        adjustedAccel.z ** 2
-    );
+//    const magnitude = Math.sqrt(
+//        adjustedAccel.x ** 2 + 
+//        adjustedAccel.y ** 2 + 
+//        adjustedAccel.z ** 2
+//    );
+const magnitude = Math.max(
+    Math.abs(adjustedAccel.x),
+    Math.abs(adjustedAccel.y),
+    Math.abs(adjustedAccel.z)
+);
+    
+    
 
     if (magnitude > threshold && !intervalID) {
         startTimer();
     } else if (magnitude > thresholdStop && intervalID) {
         stopTimer();
-        statusText.innerText = `Status: Timer stopped after ${Math.floor((Date.now() - startTime) / 1000)} seconds`;
+        statusText.innerText = `Status: Timer stopped after ${Math.floor((Date.now() - startTime) / 1000)} seconds at Magnitude ${magnitude}`;
         manualStartButton.disabled = false;
         manualStopButton.disabled = true;
         monitoring = false;
