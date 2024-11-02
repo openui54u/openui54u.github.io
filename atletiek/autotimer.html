@@ -223,9 +223,9 @@
 
                 if (magnitude > threshold && !intervalID) {
                     startTimer();
-                } else if ( magnitude > thresholdStop && intervalID && !isManuallyStarted) {
+                } else if ( ( magnitude > thresholdStop ) && intervalID && !isManuallyStarted) {
                     stopTimer();
-                    statusText.innerText = 'Status: Timer stopped (Threshold not met).';
+                    statusText.innerText = 'Status: Timer stopped (Threshold met).';
                     manualStartButton.disabled = false;
                     manualStopButton.disabled = true;
                     monitoring = false;
