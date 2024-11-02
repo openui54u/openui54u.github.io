@@ -197,58 +197,61 @@
             window.addEventListener('devicemotion', gyroHandler);
 
             // Set up accelerometer event handler
-            window.addEventListener('devicemotion', function(event) {
-                Accel.x = event.accelerationIncludingGravity.x - tareValues.x;
-                Accel.y = event.accelerationIncludingGravity.y - tareValues.y;
-                Accel.z = event.accelerationIncludingGravity.z - tareValues.z;
+// Define the accelerometer event handler separately
+const accelerometerHandler = function(event) {
+    Accel.x = event.accelerationIncludingGravity.x - tareValues.x;
+    Accel.y = event.accelerationIncludingGravity.y - tareValues.y;
+    Accel.z = event.accelerationIncludingGravity.z - tareValues.z;
 
-                // Adjusted values using gyroscope data to remove positional influence
-                const adjustedAccel = adjustForOrientation(Accel, Gyro);
-                
-                xValueDisplay.innerText = adjustedAccel.x.toFixed(2);
-                yValueDisplay.innerText = adjustedAccel.y.toFixed(2);
-                zValueDisplay.innerText = adjustedAccel.z.toFixed(2);
+    // Adjusted values using gyroscope data to remove positional influence
+    const adjustedAccel = adjustForOrientation(Accel, Gyro);
+    
+    xValueDisplay.innerText = adjustedAccel.x.toFixed(2);
+    yValueDisplay.innerText = adjustedAccel.y.toFixed(2);
+    zValueDisplay.innerText = adjustedAccel.z.toFixed(2);
 
-                // Update bar heights based on adjusted acceleration
-                barX.style.height = Math.min(Math.abs(adjustedAccel.x) * 10, 100) + 'px';
-                barY.style.height = Math.min(Math.abs(adjustedAccel.y) * 10, 100) + 'px';
-                barZ.style.height = Math.min(Math.abs(adjustedAccel.z) * 10, 100) + 'px';
+    // Update bar heights based on adjusted acceleration
+    barX.style.height = Math.min(Math.abs(adjustedAccel.x) * 10, 100) + 'px';
+    barY.style.height = Math.min(Math.abs(adjustedAccel.y) * 10, 100) + 'px';
+    barZ.style.height = Math.min(Math.abs(adjustedAccel.z) * 10, 100) + 'px';
 
-                // Check if adjusted acceleration exceeds the threshold to start or stop the timer
-                const magnitude = Math.sqrt(
-                    adjustedAccel.x ** 2 + 
-                    adjustedAccel.y ** 2 + 
-                    adjustedAccel.z ** 2
-                );
+    // Check if adjusted acceleration exceeds the threshold to start or stop the timer
+    const magnitude = Math.sqrt(
+        adjustedAccel.x ** 2 + 
+        adjustedAccel.y ** 2 + 
+        adjustedAccel.z ** 2
+    );
 
-                if (magnitude > threshold && !intervalID) {
-                    startTimer();
-                } else if ( ( magnitude > thresholdStop ) && intervalID ) {
-                    stopTimer();
-                    statusText.innerText = 'Status: Timer stopped';
-                    manualStartButton.disabled = false;
-                    manualStopButton.disabled = true;
-                    monitoring = false;
-                    startStopButton.innerText = 'Start Monitoring (Gyro)';
-                }
-            });
-        }
+    if (magnitude > threshold && !intervalID) {
+        startTimer();
+    } else if (magnitude > thresholdStop && intervalID) {
+        stopTimer();
+        statusText.innerText = 'Status: Timer stopped';
+        manualStartButton.disabled = false;
+        manualStopButton.disabled = true;
+        monitoring = false;
+        startStopButton.innerText = 'Start Monitoring (Gyro)';
+    }
+};
+
+// In your startMonitoring function, add:
+window.addEventListener('devicemotion', accelerometerHandler);
 
         // Function to stop monitoring motion
-        function stopMonitoring() {
-            monitoring = false;
-            if (intervalID) {
-                stopTimer();
-            }
-            startStopButton.innerText = 'Start Monitoring (Gyro)';
-            statusText.innerText = 'Status: Monitoring stopped.';
-            manualStartButton.disabled = false;
-            manualStopButton.disabled = true;
+function stopMonitoring() {
+    monitoring = false;
+    if (intervalID) {
+        stopTimer();
+    }
+    startStopButton.innerText = 'Start Monitoring (Gyro)';
+    statusText.innerText = 'Status: Monitoring stopped.';
+    manualStartButton.disabled = false;
+    manualStopButton.disabled = true;
 
-            // Remove event listeners
-            window.removeEventListener('devicemotion', gyroHandler);
-            window.removeEventListener('devicemotion', () => {});
-        }
+    // Remove the specific event listener for accelerometer
+    window.removeEventListener('devicemotion', gyroHandler);
+    window.removeEventListener('devicemotion', accelerometerHandler); // Use the correct reference to the accelerometer handler
+}
 
         // Tare function to reset baseline values for accelerometer
         function tareValuesFunc() {
