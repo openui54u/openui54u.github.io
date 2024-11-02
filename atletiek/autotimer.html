@@ -47,10 +47,11 @@
             margin-top: 20px;
         }
         .bar {
-            width: 20px;
-            margin: 0 5px;
+            height: 20px; /* Set a fixed height for the bars */
+            width: 0; /* Initial width set to 0 */
+            margin: 5px 0; /* Space between bars */
             background-color: blue;
-            transition: height 0.1s;
+            transition: width 0.1s;
         }
         #bar-x {
             background-color: red;
@@ -210,10 +211,13 @@
             yValueDisplay.innerText = adjustedAccel.y.toFixed(2);
             zValueDisplay.innerText = adjustedAccel.z.toFixed(2);
 
-            barX.style.height = Math.min(Math.abs(adjustedAccel.x) * 10, 100) + 'px';
-            barY.style.height = Math.min(Math.abs(adjustedAccel.y) * 10, 100) + 'px';
-            barZ.style.height = Math.min(Math.abs(adjustedAccel.z) * 10, 100) + 'px';
+//            barX.style.height = Math.min(Math.abs(adjustedAccel.x) * 10, 100) + 'px';
+//            barY.style.height = Math.min(Math.abs(adjustedAccel.y) * 10, 100) + 'px';
+//            barZ.style.height = Math.min(Math.abs(adjustedAccel.z) * 10, 100) + 'px';
 
+             // Update the bar widths based on acceleration values
+            updateBars(adjustedAccel);
+            
             const magnitude = Math.max(
                 Math.abs(adjustedAccel.x),
                 Math.abs(adjustedAccel.y),
@@ -236,6 +240,19 @@
             }
         };
 
+                // Function to update bar widths based on acceleration
+        function updateBars(adjustedAccel) {
+            const maxWidth = 100; // Maximum width of the bars in percentage
+            const xPercentage = Math.min(Math.abs(adjustedAccel.x) / threshold * maxWidth, maxWidth);
+            const yPercentage = Math.min(Math.abs(adjustedAccel.y) / threshold * maxWidth, maxWidth);
+            const zPercentage = Math.min(Math.abs(adjustedAccel.z) / threshold * maxWidth, maxWidth);
+
+            // Set the width of the bars
+            barX.style.width = `${xPercentage}%`;
+            barY.style.width = `${yPercentage}%`;
+            barZ.style.width = `${zPercentage}%`;
+        }
+        
         // Function to stop monitoring motion
         function stopMonitoring() {
             monitoring = false;
