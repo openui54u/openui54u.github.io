@@ -382,6 +382,10 @@ myAudioContext = new AudioContext();
         // Manual start and stop button functionality
         manualStartButton.addEventListener('click', () => {
              if (!isTimerRunning) {
+                 
+                 if (!myAudioContext){
+                  myAudioContext = new AudioContext();   
+                 }
                 startTimer();
                 
             }
