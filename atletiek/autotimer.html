@@ -100,26 +100,29 @@
     </p>
 
     <script>
-        let monitoring = false;
-        let threshold = 20;
-        let thresholdStop = 50;
-        let startTime = null;
-        let intervalID = null;
-        let autoTareActive = false;
+        let monitoring       = false;
+        let threshold        = 20;
+        let thresholdStop    = 50;
+        let startTime        = null;
+        let intervalID       = null;
+        let autoTareActive   = false;
         let autoTareDuration = 5000;
-        let tareStartTime = null;
+        let tareStartTime    = null;
         let tareValues = { x: 0, y: 0, z: 0 };
-        let Accel = { x: 0, y: 0, z: 0 };
-        let Gyro = { x: 0, y: 0, z: 0 };
+        let Accel      = { x: 0, y: 0, z: 0 };
+        let Gyro       = { x: 0, y: 0, z: 0 };
+        
+        let isTimerRunning = false;  // New flag to indicate if the timer is active
 
-        const statusText = document.getElementById('status');
-        const timerDisplay = document.getElementById('timer');
+
+        const statusText       = document.getElementById('status');
+        const timerDisplay     = document.getElementById('timer');
         const magnitudeDisplay = document.getElementById('magnitude-value');
-        const startStopButton = document.getElementById('start-stop-btn');
-        const tareButton = document.getElementById('tare-btn');
-        const autoTareButton = document.getElementById('auto-tare-btn');
+        const startStopButton  = document.getElementById('start-stop-btn');
+        const tareButton       = document.getElementById('tare-btn');
+        const autoTareButton   = document.getElementById('auto-tare-btn');
         const manualStartButton = document.getElementById('manual-start-btn');
-        const manualStopButton = document.getElementById('manual-stop-btn');
+        const manualStopButton  = document.getElementById('manual-stop-btn');
    
         const barX = document.getElementById('bar-x');
         const barY = document.getElementById('bar-y');
@@ -133,13 +136,17 @@
         const gyroYDisplay = document.getElementById('gyro-y-value');
         const gyroZDisplay = document.getElementById('gyro-z-value');
 
-         const absoluteXDisplay = document.getElementById('absolute-x-value');
+        const absoluteXDisplay = document.getElementById('absolute-x-value');
         const absoluteYDisplay = document.getElementById('absolute-y-value');
         const absoluteZDisplay = document.getElementById('absolute-z-value');
         
         
         
         function startTimer() {
+            
+            if (isTimerRunning) return;  // Prevent starting if already running
+
+            isTimerRunning = true;
             
             statusText.innerText = "Status: Manual timer start.";
                 manualStartButton.disabled = true;
@@ -157,12 +164,16 @@
         }
 
         function stopTimer() {
+
+            if (!isTimerRunning) return;  // Prevent stopping if timer is not running
+            isTimerRunning = false;
+            
             clearInterval(intervalID);
             intervalID = null;
             //timerDisplay.innerText = `Timer: 00:00:00:000`;
-                            statusText.innerText = "Status: Manual timer stop.";
-                manualStartButton.disabled = false;
-                manualStopButton.disabled = true;
+            statusText.innerText = "Status: Manual timer stop.";
+            manualStartButton.disabled = false;
+            manualStopButton.disabled = true;
             
         }
 
@@ -222,9 +233,11 @@
             if ( ( magnitude > threshold ) && !intervalID) {
                 startTimer();
                 statusText.innerText = `Status: Timer started at magnitude ${magnitude.toFixed(2)}`;
+               // console.log('Started', intervalID, magnitude);
             } else if ( ( magnitude > thresholdStop ) && intervalID) {
                 stopTimer();
                 statusText.innerText = `Status: Timer stopped at magnitude ${magnitude.toFixed(2)}`;
+               // console.log('Stopped', intervalID, magnitude);
             }
         };
 
@@ -237,7 +250,7 @@
             // Reset timer and display
             timerDisplay.innerText = `Timer: 00:00:00:000`;
             window.addEventListener('devicemotion', gyroHandler);
-           window.addEventListener('devicemotion', accelerometerHandler);
+            window.addEventListener('devicemotion', accelerometerHandler);
             startStopButton.innerText = 'Stop Monitoring (Gyro)';
             statusText.innerText = 'Status: Monitoring started.';
         }
@@ -264,16 +277,11 @@
         };
 
        
-        
-//        startStopButton.addEventListener('click', () => {
-//            monitoring ? stopMonitoring() : startMonitoring();
-//        });
          startStopButton.addEventListener('click', async () => {
             if (!monitoring) {
                 const permissionGranted = await requestGyroPermission();
                 if (permissionGranted) {
                     startMonitoring();
-//                    startTimer();
                 }
             } else {
                 stopMonitoring();
@@ -282,14 +290,14 @@
 
         // Manual start and stop button functionality
         manualStartButton.addEventListener('click', () => {
-            if (!intervalID) {
+             if (!isTimerRunning) {
                 startTimer();
                 
             }
         });
 
               manualStopButton.addEventListener('click', () => {
-            if (intervalID) {
+            if (isTimerRunning) {
                 stopTimer();
             }
         });
