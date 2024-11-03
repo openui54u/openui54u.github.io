@@ -306,9 +306,9 @@
             
             
              // Detect peaks and play beep
-            if (magnitude > previousMagnitude && !isIncreasing && (isTimerRunning || magnitude > threshold)) {
+            if (magnitude > previousMagnitude && !isIncreasing && (isTimerRunning && magnitude > threshold)) {
                 isIncreasing = true;
-            } else if (magnitude < previousMagnitude && isIncreasing && (isTimerRunning || magnitude > threshold)) {
+            } else if (magnitude < previousMagnitude && isIncreasing && (isTimerRunning && magnitude > threshold)) {
                 isIncreasing = false;
                 stepCount++; // Increment step count at each peak
                 beep(200, 1000, 100); // Play beep sound
