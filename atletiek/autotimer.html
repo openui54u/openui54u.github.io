@@ -259,10 +259,13 @@
                 startTimer();
                 statusText.innerText = `Status: Timer started at magnitude ${magnitude.toFixed(2)}`;
                // console.log('Started', intervalID, magnitude);
-            } else if ( ( magnitude > thresholdStop ) && intervalID) {
+            } else if ( ( magnitude > thresholdStop ) && intervalID ) {
+                
+                if (!autoThresActive){
                 stopTimer();
-                statusText.innerText = `Status: Timer stopped at magnitude ${magnitude.toFixed(2)}`;
-                stopMonitoring();
+                statusText.innerText = `Status: Timer stopped at magnitude ${magnitude.toFixed(2)}`;                
+                stopMonitoring()
+                };
                // console.log('Stopped', intervalID, magnitude);
             }
         };
