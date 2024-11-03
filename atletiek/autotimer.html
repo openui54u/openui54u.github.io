@@ -103,6 +103,7 @@
     <p id="status">Status: Not Started</p>
     <p id="timer">Timer: 00:00:00:000</p>
     <p>Magnitude: <span id="magnitude-value">0.00</span></p>
+    <p>Delta Magnitude: <span id="magnitude-delta-value">0.00</span></p>
         <p id="step-frequency">Steps per Minute: <span id="steps-per-minute">0</span></p>
 
     
@@ -164,6 +165,7 @@ const maxRecentValues = 100; // Limit the number of stored values for performanc
 
 
         let previousMagnitude = 0;
+        let deltaMagnitude = 0;
         let isIncreasing = false; // Track whether the magnitude trend is increasing
         let stepCount = 0; // Count steps
         let stepStartTime = Date.now(); // Track start time for frequency calculation
@@ -173,6 +175,7 @@ const maxRecentValues = 100; // Limit the number of stored values for performanc
         const statusText       = document.getElementById('status');
         const timerDisplay     = document.getElementById('timer');
         const magnitudeDisplay = document.getElementById('magnitude-value');
+        const magnitudeDeltaDisplay = document.getElementById('magnitude-delta-value');
         const startStopButton  = document.getElementById('start-stop-btn');
         const tareButton       = document.getElementById('tare-btn');
         const autoTareButton   = document.getElementById('auto-tare-btn'); // Auto Tare
@@ -242,7 +245,7 @@ function updateMagnitudes(magnitude) {
 
             beep(
     // Set the duration to 0.2 second (200 milliseconds)
-    800,
+    100,
     // Set the frequency of the note to A4 (440 Hz)
     1000,
     // Set the volume of the beep to 100%
@@ -273,7 +276,7 @@ function updateMagnitudes(magnitude) {
         
                         beep(
     // Set the duration to 0.2 second (200 milliseconds)
-    800,
+    600,
     // Set the frequency of the note to A4 (440 Hz)
     1200,
     // Set the volume of the beep to 100%
@@ -344,11 +347,12 @@ function updateMagnitudes(magnitude) {
             } else if (magnitude < currentThreshold && isIncreasing && (isTimerRunning && magnitude > threshold)) {
                 isIncreasing = false;
                 stepCount++; // Increment step count at each peak
-                beep(200, 500, 100); // Play beep sound
+                beep(100, 500, 100); // Play beep sound
                 updateStepFrequency(); // Update step frequency display
             }
 
-            //previousMagnitude = magnitude;
+            previousMagnitude = magnitude;
+            deltaMagnitude = Math.abs( previousMagnitude - magnitude );
 
             // Update magnitude display (rest of your code)
             magnitudeDisplay.innerText = magnitude.toFixed(1);
@@ -363,16 +367,16 @@ function updateMagnitudes(magnitude) {
                              
             
             magnitudeDisplay.innerText = magnitude.toFixed(1);
+            magnitudeDeltaDisplay.innerText = deltaMagnitude.toFixed(1);
 
           // Display absolute orientation values
-            absoluteXDisplay.innerText = Math.abs(adjustedAccel.x).toFixed(1); //Gyro.x.toFixed(2);
-            absoluteYDisplay.innerText = Math.abs(adjustedAccel.y).toFixed(1); //Gyro.y.toFixed(2);
-            absoluteZDisplay.innerText = Math.abs(adjustedAccel.z).toFixed(1); //Gyro.z.toFixed(2);
+            absoluteXDisplay.innerText = Math.abs(adjustedAccel.x).toFixed(1); 
+            absoluteYDisplay.innerText = Math.abs(adjustedAccel.y).toFixed(1); 
+            absoluteZDisplay.innerText = Math.abs(adjustedAccel.z).toFixed(1); 
             
             if ( ( magnitude > threshold ) && !intervalID) {
                 startTimer();
                 statusText.innerText = `Status: Timer started at magnitude ${magnitude.toFixed(2)}`;
-               // console.log('Started', intervalID, magnitude);
             } else if ( ( magnitude > thresholdStop ) && intervalID ) {
                 
                 if (!autoThresActive){
@@ -380,41 +384,40 @@ function updateMagnitudes(magnitude) {
                 statusText.innerText = `Status: Timer stopped at magnitude ${magnitude.toFixed(2)}`;                
                 stopMonitoring()
                 };
-               // console.log('Stopped', intervalID, magnitude);
             }
         };
 
         function startMonitoring() {
-          //  threshold = parseFloat(document.getElementById('accel-threshold').value);
-    threshold = parseFloat(accelThreshold.value);
-   // thresholdStop = parseFloat(document.getElementById('accel-threshold-Stop').value);
-    thresholdStop = parseFloat(accelThresholdStop.value);
-            monitoring = true;
-            autoThresButton.disabled  = false;
-            tareButton.disabled = false;
-            autoTareButton.disabled = false;
-           
-             
-            // Reset timer and display
-            timerDisplay.innerText = `Timer: 00:00:00:000`;
+
+            threshold                   = parseFloat(accelThreshold.value);
+            thresholdStop               = parseFloat(accelThresholdStop.value);
+            monitoring                  = true;
+            autoThresButton.disabled    = false;
+            tareButton.disabled         = false;
+            autoTareButton.disabled     = false;
+            timerDisplay.innerText      = `Timer: 00:00:00:000`; // Reset timer and display
+            startStopButton.innerText   = 'Stop Monitoring (Gyro)';
+            statusText.innerText        = 'Status: Monitoring started.';
+            
             window.addEventListener('devicemotion', gyroHandler);
             window.addEventListener('devicemotion', accelerometerHandler);
-            startStopButton.innerText = 'Stop Monitoring (Gyro)';
-            statusText.innerText = 'Status: Monitoring started.';
         }
 
         function stopMonitoring() {
-            monitoring = false;
-            autoThresButton.disabled  = true;
-            tareButton.disable = true;
-            autoTareButton.disabled = true;
+            monitoring                  = false;
+            autoThresButton.disabled    = true;
+            tareButton.disable          = true;
+            autoTareButton.disabled     = true;
+
             stopTimer();
-           
-        window.removeEventListener('devicemotion', gyroHandler);
-        window.removeEventListener('devicemotion', accelerometerHandler);
-        
+
             startStopButton.innerText = 'Start Monitoring (Gyro)';
             statusText.innerText = 'Status: Monitoring stopped.';
+        
+            window.removeEventListener('devicemotion', gyroHandler);
+            window.removeEventListener('devicemotion', accelerometerHandler);
+        
+
         }
 
          const gyroHandler = function(event) {
@@ -482,7 +485,7 @@ myAudioContext = new AudioContext();
 // Simple beep
 beep(
     // Set the duration to 0.2 second (200 milliseconds)
-    200,
+    100,
     // Set the frequency of the note to A4 (440 Hz)
     443,
     // Set the volume of the beep to 100%
@@ -516,7 +519,7 @@ beep(
                              // Simple beep
 beep(
     // Set the duration to 0.2 second (200 milliseconds)
-    200,
+    100,
     // Set the frequency of the note to A4 (440 Hz)
     320,
     // Set the volume of the beep to 100%
@@ -527,7 +530,7 @@ beep(
 
             //Set the values 
        if (Object.values(thresValues).some(value => value !== 0)) {
-            threshold = Math.max( Math.abs(thresValues.x), Math.abs(thresValues.y), Math.abs(thresValues.z) );
+            threshold = Math.round( Math.max( Math.abs(thresValues.x), Math.abs(thresValues.y), Math.abs(thresValues.z) ));
             //document.getElementById('accel-threshold').value = threshold;
            accelThreshold.value = threshold;
             
@@ -538,7 +541,7 @@ beep(
               
    beep(
     // Set the duration to 0.2 second (200 milliseconds)
-    200,
+    100,
     // Set the frequency of the note to A4 (440 Hz)
     640,
     // Set the volume of the beep to 100%
