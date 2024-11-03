@@ -194,9 +194,9 @@
             magnitudeDisplay.innerText = magnitude.toFixed(2);
 
           // Display absolute orientation values
-            absoluteXDisplay.innerText = Gyro.x.toFixed(2);
-            absoluteYDisplay.innerText = Gyro.y.toFixed(2);
-            absoluteZDisplay.innerText = Gyro.z.toFixed(2);
+            absoluteXDisplay.innerText = Math.abs(adjustedAccel.x); //Gyro.x.toFixed(2);
+            absoluteYDisplay.innerText = Math.abs(adjustedAccel.y); //Gyro.y.toFixed(2);
+            absoluteZDisplay.innerText = Math.abs(adjustedAccel.z); //Gyro.z.toFixed(2);
             
             if ( ( magnitude > threshold ) && !intervalID) {
                 startTimer();
