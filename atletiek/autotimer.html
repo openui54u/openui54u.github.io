@@ -166,6 +166,27 @@
             
         }
 
+// Request permission for iOS devices
+        function requestGyroPermission() {
+            if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                return DeviceMotionEvent.requestPermission()
+                    .then(response => {
+                        if (response === 'granted') {
+                            return true;
+                        } else {
+                            alert("Permission not granted for motion sensors.");
+                            return false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error requesting permission:", error);
+                        return false;
+                    });
+            }
+            return Promise.resolve(true); // Non-iOS devices don't need permission
+        }        
+        
+         // Function to adjust acceleration based on gyroscope orientation
         function adjustForOrientation(accel, gyro) {
             return {
                 x: accel.x - gyro.x,
@@ -226,7 +247,8 @@
             stopTimer();
            
         window.removeEventListener('devicemotion', gyroHandler);
-           window.removeEventListener('devicemotion', accelerometerHandler);
+        window.removeEventListener('devicemotion', accelerometerHandler);
+        
             startStopButton.innerText = 'Start Monitoring (Gyro)';
             statusText.innerText = 'Status: Monitoring stopped.';
         }
@@ -236,15 +258,26 @@
             Gyro.y = event.rotationRate.beta || 0;
             Gyro.z = event.rotationRate.gamma || 0;
 
-            gyroXDisplay.innerText = Gyro.x.toFixed(2);
-            gyroYDisplay.innerText = Gyro.y.toFixed(2);
-            gyroZDisplay.innerText = Gyro.z.toFixed(2);
+            gyroXDisplay.innerText = Gyro.x.toFixed(1);
+            gyroYDisplay.innerText = Gyro.y.toFixed(1);
+            gyroZDisplay.innerText = Gyro.z.toFixed(1);
         };
 
        
         
-        startStopButton.addEventListener('click', () => {
-            monitoring ? stopMonitoring() : startMonitoring();
+//        startStopButton.addEventListener('click', () => {
+//            monitoring ? stopMonitoring() : startMonitoring();
+//        });
+         startStopButton.addEventListener('click', async () => {
+            if (!monitoring) {
+                const permissionGranted = await requestGyroPermission();
+                if (permissionGranted) {
+                    startMonitoring();
+//                    startTimer();
+                }
+            } else {
+                stopMonitoring();
+            }
         });
 
         // Manual start and stop button functionality
