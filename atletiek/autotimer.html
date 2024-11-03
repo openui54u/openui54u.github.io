@@ -242,9 +242,9 @@
             
             if (autoThresActive){
             thresValues = { 
-                x: Max.max( Math.abs(adjustedAccel.x), thresValues.x ), 
-                y: Max.max( Math.abs(adjustedAccel.y), thresValues.y ), 
-                z: Max.max( Math.abs(adjustedAccel.z), thresValues.z ) };
+                x: Math.max( Math.abs(adjustedAccel.x), thresValues.x ), 
+                y: Math.max( Math.abs(adjustedAccel.y), thresValues.y ), 
+                z: Math.max( Math.abs(adjustedAccel.z), thresValues.z ) };
             }
                              
             
@@ -337,6 +337,7 @@
             statusText.innerText = "Status: Tare values set.";
             // Reset timer and display
             timerDisplay.innerText = `Timer: 00:00:00:000`;
+            thresValues = { x: 0, y: 0, z: 0 };
         });
 
         // Auto-tare functionality
@@ -351,23 +352,21 @@
         });
 
         // Auto-threshold functionality
-        autoThresButton.addEventListener('click', () => {
+         autoThresButton.addEventListener('click', () => {
             autoThresActive = true;
             statusText.innerText = "Status: Auto-threshold in progress...";
            
             setTimeout(() => {
-//              thresValues = { ...Accel };
-                autoThresActive = false;
-                statusText.innerText = "Status: Auto-threshold completed.";
-            
+
             //Set the values 
             threshold = Math.max( Math.abs(thresValues.x), Math.abs(thresValues.y), Math.abs(thresValues.z) );
             document.getElementById('accel-threshold').value = threshold;
             
             thresholdStop = threshold * 2;
             document.getElementById('accel-threshold-Stop').value = thresholdStop; 
-                
-                
+              
+                autoThresActive = false;
+                statusText.innerText = "Status: Auto-threshold completed."              
             }, autoThresDuration);
         });
         
