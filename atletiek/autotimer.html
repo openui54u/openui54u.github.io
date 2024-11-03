@@ -198,10 +198,10 @@
             absoluteYDisplay.innerText = Gyro.y.toFixed(2);
             absoluteZDisplay.innerText = Gyro.z.toFixed(2);
             
-            if (magnitude > threshold && !intervalID) {
+            if ( ( magnitude > threshold ) && !intervalID) {
                 startTimer();
                 statusText.innerText = `Status: Timer started at magnitude ${magnitude.toFixed(2)}`;
-            } else if ( magnitude > thresholdStop && intervalID) {
+            } else if ( ( magnitude > thresholdStop ) && intervalID) {
                 stopTimer();
                 statusText.innerText = `Status: Timer stopped at magnitude ${magnitude.toFixed(2)}`;
             }
