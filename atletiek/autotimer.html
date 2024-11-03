@@ -103,6 +103,8 @@
     <p id="status">Status: Not Started</p>
     <p id="timer">Timer: 00:00:00:000</p>
     <p>Magnitude: <span id="magnitude-value">0.00</span></p>
+        <p id="step-frequency">Steps per Minute: <span id="steps-per-minute">0</span></p>
+
     
     <div class="bar-container">
         <div id="bar-x" class="bar" style="width: 0;"></div>
@@ -158,6 +160,13 @@
         let isTimerRunning = false;  // New flag to indicate if the timer is active
 
 
+        let previousMagnitude = 0;
+        let isIncreasing = false; // Track whether the magnitude trend is increasing
+        let stepCount = 0; // Count steps
+        let stepStartTime = Date.now(); // Track start time for frequency calculation
+
+        
+        
         const statusText       = document.getElementById('status');
         const timerDisplay     = document.getElementById('timer');
         const magnitudeDisplay = document.getElementById('magnitude-value');
@@ -187,6 +196,13 @@
         const absoluteYDisplay = document.getElementById('absolute-y-value');
         const absoluteZDisplay = document.getElementById('absolute-z-value');
         
+        
+         function updateStepFrequency() {
+            const elapsedTime = (Date.now() - stepStartTime) / 60000; // Convert to minutes
+            const stepsPerMinute = stepCount / elapsedTime;
+            document.getElementById('steps-per-minute').innerText = Math.round(stepsPerMinute);
+        }
+
         
         
         function startTimer() {
@@ -288,6 +304,23 @@
 
             const magnitude = Math.max(Math.abs(adjustedAccel.x), Math.abs(adjustedAccel.y), Math.abs(adjustedAccel.z));
             
+            
+             // Detect peaks and play beep
+            if (magnitude > previousMagnitude && !isIncreasing) {
+                isIncreasing = true;
+            } else if (magnitude < previousMagnitude && isIncreasing) {
+                isIncreasing = false;
+                stepCount++; // Increment step count at each peak
+                beep(200, 1000, 100); // Play beep sound
+                updateStepFrequency(); // Update step frequency display
+            }
+
+            previousMagnitude = magnitude;
+
+            // Update magnitude display (rest of your code)
+            magnitudeDisplay.innerText = magnitude.toFixed(1);
+            
+            
             if (autoThresActive){
             thresValues = { 
                 x: Math.max( Math.abs(adjustedAccel.x), thresValues.x ), 
@@ -373,6 +406,8 @@ myAudioContext = new AudioContext();
                 const permissionGranted = await requestGyroPermission();
                 if (permissionGranted) {
                     startMonitoring();
+                    stepStartTime = Date.now(); // Reset start time for frequency tracking
+                stepCount = 0; // Reset step count
                 }
             } else {
                 stopMonitoring();
