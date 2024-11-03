@@ -159,6 +159,9 @@
         
         let isTimerRunning = false;  // New flag to indicate if the timer is active
 
+        let magnitudes = []; // To store recent magnitude values
+const maxRecentValues = 100; // Limit the number of stored values for performance
+
 
         let previousMagnitude = 0;
         let isIncreasing = false; // Track whether the magnitude trend is increasing
@@ -196,6 +199,34 @@
         const absoluteYDisplay = document.getElementById('absolute-y-value');
         const absoluteZDisplay = document.getElementById('absolute-z-value');
         
+        
+        
+        // This function should be called every time you calculate a new magnitude
+function updateMagnitudes(magnitude) {
+    // Add the new magnitude to the array
+    magnitudes.push(magnitude);
+    
+    // Limit the array size
+    if (magnitudes.length > maxRecentValues) {
+        magnitudes.shift(); // Remove the oldest value
+    }
+
+    // Calculate the average
+    const sum = magnitudes.reduce((acc, val) => acc + val, 0);
+    const average = sum / magnitudes.length;
+
+    // Calculate the baseline (half the average)
+    const baseline = average / 2;
+
+    // Count how many values are above the baseline
+    const countAboveBaseline = magnitudes.filter(val => val > baseline).length;
+
+    // Calculate threshold based on percentage of values above baseline
+    const percentage = 0.8; // For 80%
+    const threshold = (countAboveBaseline / magnitudes.length) > percentage ? average : baseline;
+
+    return threshold;
+}
         
          function updateStepFrequency() {
             const elapsedTime = (Date.now() - stepStartTime) / 60000; // Convert to minutes
@@ -304,11 +335,13 @@
 
             const magnitude = Math.max(Math.abs(adjustedAccel.x), Math.abs(adjustedAccel.y), Math.abs(adjustedAccel.z));
             
+            const currentThreshold = updateMagnitudes(magnitude); // Get the dynamic threshold
+
             
              // Detect peaks and play beep
-            if (magnitude > previousMagnitude && !isIncreasing && (isTimerRunning && magnitude > threshold)) {
+            if (magnitude > currentThreshold && !isIncreasing && (isTimerRunning && magnitude > threshold)) {
                 isIncreasing = true;
-            } else if (magnitude < previousMagnitude && isIncreasing && (isTimerRunning && magnitude > threshold)) {
+            } else if (magnitude < currentThreshold && isIncreasing && (isTimerRunning && magnitude > threshold)) {
                 isIncreasing = false;
                 stepCount++; // Increment step count at each peak
                 beep(200, 1000, 100); // Play beep sound
