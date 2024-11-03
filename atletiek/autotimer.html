@@ -354,13 +354,16 @@
         autoThresButton.addEventListener('click', () => {
             autoThresActive = true;
             statusText.innerText = "Status: Auto-threshold in progress...";
+           
             setTimeout(() => {
 //              thresValues = { ...Accel };
                 autoThresActive = false;
                 statusText.innerText = "Status: Auto-threshold completed.";
-                //Set the values 
-            threshold = Math.max( thresValues.x, thresValues.y, thresValues.z );
+            
+            //Set the values 
+            threshold = Math.max( Math.abs(thresValues.x), Math.abs(thresValues.y), Math.abs(thresValues.z) );
             document.getElementById('accel-threshold').value = threshold;
+            
             thresholdStop = threshold * 2;
             document.getElementById('accel-threshold-Stop').value = thresholdStop; 
                 
