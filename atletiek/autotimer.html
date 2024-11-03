@@ -356,8 +356,10 @@
                 autoThresActive = false;
                 statusText.innerText = "Status: Auto-threshold completed.";
                 //Set the values 
-            threshold = parseFloat(document.getElementById('accel-threshold').value) = Math.max( thresValues.x, thresValues.y, thresValues.z );
-            thresholdStop = parseFloat(document.getElementById('accel-threshold-Stop').value) =threshold * 2;
+            threshold = Math.max( thresValues.x, thresValues.y, thresValues.z );
+            document.getElementById('accel-threshold').value) = threshold;
+            thresholdStop = threshold * 2;
+            document.getElementById('accel-threshold-Stop').value = thresholdStop; 
                 
                 
             }, autoThresDuration);
