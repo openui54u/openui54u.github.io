@@ -69,6 +69,22 @@
         #bar-z {
             background-color: blue;
         }
+        
+.values-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px; /* Adjust space between each element */
+    font-size: 18px;
+    margin-top: 20px;
+}
+
+.value-group {
+    display: flex;
+    gap: 10px; /* Space between each value in the group */
+    align-items: center;
+}
+        
     </style>
 </head>
 <body>
@@ -94,21 +110,31 @@
         <div id="bar-z" class="bar" style="width: 0;"></div>
     </div>
     
-    <p>
-    X: <span id="x-value">0.00</span> m/s²,
-    Y: <span id="y-value">0.00</span> m/s²,
-    Z: <span id="z-value">0.00</span> m/s²</p>
+    <div class="values-container">
+    <p>XYZ</p>
+    <div class="value-group">
+    X: <span id="x-value">0.00</span>,
+    Y: <span id="y-value">0.00</span>,
+    Z: <span id="z-value">0.00</span> m/s²
+    </div>
+    </div>
     
-    <p>Gyro: 
-    X: <span id="gyro-x-value">0.00</span> °/s,
-    Y: <span id="gyro-y-value">0.00</span> °/s,
-    Z: <span id="gyro-z-value">0.00</span> °/s</p>
+    <div class="values-container">
+        <p>Gyro: </p>
+        <div class="value-group">
+    X: <span id="gyro-x-value">0.00</span>,
+    Y: <span id="gyro-y-value">0.00</span>,
+    Z: <span id="gyro-z-value">0.00</span> °/s
+        </div>
+    </div>
     
-    <p>Absolute: 
+    <div class="values-container">
+        <p>Absolute: </p>
+         <div class="value-group">
         X: <span id="absolute-x-value">0.00</span>, 
         Y: <span id="absolute-y-value">0.00</span>, 
         Z: <span id="absolute-z-value">0.00</span>
-    </p>
+    </div></div>
 
     <script>
         let monitoring       = false;
@@ -123,6 +149,7 @@
         let Accel       = { x: 0, y: 0, z: 0 };
         let Gyro        = { x: 0, y: 0, z: 0 };
         
+        let myAudioContext = null;
         let autoThresActive = false;
         let autoThresDuration = 5000;
         let thresStartTime    = null;
@@ -140,6 +167,9 @@
         const autoThresButton   = document.getElementById('auto-thres-btn'); // Auto Threshold
         const manualStartButton = document.getElementById('manual-start-btn');
         const manualStopButton  = document.getElementById('manual-stop-btn');
+        
+        const accelThreshold  = document.getElementById('accel-threshold');
+        const accelThresholdStop  = document.getElementById('accel-threshold-Stop');
    
         const barX = document.getElementById('bar-x');
         const barY = document.getElementById('bar-y');
@@ -271,8 +301,10 @@
         };
 
         function startMonitoring() {
-            threshold = parseFloat(document.getElementById('accel-threshold').value);
-            thresholdStop = parseFloat(document.getElementById('accel-threshold-Stop').value);
+          //  threshold = parseFloat(document.getElementById('accel-threshold').value);
+    threshold = parseFloat(accelThreshold.value);
+   // thresholdStop = parseFloat(document.getElementById('accel-threshold-Stop').value);
+    thresholdStop = parseFloat(accelThresholdStop.value);
             monitoring = true;
             autoThresButton.disabled  = false;
             tareButton.disabled = false;
@@ -313,6 +345,12 @@
 
        
          startStopButton.addEventListener('click', async () => {
+             
+// The browser will limit the number of concurrent audio contexts
+// So be sure to re-use them whenever you can
+myAudioContext = new AudioContext();
+
+             
             if (!monitoring) {
                 const permissionGranted = await requestGyroPermission();
                 if (permissionGranted) {
@@ -349,11 +387,34 @@
         // Auto-tare functionality
         autoTareButton.addEventListener('click', () => {
             autoTareActive = true;
-            statusText.innerText = "Status: Auto-tare in progress...";
+            statusText.innerText = "Status: Auto-tare in progress...";           
+           
+// Simple beep
+beep(
+    // Set the duration to 0.2 second (200 milliseconds)
+    200,
+    // Set the frequency of the note to A4 (440 Hz)
+    443,
+    // Set the volume of the beep to 100%
+    100
+);
+
+            
             setTimeout(() => {
                 tareValues = { ...Accel };
                 autoTareActive = false;
                 statusText.innerText = "Status: Auto-tare completed.";
+    
+                // Simple beep
+beep(
+    // Set the duration to 0.2 second (200 milliseconds)
+    200,
+    // Set the frequency of the note to A4 (440 Hz)
+    886,
+    // Set the volume of the beep to 100%
+    100
+);
+                
             }, autoTareDuration);
         });
 
@@ -361,20 +422,91 @@
          autoThresButton.addEventListener('click', () => {
             autoThresActive = true;
             statusText.innerText = "Status: Auto-threshold in progress...";
-           
+  
+                             // Simple beep
+beep(
+    // Set the duration to 0.2 second (200 milliseconds)
+    200,
+    // Set the frequency of the note to A4 (440 Hz)
+    320,
+    // Set the volume of the beep to 100%
+    100
+);
+             
             setTimeout(() => {
 
             //Set the values 
+       if (Object.values(thresValues).some(value => value !== 0)) {
             threshold = Math.max( Math.abs(thresValues.x), Math.abs(thresValues.y), Math.abs(thresValues.z) );
-            document.getElementById('accel-threshold').value = threshold;
+            //document.getElementById('accel-threshold').value = threshold;
+           accelThreshold.value = threshold;
             
             thresholdStop = threshold * 2;
-            document.getElementById('accel-threshold-Stop').value = thresholdStop; 
+            //document.getElementById('accel-threshold-Stop').value = thresholdStop; 
+           accelThresholdStop.value = thresholdStop;
+        };
               
+   beep(
+    // Set the duration to 0.2 second (200 milliseconds)
+    200,
+    // Set the frequency of the note to A4 (440 Hz)
+    640,
+    // Set the volume of the beep to 100%
+    100
+);
                 autoThresActive = false;
                 statusText.innerText = "Status: Auto-threshold completed."              
             }, autoThresDuration);
         });
+        
+        
+/**
+ * Helper function to emit a beep sound in the browser using the Web Audio API.
+ * 
+ * @param {number} duration - The duration of the beep sound in milliseconds.
+ * @param {number} frequency - The frequency of the beep sound.
+ * @param {number} volume - The volume of the beep sound.
+ * 
+ * @returns {Promise} - A promise that resolves when the beep sound is finished.
+ */
+function beep(duration, frequency, volume){
+    return new Promise((resolve, reject) => {
+        // Set default duration if not provided
+        duration = duration || 200;
+        frequency = frequency || 440;
+        volume = volume || 100;
+
+        try{
+            let oscillatorNode = myAudioContext.createOscillator();
+            let gainNode = myAudioContext.createGain();
+            oscillatorNode.connect(gainNode);
+
+            // Set the oscillator frequency in hertz
+            oscillatorNode.frequency.value = frequency;
+
+            // Set the type of oscillator
+            oscillatorNode.type= "square";
+            gainNode.connect(myAudioContext.destination);
+
+            // Set the gain to the volume
+            gainNode.gain.value = volume * 0.01;
+
+            // Start audio with the desired duration
+            oscillatorNode.start(myAudioContext.currentTime);
+            oscillatorNode.stop(myAudioContext.currentTime + duration * 0.001);
+
+            // Resolve the promise when the sound is finished
+            oscillatorNode.onended = () => {
+                resolve();
+            };
+        }catch(error){
+            reject(error);
+        }
+    });
+}
+
+
+
         
         
         // Disable buttons initially
@@ -385,6 +517,11 @@
 
         // Ensure monitoring state reflects whether intervalID is active
         window.addEventListener('beforeunload', stopMonitoring);
+        
+        
+        
+        
+        
     </script>
 </body>
 </html>
