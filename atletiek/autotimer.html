@@ -351,9 +351,9 @@ function updateMagnitudes(magnitude) {
                 updateStepFrequency(); // Update step frequency display
             }
 
-            previousMagnitude   = magnitude;
-            deltaMagnitude      = Math.abs( previousMagnitude - magnitude );
             
+            deltaMagnitude      = Math.abs( previousMagnitude - magnitude );
+            previousMagnitude   = magnitude;
             
             if (autoThresActive){
             thresValues = { 
