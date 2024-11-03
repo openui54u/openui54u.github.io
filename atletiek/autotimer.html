@@ -237,6 +237,7 @@
             } else if ( ( magnitude > thresholdStop ) && intervalID) {
                 stopTimer();
                 statusText.innerText = `Status: Timer stopped at magnitude ${magnitude.toFixed(2)}`;
+                stopMonitoring();
                // console.log('Stopped', intervalID, magnitude);
             }
         };
