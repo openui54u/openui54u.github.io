@@ -371,14 +371,14 @@ function updateMagnitudes(magnitude) {
             absoluteYDisplay.innerText = Math.abs(adjustedAccel.y).toFixed(1); 
             absoluteZDisplay.innerText = Math.abs(adjustedAccel.z).toFixed(1); 
             
-            if ( ( magnitude > threshold ) && !intervalID) {
+            if ( ( deltaMagnitude > threshold ) && !intervalID) {
                 startTimer();
-                statusText.innerText = `Status: Timer started at magnitude ${magnitude.toFixed(2)}`;
-            } else if ( ( magnitude > thresholdStop ) && intervalID ) {
+                statusText.innerText = `Status: Timer started at Delta magnitude ${deltaMagnitude.toFixed(2)}`;
+            } else if ( ( deltaMagnitude > thresholdStop ) && intervalID ) {
                 
                 if (!autoThresActive){
                 stopTimer();
-                statusText.innerText = `Status: Timer stopped at magnitude ${magnitude.toFixed(2)}`;                
+                statusText.innerText = `Status: Timer stopped at Delta magnitude ${deltaMagnitude.toFixed(2)}`;                
                 stopMonitoring()
                 };
             }
