@@ -140,6 +140,11 @@
         
         
         function startTimer() {
+            
+            statusText.innerText = "Status: Manual timer start.";
+                manualStartButton.disabled = true;
+                manualStopButton.disabled = false;
+            
             startTime = Date.now();
             intervalID = setInterval(() => {
                 const elapsedTime = Date.now() - startTime;
@@ -155,6 +160,10 @@
             clearInterval(intervalID);
             intervalID = null;
             //timerDisplay.innerText = `Timer: 00:00:00:000`;
+                            statusText.innerText = "Status: Manual timer stop.";
+                manualStartButton.disabled = false;
+                manualStopButton.disabled = true;
+            
         }
 
         function adjustForOrientation(accel, gyro) {
@@ -242,18 +251,13 @@
         manualStartButton.addEventListener('click', () => {
             if (!intervalID) {
                 startTimer();
-                statusText.innerText = "Status: Manual timer start.";
-                manualStartButton.disabled = true;
-                manualStopButton.disabled = false;
+                
             }
         });
 
               manualStopButton.addEventListener('click', () => {
             if (intervalID) {
                 stopTimer();
-                statusText.innerText = "Status: Manual timer stop.";
-                manualStartButton.disabled = false;
-                manualStopButton.disabled = true;
             }
         });
 
