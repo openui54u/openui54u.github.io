@@ -274,6 +274,9 @@
             threshold = parseFloat(document.getElementById('accel-threshold').value);
             thresholdStop = parseFloat(document.getElementById('accel-threshold-Stop').value);
             monitoring = true;
+            autoThresButton.disabled  = false;
+            tareButton.disable = false;
+            autoTareButton.disabled = false;
            
              
             // Reset timer and display
@@ -286,6 +289,9 @@
 
         function stopMonitoring() {
             monitoring = false;
+            autoThresButton.disabled  = true;
+            tareButton.disable = true;
+            autoTareButton.disabled = true;
             stopTimer();
            
         window.removeEventListener('devicemotion', gyroHandler);
@@ -373,6 +379,9 @@
         
         // Disable buttons initially
         manualStopButton.disabled = true;
+        autoThresButton.disabled  = true;
+        tareButton.disabled       = true;
+        autoTareButton.disabled   = true;
 
         // Ensure monitoring state reflects whether intervalID is active
         window.addEventListener('beforeunload', stopMonitoring);
