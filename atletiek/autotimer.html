@@ -193,6 +193,15 @@
             
             if (isTimerRunning) return;  // Prevent starting if already running
 
+            beep(
+    // Set the duration to 0.2 second (200 milliseconds)
+    800,
+    // Set the frequency of the note to A4 (440 Hz)
+    1000,
+    // Set the volume of the beep to 100%
+    100
+);
+            
             isTimerRunning = true;
             
             statusText.innerText = "Status: Manual timer start.";
@@ -214,6 +223,15 @@
 
             if (!isTimerRunning) return;  // Prevent stopping if timer is not running
             isTimerRunning = false;
+        
+                        beep(
+    // Set the duration to 0.2 second (200 milliseconds)
+    800,
+    // Set the frequency of the note to A4 (440 Hz)
+    1200,
+    // Set the volume of the beep to 100%
+    100
+);
             
             clearInterval(intervalID);
             intervalID = null;
