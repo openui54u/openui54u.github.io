@@ -76,6 +76,7 @@
     <p>Set acceleration threshold (XYZ-axis):</p>
     <input type="number" id="accel-threshold" value="20" step="1">-
     <input type="number" id="accel-threshold-Stop" value="50" step="1">
+    <button id="auto-thres-btn">Auto Threshold</button>
     <button id="start-stop-btn">Start Monitoring (Gyro)</button>
     <button id="tare-btn">Tare (Gyro)</button>
     <button id="auto-tare-btn">Auto Tare</button>
@@ -93,15 +94,17 @@
         <div id="bar-z" class="bar" style="width: 0;"></div>
     </div>
     
-    <p>X: <span id="x-value">0.00</span> m/s²,
+    <p>
+    X: <span id="x-value">0.00</span> m/s²,
     Y: <span id="y-value">0.00</span> m/s²,
     Z: <span id="z-value">0.00</span> m/s²</p>
     
-    <p>Gyroscope X: <span id="gyro-x-value">0.00</span> °/s,
+    <p>Gyro: 
+    X: <span id="gyro-x-value">0.00</span> °/s,
     Y: <span id="gyro-y-value">0.00</span> °/s,
     Z: <span id="gyro-z-value">0.00</span> °/s</p>
     
-    <p>Absolute Orientation: 
+    <p>Absolute: 
         X: <span id="absolute-x-value">0.00</span>, 
         Y: <span id="absolute-y-value">0.00</span>, 
         Z: <span id="absolute-z-value">0.00</span>
@@ -116,9 +119,14 @@
         let autoTareActive   = false;
         let autoTareDuration = 5000;
         let tareStartTime    = null;
-        let tareValues = { x: 0, y: 0, z: 0 };
-        let Accel      = { x: 0, y: 0, z: 0 };
-        let Gyro       = { x: 0, y: 0, z: 0 };
+        let tareValues  = { x: 0, y: 0, z: 0 };
+        let Accel       = { x: 0, y: 0, z: 0 };
+        let Gyro        = { x: 0, y: 0, z: 0 };
+        
+        let autoThresActive = false;
+        let autoThresDuration = 5000;
+        let thresStartTime    = null;
+        let thresValues = { x: 0, y: 0, z: 0 };
         
         let isTimerRunning = false;  // New flag to indicate if the timer is active
 
@@ -128,7 +136,8 @@
         const magnitudeDisplay = document.getElementById('magnitude-value');
         const startStopButton  = document.getElementById('start-stop-btn');
         const tareButton       = document.getElementById('tare-btn');
-        const autoTareButton   = document.getElementById('auto-tare-btn');
+        const autoTareButton   = document.getElementById('auto-tare-btn'); // Auto Tare
+        const autoThresButton   = document.getElementById('auto-thres-btn'); // Auto Threshold
         const manualStartButton = document.getElementById('manual-start-btn');
         const manualStopButton  = document.getElementById('manual-stop-btn');
    
@@ -231,6 +240,14 @@
 
             const magnitude = Math.max(Math.abs(adjustedAccel.x), Math.abs(adjustedAccel.y), Math.abs(adjustedAccel.z));
             
+            if (autoThresActive){
+            thresValues = { 
+                x: Max.max( Math.abs(adjustedAccel.x), thresValues.x ), 
+                y: Max.max( Math.abs(adjustedAccel.y), thresValues.y ), 
+                z: Max.max( Math.abs(adjustedAccel.z), thresValues.z ) };
+            }
+                             
+            
             magnitudeDisplay.innerText = magnitude.toFixed(1);
 
           // Display absolute orientation values
@@ -330,6 +347,23 @@
             }, autoTareDuration);
         });
 
+        // Auto-threshold functionality
+        autoThresButton.addEventListener('click', () => {
+            autoThresActive = true;
+            statusText.innerText = "Status: Auto-threshold in progress...";
+            setTimeout(() => {
+//              thresValues = { ...Accel };
+                autoThresActive = false;
+                statusText.innerText = "Status: Auto-threshold completed.";
+                //Set the values 
+            threshold = parseFloat(document.getElementById('accel-threshold').value) = Math.max( thresValues.x, thresValues.y, thresValues.z );
+            thresholdStop = parseFloat(document.getElementById('accel-threshold-Stop').value) =threshold * 2;
+                
+                
+            }, autoThresDuration);
+        });
+        
+        
         // Disable buttons initially
         manualStopButton.disabled = true;
 
