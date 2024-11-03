@@ -344,11 +344,11 @@ function updateMagnitudes(magnitude) {
             } else if (magnitude < currentThreshold && isIncreasing && (isTimerRunning && magnitude > threshold)) {
                 isIncreasing = false;
                 stepCount++; // Increment step count at each peak
-                beep(200, 1000, 100); // Play beep sound
+                beep(200, 500, 100); // Play beep sound
                 updateStepFrequency(); // Update step frequency display
             }
 
-            previousMagnitude = magnitude;
+            //previousMagnitude = magnitude;
 
             // Update magnitude display (rest of your code)
             magnitudeDisplay.innerText = magnitude.toFixed(1);
@@ -531,7 +531,7 @@ beep(
             //document.getElementById('accel-threshold').value = threshold;
            accelThreshold.value = threshold;
             
-            thresholdStop = threshold * 2;
+            thresholdStop = threshold * 3;
             //document.getElementById('accel-threshold-Stop').value = thresholdStop; 
            accelThresholdStop.value = thresholdStop;
         };
