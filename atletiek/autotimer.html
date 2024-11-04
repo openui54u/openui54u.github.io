@@ -367,7 +367,7 @@ beep(
 
             
             deltaMagnitude      = Math.abs( previousMagnitude - magnitude );
-            previousMagnitude   = magnitude;
+            
             
             if (autoThresActive){
             thresValues = { 
@@ -397,6 +397,7 @@ beep(
                 };
             }
             
+            previousMagnitude   = magnitude;
             previousAccel.x = Accel.x;
             previousAccel.x = Accel.y;
             previousAccel.x = Accel.z;
