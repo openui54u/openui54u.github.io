@@ -91,11 +91,20 @@
     <h1>Gyroscopic Timer</h1>
        <div class="values-container">
     <p>Set threshold:</p>
+           
     <div class="value-group">
-    <input type="number" id="accel-threshold" value="1" step="1">-
+    <input type="number" id="accel-threshold" value="20" step="100">-
     <input type="number" id="accel-threshold-Stop" value="15" step="1">
-    <button id="auto-thres-btn">Auto</button>
-    </div></div>
+    </div>
+        
+     <button id="auto-thres-btn">Auto</button>
+    </div>
+     <div class="values-container">
+    <div class="value-group">
+    <input type="number" id="acceldelta-threshold" value="1" step="1">-
+    <input type="number" id="acceldelta-threshold-Stop" value="15" step="1">
+         </div></div>       
+   
     
     <button id="start-stop-btn">Start Monitoring</button>
 <!--
@@ -155,6 +164,9 @@
         let monitoring       = false;
         let threshold        = 20;
         let thresholdStop    = 50;
+        let thresholdDelta        = 2;
+        let thresholdDeltaStop    = 10;
+        
         let startTime        = null;
         let intervalID       = null;
 //        let autoTareActive   = false;
@@ -197,8 +209,10 @@ const maxRecentValues = 100; // Limit the number of stored values for performanc
         const manualStartButton = document.getElementById('manual-start-btn');
         const manualStopButton  = document.getElementById('manual-stop-btn');
         
-        const accelThreshold  = document.getElementById('accel-threshold');
-        const accelThresholdStop  = document.getElementById('accel-threshold-Stop');
+        const accelThreshold           = document.getElementById('accel-threshold');
+        const accelThresholdStop       = document.getElementById('accel-threshold-Stop');
+        const accelDeltaThreshold      = document.getElementById('accel-delta-threshold');
+        const accelDeltaThresholdStop  = document.getElementById('accel-delta-threshold-Stop');
    
         const barX = document.getElementById('bar-x');
         const barY = document.getElementById('bar-y');
@@ -393,10 +407,10 @@ beep(
 //            absoluteYDisplay.innerText = Math.abs(deltaAccel.y).toFixed(1); 
 //            absoluteZDisplay.innerText = Math.abs(deltaAccel.z).toFixed(1); 
             
-            if ( ( deltaMagnitude > threshold ) && !intervalID) {
+            if ( ( deltaMagnitude > thresholdDelta ) && !intervalID) {
                 startTimer();
                 statusText.innerText = `Status: Timer started at Delta magnitude ${deltaMagnitude.toFixed(2)}`;
-            } else if ( ( deltaMagnitude > thresholdStop ) && intervalID ) {
+            } else if ( ( deltaMagnitude > thresholdDeltaStop ) && intervalID ) {
                 
                 if (!autoThresActive){
                 stopTimer();
@@ -414,6 +428,10 @@ beep(
 
             threshold                   = parseFloat(accelThreshold.value);
             thresholdStop               = parseFloat(accelThresholdStop.value);
+            
+            thresholdDelta              = parseFloat(accelDeltaThreshold.value);
+            thresholdDeltaStop          = parseFloat(accelDeltaThresholdStop.value);
+            
             monitoring                  = true;
             autoThresButton.disabled    = false;
 //            tareButton.disabled         = false;
