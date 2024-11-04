@@ -135,6 +135,7 @@
     </div>
 -->
     
+<!--
     <div class="values-container">
         <p>Absolute: </p>
          <div class="value-group">
@@ -142,6 +143,7 @@
         Y: <span id="absolute-y-value">0.00</span>, 
         Z: <span id="absolute-z-value">0.00</span>
     </div></div>
+-->
 
     <script>
         let monitoring       = false;
@@ -204,10 +206,10 @@ const maxRecentValues = 100; // Limit the number of stored values for performanc
 //        const gyroYDisplay = document.getElementById('gyro-y-value');
 //        const gyroZDisplay = document.getElementById('gyro-z-value');
 
-        const absoluteXDisplay = document.getElementById('absolute-x-value');
-        const absoluteYDisplay = document.getElementById('absolute-y-value');
-        const absoluteZDisplay = document.getElementById('absolute-z-value');
-        
+//        const absoluteXDisplay = document.getElementById('absolute-x-value');
+//        const absoluteYDisplay = document.getElementById('absolute-y-value');
+//        const  = document.getElementById('absolute-z-value');
+//        
         
         
         // This function should be called every time you calculate a new magnitude
@@ -381,9 +383,9 @@ beep(
             magnitudeDeltaDisplay.innerText = deltaMagnitude.toFixed(1);
 
           // Display absolute orientation values
-            absoluteXDisplay.innerText = Math.abs(deltaAccel.x).toFixed(1); 
-            absoluteYDisplay.innerText = Math.abs(deltaAccel.y).toFixed(1); 
-            absoluteZDisplay.innerText = Math.abs(deltaAccel.z).toFixed(1); 
+//            absoluteXDisplay.innerText = Math.abs(deltaAccel.x).toFixed(1); 
+//            absoluteYDisplay.innerText = Math.abs(deltaAccel.y).toFixed(1); 
+//            absoluteZDisplay.innerText = Math.abs(deltaAccel.z).toFixed(1); 
             
             if ( ( deltaMagnitude > threshold ) && !intervalID) {
                 startTimer();
