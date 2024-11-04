@@ -132,13 +132,13 @@
     <div class="values-container">
     <p>XYZ</p>
         <div class="value-group">
-            X: <span id="x-value">0.00</span>,
-            Y: <span id="y-value">0.00</span>,
-            Z: <span id="z-value">0.00</span> m/s²
+            X: <span id="x-value">0.0</span>,
+            Y: <span id="y-value">0.0</span>,
+            Z: <span id="z-value">0.0</span> m/s²
         </div>
     </div>
     <div class="values-container">
-    <p>XYZ</p>
+    <p>Delta XYZ</p>
         <div class="value-group">
             X: <span id="x-d-value">0.00</span>,
             Y: <span id="y-d-value">0.00</span>,
@@ -183,13 +183,14 @@
         let Accel           = { x: 0, y: 0, z: 0 };
         let previousAccel   = { x: 0, y: 0, z: 0 };
         let deltaAccel      = { x: 0, y: 0, z: 0 };
-//        let Gyro        = { x: 0, y: 0, z: 0 };
+//      let Gyro        = { x: 0, y: 0, z: 0 };
         
         let myAudioContext = null;
         let autoThresActive = false;
         let autoThresDuration = 5000;
         let thresStartTime    = null;
-        let thresValues = { x: 0, y: 0, z: 0 };
+        let thresValues      = { x: 0, y: 0, z: 0 };
+        let thresDeltaValues = { x: 0, y: 0, z: 0 };
         
         let isTimerRunning = false;  // New flag to indicate if the timer is active
 
@@ -370,9 +371,11 @@ beep(
 //            xValueDisplay.innerText = adjustedAccel.x.toFixed(1);
 //            yValueDisplay.innerText = adjustedAccel.y.toFixed(1);
 //            zValueDisplay.innerText = adjustedAccel.z.toFixed(1);
+                
              xValueDisplay.innerText            = Accel.x.toFixed(1) ;
              yValueDisplay.innerText            = Accel.y.toFixed(1) ;
              zValueDisplay.innerText            = Accel.z.toFixed(1) ;
+                
              xDeltaValueValueDisplay.innerText  = deltaAccel.x.toFixed(1);
              yDeltaValueDisplay.innerText       = deltaAccel.y.toFixed(1);
              zDeltaValueDisplay.innerText       = deltaAccel.z.toFixed(1);
@@ -446,8 +449,8 @@ beep(
 //            tareButton.disabled         = false;
 //            autoTareButton.disabled     = false;
             timerDisplay.innerText      = `Timer: 00:00:00:000`; // Reset timer and display
-            startStopButton.innerText   = 'Stop Monitoring (Gyro)';
-            statusText.innerText        = 'Status: Monitoring started.';
+        // startStopButton.innerText   = 'Stop Monitoring (Gyro)';
+        //  statusText.innerText        = 'Status: Monitoring started.';
             
 //            window.addEventListener('devicemotion', gyroHandler);
             window.addEventListener('devicemotion', accelerometerHandler);
@@ -461,8 +464,8 @@ beep(
 
             stopTimer();
 
-            startStopButton.innerText = 'Start Monitoring (Gyro)';
-            statusText.innerText = 'Status: Monitoring stopped.';
+           // startStopButton.innerText = 'Start Monitoring (Gyro)';
+        //    statusText.innerText = 'Status: Monitoring stopped.';
         
 //            window.removeEventListener('devicemotion', gyroHandler);
             window.removeEventListener('devicemotion', accelerometerHandler);
@@ -564,6 +567,7 @@ myAudioContext = new AudioContext();
         // Auto-threshold functionality
          autoThresButton.addEventListener('click', () => {
             thresValues = { x: 0, y: 0, z: 0 };
+            thresDeltaValues = { x: 0, y: 0, z: 0 };
             autoThresActive = true;
             statusText.innerText = "Status: Auto-threshold in progress...";
   
@@ -583,6 +587,16 @@ myAudioContext = new AudioContext();
             //document.getElementById('accel-threshold-Stop').value = thresholdStop; 
            accelThresholdStop.value = thresholdStop;
         };
+          if (Object.values(thresDeltaValues).some(value => value !== 0)) {
+            thresholdDelta = Math.round( Math.max( Math.abs(thresDeltaValues.x), Math.abs(thresDeltaValues.y), Math.abs(thresDeltaValues.z) ));
+            //document.getElementById('accel-threshold').value = threshold;
+           accelDeltaThreshold.value = thresholdDelta;
+            
+            thresholdDeltaStopStop = thresholdDelta * 3;
+            //document.getElementById('accel-threshold-Stop').value = thresholdStop; 
+           accelDeltaThresholdStop.value = thresholdDeltaStop;
+        };
+                
               
                 // Simple beep
                 //    duration, frequency, volume             
