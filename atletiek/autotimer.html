@@ -368,9 +368,9 @@ beep(
 //            xValueDisplay.innerText = adjustedAccel.x.toFixed(1);
 //            yValueDisplay.innerText = adjustedAccel.y.toFixed(1);
 //            zValueDisplay.innerText = adjustedAccel.z.toFixed(1);
-             xValueDisplay.innerText            = Accel.x.toFixed(1);
-             yValueDisplay.innerText            = Accel.y.toFixed(1);
-             zValueDisplay.innerText            = Accel.z.toFixed(1);
+             xValueDisplay.innerText            = Accel.x.toFixed(1) || 0;
+             yValueDisplay.innerText            = Accel.y.toFixed(1) || 0;
+             zValueDisplay.innerText            = Accel.z.toFixed(1) || 0;
              xDeltaValueValueDisplay.innerText  = deltaAccel.x.toFixed(1);
              yDeltaValueDisplay.innerText       = deltaAccel.y.toFixed(1);
              zDeltaValueDisplay.innerText       = deltaAccel.z.toFixed(1);
