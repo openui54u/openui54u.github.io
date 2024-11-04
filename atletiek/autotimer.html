@@ -358,7 +358,7 @@ beep(
             barY.style.width = Math.min(Math.abs(deltaAccel.y) * 10, 100) + '%';
             barZ.style.width = Math.min(Math.abs(deltaAccel.z) * 10, 100) + '%';
 
-            const magnitude = Math.max(Math.abs(deltaAccel.x), Math.abs(deltaAccel.y), Math.abs(deltaAccel.z));
+            const magnitude = Math.max(Math.abs(Accel.x), Math.abs(Accel.y), Math.abs(Accel.z));
             
             const currentThreshold = updateMagnitudes(magnitude); // Get the dynamic threshold
 
