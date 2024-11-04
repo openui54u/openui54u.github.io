@@ -398,9 +398,8 @@ beep(
             }
             
             previousMagnitude   = magnitude;
-            previousAccel.x = Accel.x;
-            previousAccel.x = Accel.y;
-            previousAccel.x = Accel.z;
+            previousAccel = { ...Accel };
+
         };
 
         function startMonitoring() {
@@ -430,7 +429,7 @@ beep(
             startStopButton.innerText = 'Start Monitoring (Gyro)';
             statusText.innerText = 'Status: Monitoring stopped.';
         
-            window.removeEventListener('devicemotion', gyroHandler);
+//            window.removeEventListener('devicemotion', gyroHandler);
             window.removeEventListener('devicemotion', accelerometerHandler);
         
 
