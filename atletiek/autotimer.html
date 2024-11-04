@@ -337,9 +337,6 @@ beep(
             deltaAccel.y = Math.abs( previousAccel.y - Accel.y );
             deltaAccel.z = Math.abs( previousAccel.z - Accel.z );
             
-            previousAccel.x = Accel.x;
-            previousAccel.x = Accel.y;
-            previousAccel.x = Accel.z;
 //            const adjustedAccel = adjustForOrientation(Accel, Gyro);
             
 //            xValueDisplay.innerText = adjustedAccel.x.toFixed(1);
@@ -399,6 +396,10 @@ beep(
                 stopMonitoring()
                 };
             }
+            
+            previousAccel.x = Accel.x;
+            previousAccel.x = Accel.y;
+            previousAccel.x = Accel.z;
         };
 
         function startMonitoring() {
