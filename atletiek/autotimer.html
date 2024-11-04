@@ -149,7 +149,7 @@
     <script>
         let monitoring       = false;
         let threshold        = 20;
-        let thresholdStop    = 50;
+//        let thresholdStop    = 50;
         let thresholdDelta        = 2;
         let thresholdDeltaStop    = 10;
         
@@ -384,7 +384,7 @@ beep(
         function startMonitoring() {
 
             threshold                   = parseFloat(accelThreshold.value);
-            thresholdStop               = parseFloat(accelThresholdStop.value);
+//                           = parseFloat(accelThresholdStop.value);
             
             thresholdDelta              = parseFloat(accelDeltaThreshold.value);
             thresholdDeltaStop          = parseFloat(accelDeltaThresholdStop.value);
@@ -485,9 +485,9 @@ myAudioContext = new AudioContext() };
             //document.getElementById('accel-threshold').value = threshold;
            accelThreshold.value = threshold;
             
-            thresholdStop = threshold * 3;
+//            thresholdStop = threshold * 3;
             //document.getElementById('accel-threshold-Stop').value = thresholdStop; 
-           accelThresholdStop.value = thresholdStop;
+//           accelThresholdStop.value = thresholdStop;
         };
           if (Object.values(thresDeltaValues).some(value => value !== 0)) {
             thresholdDelta = Math.round( Math.max( Math.abs(thresDeltaValues.x), Math.abs(thresDeltaValues.y), Math.abs(thresDeltaValues.z) ));
