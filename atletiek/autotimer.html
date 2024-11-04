@@ -90,8 +90,8 @@
 <body>
     <h1>Gyroscopic Timer</h1>
     <p>Set acceleration threshold (XYZ-axis):</p>
-    <input type="number" id="accel-threshold" value="20" step="1">-
-    <input type="number" id="accel-threshold-Stop" value="80" step="1">
+    <input type="number" id="accel-threshold" value="1" step="1">-
+    <input type="number" id="accel-threshold-Stop" value="15" step="1">
     <button id="auto-thres-btn">Auto Threshold</button>
     <button id="start-stop-btn">Start Monitoring (Gyro)</button>
 <!--
@@ -530,6 +530,7 @@ myAudioContext = new AudioContext();
 
         // Auto-threshold functionality
          autoThresButton.addEventListener('click', () => {
+            thresValues = { x: 0, y: 0, z: 0 };
             autoThresActive = true;
             statusText.innerText = "Status: Auto-threshold in progress...";
   
