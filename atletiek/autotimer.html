@@ -124,6 +124,7 @@
     </div>
     </div>
     
+<!--
     <div class="values-container">
         <p>Gyro: </p>
         <div class="value-group">
@@ -132,6 +133,7 @@
     Z: <span id="gyro-z-value">0.00</span> °/s
         </div>
     </div>
+-->
     
     <div class="values-container">
         <p>Absolute: </p>
@@ -198,9 +200,9 @@ const maxRecentValues = 100; // Limit the number of stored values for performanc
         const yValueDisplay = document.getElementById('y-value');
         const zValueDisplay = document.getElementById('z-value');
         
-        const gyroXDisplay = document.getElementById('gyro-x-value');
-        const gyroYDisplay = document.getElementById('gyro-y-value');
-        const gyroZDisplay = document.getElementById('gyro-z-value');
+//        const gyroXDisplay = document.getElementById('gyro-x-value');
+//        const gyroYDisplay = document.getElementById('gyro-y-value');
+//        const gyroZDisplay = document.getElementById('gyro-z-value');
 
         const absoluteXDisplay = document.getElementById('absolute-x-value');
         const absoluteYDisplay = document.getElementById('absolute-y-value');
@@ -331,9 +333,9 @@ beep(
             Accel.y = event.accelerationIncludingGravity.y ;//- tareValues.y;
             Accel.z = event.accelerationIncludingGravity.z ;//- tareValues.z;
 
-            deltaAccel.x = previousAccel.x - Accel.x;
-            deltaAccel.y = previousAccel.x - Accel.y;
-            deltaAccel.z = previousAccel.x - Accel.z;
+            deltaAccel.x = Math.abs( previousAccel.x - Accel.x );
+            deltaAccel.y = Math.abs( previousAccel.y - Accel.y );
+            deltaAccel.z = Math.abs( previousAccel.z - Accel.z );
             
             previousAccel.x = Accel.x;
             previousAccel.x = Accel.y;
