@@ -355,9 +355,11 @@ beep(
 
         const accelerometerHandler = function(event) {
             
+            if (event.accelerationIncludingGravity.x != null){
             Accel.x = event.accelerationIncludingGravity.x ;//- tareValues.x;
             Accel.y = event.accelerationIncludingGravity.y ;//- tareValues.y;
             Accel.z = event.accelerationIncludingGravity.z ;//- tareValues.z;
+            
 
             deltaAccel.x = Math.abs( previousAccel.x - Accel.x );
             deltaAccel.y = Math.abs( previousAccel.y - Accel.y );
@@ -368,9 +370,9 @@ beep(
 //            xValueDisplay.innerText = adjustedAccel.x.toFixed(1);
 //            yValueDisplay.innerText = adjustedAccel.y.toFixed(1);
 //            zValueDisplay.innerText = adjustedAccel.z.toFixed(1);
-             xValueDisplay.innerText            = Accel.x.toFixed(1) || 0;
-             yValueDisplay.innerText            = Accel.y.toFixed(1) || 0;
-             zValueDisplay.innerText            = Accel.z.toFixed(1) || 0;
+             xValueDisplay.innerText            = Accel.x.toFixed(1) ;
+             yValueDisplay.innerText            = Accel.y.toFixed(1) ;
+             zValueDisplay.innerText            = Accel.z.toFixed(1) ;
              xDeltaValueValueDisplay.innerText  = deltaAccel.x.toFixed(1);
              yDeltaValueDisplay.innerText       = deltaAccel.y.toFixed(1);
              zDeltaValueDisplay.innerText       = deltaAccel.z.toFixed(1);
@@ -424,6 +426,10 @@ beep(
             
             previousMagnitude   = magnitude;
             previousAccel       = { ...Accel };
+            } else {
+                // null
+                stopMonitoring();
+            }
 
         };
 
@@ -487,7 +493,7 @@ myAudioContext = new AudioContext();
                 if (permissionGranted) {
                     startMonitoring();
                     stepStartTime = Date.now(); // Reset start time for frequency tracking
-                stepCount = 0; // Reset step count
+                    stepCount = 0; // Reset step count
                 }
             } else {
                 stopMonitoring();
@@ -561,9 +567,9 @@ myAudioContext = new AudioContext();
             autoThresActive = true;
             statusText.innerText = "Status: Auto-threshold in progress...";
   
-// Simple beep
-//    duration, frequency, volume             
-beep( 100,      320,        100 );
+            // Simple beep
+            //    duration, frequency, volume             
+            beep( 100,      320,        100 );
              
             setTimeout(() => {
 
@@ -578,9 +584,9 @@ beep( 100,      320,        100 );
            accelThresholdStop.value = thresholdStop;
         };
               
-// Simple beep
-//    duration, frequency, volume             
-beep( 100,      640,        100 );
+                // Simple beep
+                //    duration, frequency, volume             
+                beep( 100,      640,        100 );
                 
                 autoThresActive = false;
                 statusText.innerText = "Status: Auto-threshold completed."              
