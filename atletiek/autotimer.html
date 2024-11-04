@@ -145,27 +145,6 @@
             Z: <span id="z-d-value">0.00</span> m/s²
         </div>
     </div>
-    
-<!--
-    <div class="values-container">
-        <p>Gyro: </p>
-        <div class="value-group">
-    X: <span id="gyro-x-value">0.00</span>,
-    Y: <span id="gyro-y-value">0.00</span>,
-    Z: <span id="gyro-z-value">0.00</span> °/s
-        </div>
-    </div>
--->
-    
-<!--
-    <div class="values-container">
-        <p>Absolute: </p>
-         <div class="value-group">
-        X: <span id="absolute-x-value">0.00</span>, 
-        Y: <span id="absolute-y-value">0.00</span>, 
-        Z: <span id="absolute-z-value">0.00</span>
-    </div></div>
--->
 
     <script>
         let monitoring       = false;
@@ -176,14 +155,9 @@
         
         let startTime        = null;
         let intervalID       = null;
-//        let autoTareActive   = false;
-//        let autoTareDuration = 5000;
-//        let tareStartTime    = null;
-//        let tareValues  = { x: 0, y: 0, z: 0 };
         let Accel           = { x: 0, y: 0, z: 0 };
         let previousAccel   = { x: 0, y: 0, z: 0 };
         let deltaAccel      = { x: 0, y: 0, z: 0 };
-//      let Gyro        = { x: 0, y: 0, z: 0 };
         
         let myAudioContext = null;
         let autoThresActive = false;
@@ -234,15 +208,6 @@ const maxRecentValues = 100; // Limit the number of stored values for performanc
         const yDeltaValueDisplay = document.getElementById('y-d-value');
         const zDeltaValueDisplay = document.getElementById('z-d-value');
         
-//        const gyroXDisplay = document.getElementById('gyro-x-value');
-//        const gyroYDisplay = document.getElementById('gyro-y-value');
-//        const gyroZDisplay = document.getElementById('gyro-z-value');
-
-//        const absoluteXDisplay = document.getElementById('absolute-x-value');
-//        const absoluteYDisplay = document.getElementById('absolute-y-value');
-//        const  = document.getElementById('absolute-z-value');
-//        
-        
         
         // This function should be called every time you calculate a new magnitude
 function updateMagnitudes(magnitude) {
@@ -266,9 +231,9 @@ function updateMagnitudes(magnitude) {
 
     // Calculate threshold based on percentage of values above baseline
     const percentage = 0.8; // For 80%
-    const threshold = (countAboveBaseline / magnitudes.length) > percentage ? average : baseline;
+    const local_threshold = (countAboveBaseline / magnitudes.length) > percentage ? average : baseline;
 
-    return threshold;
+    return local_threshold;
 }
         
          function updateStepFrequency() {
@@ -345,38 +310,26 @@ beep(
             return Promise.resolve(true); // Non-iOS devices don't need permission
         }        
         
-// Function to adjust acceleration based on gyroscope orientation
-//        function adjustForOrientation(accel, gyro) {
-//            return {
-//                x: accel.x - gyro.x,
-//                y: accel.y - gyro.y,
-//                z: accel.z - gyro.z
-//            };
-//        }
+
 
         const accelerometerHandler = function(event) {
-            
-            if (event.accelerationIncludingGravity.x != null){
-            Accel.x = event.accelerationIncludingGravity.x ;//- tareValues.x;
-            Accel.y = event.accelerationIncludingGravity.y ;//- tareValues.y;
-            Accel.z = event.accelerationIncludingGravity.z ;//- tareValues.z;
+
+            const acceleration = event.accelerationIncludingGravity || { x: 0, y: 0, z: 0 };
+
+            Accel.x = acceleration.x  || 0 ;
+            Accel.y = acceleration.y  || 0 ;
+            Accel.z = acceleration.z  || 0 ;
             
 
             deltaAccel.x = Math.abs( previousAccel.x - Accel.x );
             deltaAccel.y = Math.abs( previousAccel.y - Accel.y );
             deltaAccel.z = Math.abs( previousAccel.z - Accel.z );
-            
-//            const adjustedAccel = adjustForOrientation(Accel, Gyro);
-            
-//            xValueDisplay.innerText = adjustedAccel.x.toFixed(1);
-//            yValueDisplay.innerText = adjustedAccel.y.toFixed(1);
-//            zValueDisplay.innerText = adjustedAccel.z.toFixed(1);
                 
              xValueDisplay.innerText            = Accel.x.toFixed(1) ;
              yValueDisplay.innerText            = Accel.y.toFixed(1) ;
              zValueDisplay.innerText            = Accel.z.toFixed(1) ;
                 
-             xDeltaValueValueDisplay.innerText  = deltaAccel.x.toFixed(1);
+             xDeltaValueDisplay.innerText       = deltaAccel.x.toFixed(1);
              yDeltaValueDisplay.innerText       = deltaAccel.y.toFixed(1);
              zDeltaValueDisplay.innerText       = deltaAccel.z.toFixed(1);
 
@@ -409,11 +362,6 @@ beep(
           // Update magnitude display (rest of your code)
 //            magnitudeDisplay.innerText      = magnitude.toFixed(1);
             magnitudeDeltaDisplay.innerText = deltaMagnitude.toFixed(1);
-
-          // Display absolute orientation values
-//            absoluteXDisplay.innerText = Math.abs(deltaAccel.x).toFixed(1); 
-//            absoluteYDisplay.innerText = Math.abs(deltaAccel.y).toFixed(1); 
-//            absoluteZDisplay.innerText = Math.abs(deltaAccel.z).toFixed(1); 
             
             if ( ( deltaMagnitude > thresholdDelta ) && !intervalID) {
                 startTimer();
@@ -429,10 +377,7 @@ beep(
             
             previousMagnitude   = magnitude;
             previousAccel       = { ...Accel };
-            } else {
-                // null
-                stopMonitoring();
-            }
+         
 
         };
 
@@ -478,9 +423,9 @@ beep(
 //            Gyro.y = event.rotationRate.beta || 0;
 //            Gyro.z = event.rotationRate.gamma || 0;
 //
-//            gyroXDisplay.innerText = Gyro.x.toFixed(1);
-//            gyroYDisplay.innerText = Gyro.y.toFixed(1);
-//            gyroZDisplay.innerText = Gyro.z.toFixed(1);
+////            gyroXDisplay.innerText = Gyro.x.toFixed(1);
+////            gyroYDisplay.innerText = Gyro.y.toFixed(1);
+////            gyroZDisplay.innerText = Gyro.z.toFixed(1);
 //        };
 
        
@@ -488,8 +433,8 @@ beep(
              
 // The browser will limit the number of concurrent audio contexts
 // So be sure to re-use them whenever you can
-myAudioContext = new AudioContext();
-
+if (myAudioContext == undefined){             
+myAudioContext = new AudioContext() };
              
             if (!monitoring) {
                 const permissionGranted = await requestGyroPermission();
@@ -521,49 +466,6 @@ myAudioContext = new AudioContext();
             }
         });
 
-//        // Tare button functionality
-//        tareButton.addEventListener('click', () => {
-//            tareValues = { ...Accel };
-//            statusText.innerText = "Status: Tare values set.";
-//            // Reset timer and display
-//            timerDisplay.innerText = `Timer: 00:00:00:000`;
-//            thresValues = { x: 0, y: 0, z: 0 };
-//        });
-
-        // Auto-tare functionality
-//        autoTareButton.addEventListener('click', () => {
-//            autoTareActive = true;
-//            statusText.innerText = "Status: Auto-tare in progress...";           
-//           
-//// Simple beep
-//beep(
-//    // Set the duration to 0.2 second (200 milliseconds)
-//    100,
-//    // Set the frequency of the note to A4 (440 Hz)
-//    443,
-//    // Set the volume of the beep to 100%
-//    100
-//);
-//
-//            
-//            setTimeout(() => {
-//                tareValues = { ...Accel };
-//                autoTareActive = false;
-//                statusText.innerText = "Status: Auto-tare completed.";
-//    
-//                // Simple beep
-//beep(
-//    // Set the duration to 0.2 second (200 milliseconds)
-//    200,
-//    // Set the frequency of the note to A4 (440 Hz)
-//    886,
-//    // Set the volume of the beep to 100%
-//    100
-//);
-//                
-//            }, autoTareDuration);
-//        });
-
         // Auto-threshold functionality
          autoThresButton.addEventListener('click', () => {
             thresValues = { x: 0, y: 0, z: 0 };
@@ -592,12 +494,11 @@ myAudioContext = new AudioContext();
             //document.getElementById('accel-threshold').value = threshold;
            accelDeltaThreshold.value = thresholdDelta;
             
-            thresholdDeltaStopStop = thresholdDelta * 3;
+            thresholdDeltaStop = thresholdDelta * 3;
             //document.getElementById('accel-threshold-Stop').value = thresholdStop; 
            accelDeltaThresholdStop.value = thresholdDeltaStop;
         };
                 
-              
                 // Simple beep
                 //    duration, frequency, volume             
                 beep( 100,      640,        100 );
