@@ -186,7 +186,12 @@
         let magnitudes = []; // To store recent magnitude values
 const maxRecentValues = 100; // Limit the number of stored values for performance
 
-
+        let peakRanges = [];  // Store last 3 peak-to-peak ranges for dynamic halfway threshold
+let halfwayThreshold = 0; // Dynamically calculated halfway point between min and max
+let currentMin = Infinity;  // Track current cycle's minimum
+let currentMax = -Infinity; // Track current cycle's maximum
+       
+        
         let previousMagnitude = 0;
         let deltaMagnitude = 0;
         let isIncreasing = false; // Track whether the magnitude trend is increasing
@@ -267,25 +272,25 @@ function updateCycleMinMax(x, y, z) {
 /**
  * Calculates halfway thresholds for each axis based on current cycle min and max values.
  */
-function calculateThresholds() {
-    ["x", "y", "z"].forEach(axis => {
-        const avgMin = minValues[axis].reduce((a, b) => a + b, 0) / minValues[axis].length;
-        const avgMax = maxValues[axis].reduce((a, b) => a + b, 0) / maxValues[axis].length;
-        halfwayThresholds[axis] = (avgMin + avgMax) / 2;
-        deltaThresholds[axis] = Math.abs(avgMin - avgMax);
-    });
-}
+//function calculateThresholds() {
+//    ["x", "y", "z"].forEach(axis => {
+//        const avgMin = minValues[axis].reduce((a, b) => a + b, 0) / minValues[axis].length;
+//        const avgMax = maxValues[axis].reduce((a, b) => a + b, 0) / maxValues[axis].length;
+//        halfwayThresholds[axis] = (avgMin + avgMax) / 2;
+//        deltaThresholds[axis] = Math.abs(avgMin - avgMax);
+//    });
+//}
 
- function getMaxAxis(deltaThresholds) {
-    const { x, y, z } = deltaThresholds;
-    const maxVal = Math.max(x, y, z);
-
-    let axis = 'x';
-    if (maxVal === y) axis = 'y';
-    else if (maxVal === z) axis = 'z';
-
-    return { axis, value: maxVal };
-}
+// function getMaxAxis(deltaThresholds) {
+//    const { x, y, z } = deltaThresholds;
+//    const maxVal = Math.max(x, y, z);
+//
+//    let axis = 'x';
+//    if (maxVal === y) axis = 'y';
+//    else if (maxVal === z) axis = 'z';
+//
+//    return { axis, value: maxVal };
+//}
 /**
  * Checks if a step is detected based on crossing halfway thresholds.
  */
@@ -293,31 +298,73 @@ function calculateThresholds() {
 
 function checkStep(x, y, z) {
     
+    // Calculate the combined magnitude of movement
+    const combinedMovement = Math.sqrt(x * x + y * y + z * z);
+    // Update current cycle's min and max based on the current combined movement
+    currentMin = Math.min(currentMin, combinedMovement);
+    currentMax = Math.max(currentMax, combinedMovement);
+    
+    // Calculate halfway threshold based on the average of the last 3 peak ranges
+    if (peakRanges.length >= 3) {
+        halfwayThreshold = peakRanges.reduce((acc, range) => acc + range, 0) / peakRanges.length;
+    }
+    
+    
     // Which axis to check movement on ?
-    let checkAxis = getMaxAxis(deltaThresholds).axis;
+   // let checkAxis = getMaxAxis(deltaThresholds).axis;
     //
-        const halfway = halfwayThresholds[checkAxis];
-        const val = { x, y, z }[checkAxis];
-
-    const currentTime = Date.now(); // Get current time
-          deltaTime   = currentTime - lastStepTime;
-//    if (currentTime - lastStepTime > stepDelay) { // Check time since last step
-        
-        if (val > halfway && !beepTriggered ) {  // "Up" crossing
-            if (beepOn === "up") triggerBeep();
-            stepCount++;
-            beepTriggered = true;  // Avoid double counting
-            lastStepTime = currentTime; // Update last step time
-            direction = "up";
-        } else if (val < halfway && beepTriggered) {  // "Down" crossing
-            if (beepOn === "down") triggerBeep();
-            stepCount++;
-            beepTriggered = false;  // Reset for the next cycle
-            direction     = "down"; // to show indication on screen of direction
-        }
+//        const halfway = halfwayThresholds[checkAxis];
+//        const val = { x, y, z }[checkAxis];
+//
+//    const currentTime = Date.now(); // Get current time
+//          deltaTime   = currentTime - lastStepTime;
+////    if (currentTime - lastStepTime > stepDelay) { // Check time since last step
+//        
+//        if (val > halfway && !beepTriggered ) {  // "Up" crossing
+//            if (beepOn === "up") triggerBeep();
+//            stepCount++;
+//            beepTriggered = true;  // Avoid double counting
+//            lastStepTime = currentTime; // Update last step time
+//            direction = "up";
+//        } else if (val < halfway && beepTriggered) {  // "Down" crossing
+//            if (beepOn === "down") triggerBeep();
+//            stepCount++;
+//            beepTriggered = false;  // Reset for the next cycle
+//            direction     = "down"; // to show indication on screen of direction
+//        }
 //    }
+    
+    // Detect upward crossing
+    if (combinedMovement > currentMax - halfwayThreshold && !beepTriggered) {
+        // Count and trigger beep on upward crossing
+        stepCount++;
+        triggerBeep();
+        beepTriggered = true;  // Prevent double-counting on the same peak
+        direction = "up";
+
+    // Detect downward crossing
+    } else if (combinedMovement < currentMin + halfwayThreshold && beepTriggered) {
+        beepTriggered = false;  // Reset for the next cycle
+        // Once downward crossing is detected, save the peak-to-peak range
+        updatePeakRanges();
+        direction     = "down";
+    }
+    
 }
-       
+   
+        // Helper function to update peak ranges for dynamic threshold calculation
+function updatePeakRanges() {
+    // Calculate the peak-to-peak range for this cycle
+    const peakRange = currentMax - currentMin;
+
+    // Add the new peak range and keep only the last 3 ranges
+    peakRanges.push(peakRange);
+    if (peakRanges.length > 3) peakRanges.shift(); // Keep only last 3 ranges
+
+    // Reset min and max for the next cycle
+    currentMin = Infinity;
+    currentMax = -Infinity;
+}
         
 // END OF STEP INTEGRATION        
         
