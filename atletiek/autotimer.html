@@ -549,7 +549,7 @@ function updateMagnitudes(magnitude) {
                              
           // Update magnitude display (rest of your code)
 //            magnitudeDisplay.innerText      = magnitude.toFixed(1);
-            magnitudeDeltaDisplay.innerText = deltaMagnitude.toFixed(1);
+            magnitudeDeltaDisplay.innerText = deltaMagnitude.toFixed(1) + ' ^' + Math.round(combinedMovement);
             
             if ( ( deltaMagnitude > thresholdDelta ) && !intervalID) {
                 startTimer();
