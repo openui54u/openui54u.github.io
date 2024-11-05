@@ -281,7 +281,7 @@ function checkStep(x, y, z) {
     
 //    ["x", "y", "z"].forEach((axis, idx) => {
         const halfway = halfwayThresholds[checkAxis];
-        const val = [checkAxis][idx];
+        const val = { x, y, z }[checkAxis];
 
         if (val > halfway && !beepTriggered) {  // "Up" crossing
             if (beepOn === "up") triggerBeep();
@@ -294,6 +294,7 @@ function checkStep(x, y, z) {
             beepTriggered = false;  // Reset for the next cycle
         }
 //    });
+}
     
 //    ["x", "y", "z"].forEach((axis, idx) => {
 //        const halfway = halfwayThresholds[axis];
@@ -310,7 +311,7 @@ function checkStep(x, y, z) {
 //            beepTriggered = false;  // Reset for the next cycle
 //        }
 //    });
-}        
+//}        
         
 // END OF STEP INTEGRATION        
         
