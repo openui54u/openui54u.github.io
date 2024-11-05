@@ -303,7 +303,8 @@ function calculateThresholds() {
 function checkStep(x, y, z) {
     
     // Calculate the combined magnitude of movement
-    combinedMovement = Math.sqrt(x * x + y * y + z * z);
+    // https://www.mathportal.org/calculators/matrices-calculators/vector-calculator.php
+    combinedMovement = Math.sqrt( ((x+20) * (x+20) + (y+20) * (y+20) + (z+20) * (z+20));
     // Update current cycle's min and max based on the current combined movement
     currentMin = Math.min(currentMin, combinedMovement);
     currentMax = Math.max(currentMax, combinedMovement);
@@ -527,15 +528,16 @@ function updateMagnitudes(magnitude) {
 
         deltaMagnitude      = Math.abs( previousMagnitude - magnitude );
             
-// NEW STEP INTEGRATION    
-        if (deltaMagnitude > thresholdDelta){
-            // Update the cyclic min and max values
-        updateCycleMinMax(Accel.x, Accel.y, Accel.z);
-
-        // Calculate new thresholds if we have enough data
+// NEW STEP INTEGRATION  
+            
+     // Calculate new thresholds if we have enough data
         if (minValues.x.length === numCycles) {
             calculateThresholds();
         }
+            
+        if (deltaMagnitude > thresholdDelta){
+            // Update the cyclic min and max values
+        updateCycleMinMax(Accel.x, Accel.y, Accel.z);
 
         // Check if a step is detected
         checkStep(Accel.x, Accel.y, Accel.z);
@@ -544,9 +546,6 @@ function updateMagnitudes(magnitude) {
         }
 // NEW STEP INTEGRATION            
             
-            
-
- 
                
             if (autoThresActive){
             thresValues = { 
