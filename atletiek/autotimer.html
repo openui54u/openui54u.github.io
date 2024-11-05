@@ -160,6 +160,8 @@
             Z: <span id="z-d-value">0.00</span> m/s²
         </div>
     </div>
+    
+    <p id="Detail_text">Details: <span id="details">- - - -</span></p>
 
     <script>
         let monitoring       = false;
@@ -404,7 +406,10 @@ function updateMagnitudes(magnitude) {
              if(direction=="up" ? l_sym = ">" : l_sym = "<");
             const elapsedTime = (Date.now() - stepStartTime) / 60000; // Convert to minutes
             const stepsPerMinute = stepCount / elapsedTime;
-            document.getElementById('steps-per-minute').innerText = Math.round(stepsPerMinute) + ' (' + Math.round(stepCount) + '/' + Math.round(elapsedTime*60) + 's ) @' + Math.round(deltaTime) + l_sym + ' ^' + Math.round(combinedMovement) + ' /' + Math.round(halfwayThreshold);
+            
+            document.getElementById('steps-per-minute').innerText = Math.round(stepsPerMinute) ;
+            
+            document.getElementById('details').innerText = ' ( n:' + Math.round(stepCount) + '/ t:' + Math.round(elapsedTime*60) + 's ) ∆t' + Math.round(deltaTime) + 'dir:' + l_sym + ' ^' + 'comb:' + Math.round(combinedMovement) + ' / hwt:' + Math.round(halfwayThreshold);
         }
 
         
