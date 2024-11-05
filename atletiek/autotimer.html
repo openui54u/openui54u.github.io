@@ -274,44 +274,33 @@ function calculateThresholds() {
 /**
  * Checks if a step is detected based on crossing halfway thresholds.
  */
+ const stepDelay = 200; // Minimum time (in ms) between steps
+
 function checkStep(x, y, z) {
     
     // Which axis to check movement on ?
     let checkAxis = getMaxAxis(deltaThresholds).axis;
-    
-//    ["x", "y", "z"].forEach((axis, idx) => {
+    //
         const halfway = halfwayThresholds[checkAxis];
         const val = { x, y, z }[checkAxis];
 
+    const currentTime = Date.now(); // Get current time
+
+    if (currentTime - lastStepTime > stepDelay) { // Check time since last step
+        
         if (val > halfway && !beepTriggered) {  // "Up" crossing
             if (beepOn === "up") triggerBeep();
             stepCount++;
             beepTriggered = true;  // Avoid double counting
-
+            lastStepTime = currentTime; // Update last step time
         } else if (val < halfway && beepTriggered) {  // "Down" crossing
             if (beepOn === "down") triggerBeep();
             stepCount++;
             beepTriggered = false;  // Reset for the next cycle
         }
-//    });
+    }
 }
-    
-//    ["x", "y", "z"].forEach((axis, idx) => {
-//        const halfway = halfwayThresholds[axis];
-//        const val = [x, y, z][idx];
-//
-//        if (val > halfway && !beepTriggered) {  // "Up" crossing
-//            if (beepOn === "up") triggerBeep();
-//            stepCount++;
-//            beepTriggered = true;  // Avoid double counting
-//
-//        } else if (val < halfway && beepTriggered) {  // "Down" crossing
-//            if (beepOn === "down") triggerBeep();
-//            stepCount++;
-//            beepTriggered = false;  // Reset for the next cycle
-//        }
-//    });
-//}        
+       
         
 // END OF STEP INTEGRATION        
         
