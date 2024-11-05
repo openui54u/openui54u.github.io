@@ -191,7 +191,7 @@ const maxRecentValues = 100; // Limit the number of stored values for performanc
 
         let peakRanges = [];  // Store last 3 peak-to-peak ranges for dynamic halfway threshold
 //let halfwayThreshold = 5; // Dynamically calculated halfway point between min and max
-let halfwayThreshold = 15; // Dynamically calculated halfway point between min and max
+let halfwayThreshold = 35; // Dynamically calculated halfway point between min and max
 let currentMin = Infinity;  // Track current cycle's minimum
 let currentMax = -Infinity; // Track current cycle's maximum
        
@@ -305,6 +305,7 @@ function checkStep(x, y, z) {
     // Calculate the combined magnitude of movement
     // https://www.mathportal.org/calculators/matrices-calculators/vector-calculator.php
     combinedMovement = Math.sqrt( ((x+20) * (x+20) + (y+20) * (y+20) + (z+20) * (z+20)) );
+    
     // Update current cycle's min and max based on the current combined movement
     currentMin = Math.min(currentMin, combinedMovement);
     currentMax = Math.max(currentMax, combinedMovement);
