@@ -286,7 +286,7 @@ function checkStep(x, y, z) {
 
     const currentTime = Date.now(); // Get current time
 
-    if (currentTime - lastStepTime > stepDelay) { // Check time since last step
+//    if (currentTime - lastStepTime > stepDelay) { // Check time since last step
         
         if (val > halfway && !beepTriggered) {  // "Up" crossing
             if (beepOn === "up") triggerBeep();
@@ -298,7 +298,7 @@ function checkStep(x, y, z) {
             stepCount++;
             beepTriggered = false;  // Reset for the next cycle
         }
-    }
+//    }
 }
        
         
