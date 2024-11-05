@@ -290,17 +290,17 @@ function checkStep(x, y, z) {
           deltaTime   = currentTime - lastStepTime;
 //    if (currentTime - lastStepTime > stepDelay) { // Check time since last step
         
-        if (val > halfway && !beepTriggered && direction === "up") {  // "Up" crossing
+        if (val > halfway && !beepTriggered ) {  // "Up" crossing
             if (beepOn === "up") triggerBeep();
             stepCount++;
             beepTriggered = true;  // Avoid double counting
             lastStepTime = currentTime; // Update last step time
-            direction = "down";
-        } else if (val < halfway && beepTriggered && direction === "down") {  // "Down" crossing
+            direction = "up";
+        } else if (val < halfway && beepTriggered) {  // "Down" crossing
             if (beepOn === "down") triggerBeep();
             stepCount++;
             beepTriggered = false;  // Reset for the next cycle
-            direction = "up"; // next time only when going up
+            direction     = "down"; // to show indication on screen of direction
         }
 //    }
 }
@@ -336,9 +336,11 @@ function updateMagnitudes(magnitude) {
 }
         
          function updateStepFrequency() {
+             let l_sym = "-";
+             if(direction=="up" ? l_sym = ">" : l_sym = "<");
             const elapsedTime = (Date.now() - stepStartTime) / 60000; // Convert to minutes
             const stepsPerMinute = stepCount / elapsedTime;
-            document.getElementById('steps-per-minute').innerText = Math.round(stepsPerMinute) + ' (' + Math.round(stepCount) + '/' + Math.round(elapsedTime*60) + 's ) @' + Math.round(deltaTime)  ;
+            document.getElementById('steps-per-minute').innerText = Math.round(stepsPerMinute) + ' (' + Math.round(stepCount) + '/' + Math.round(elapsedTime*60) + 's ) @' + Math.round(deltaTime) + l_sym ;
         }
 
         
