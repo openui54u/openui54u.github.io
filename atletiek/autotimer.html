@@ -191,7 +191,7 @@ const maxRecentValues = 100; // Limit the number of stored values for performanc
 
         let peakRanges = [];  // Store last 3 peak-to-peak ranges for dynamic halfway threshold
 //let halfwayThreshold = 5; // Dynamically calculated halfway point between min and max
-let halfwayThreshold = 35; // Dynamically calculated halfway point between min and max
+let halfwayThreshold = 10; // Dynamically calculated halfway point between min and max
 let currentMin = Infinity;  // Track current cycle's minimum
 let currentMax = -Infinity; // Track current cycle's maximum
        
@@ -276,14 +276,14 @@ function updateCycleMinMax(x, y, z) {
 /**
  * Calculates halfway thresholds for each axis based on current cycle min and max values.
  */
-function calculateThresholds() {
+//function calculateThresholds() {
 //    ["x", "y", "z"].forEach(axis => {
 //        const avgMin = minValues[axis].reduce((a, b) => a + b, 0) / minValues[axis].length;
 //        const avgMax = maxValues[axis].reduce((a, b) => a + b, 0) / maxValues[axis].length;
 //        halfwayThresholds[axis] = (avgMin + avgMax) / 2;
 //        deltaThresholds[axis] = Math.abs(avgMin - avgMax);
 //    });
-}
+//}
 
 // function getMaxAxis(deltaThresholds) {
 //    const { x, y, z } = deltaThresholds;
@@ -532,9 +532,9 @@ function updateMagnitudes(magnitude) {
 // NEW STEP INTEGRATION  
             
      // Calculate new thresholds if we have enough data
-        if (minValues.x.length === numCycles) {
-            calculateThresholds();
-        }
+//        if (minValues.x.length === numCycles) {
+//            calculateThresholds();
+//        }
             
         if (deltaMagnitude > thresholdDelta){
             // Update the cyclic min and max values
