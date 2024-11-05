@@ -321,7 +321,7 @@ function getDominantAxis(x, y, z) {
 }
 
 function calculateDirectionalCombinedMovement(x, y, z) {
-    const dominantAxis = getDominantAxis(x, y, z).value;
+    const dominantAxis = getDominantAxis(x, y, z).axis;
 
     // Combine movement while keeping the dominant axis’ sign
     return Math.sqrt(x * x + y * y + z * z) * Math.sign(dominantAxis);
