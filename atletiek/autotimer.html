@@ -188,7 +188,8 @@
 const maxRecentValues = 100; // Limit the number of stored values for performance
 
         let peakRanges = [];  // Store last 3 peak-to-peak ranges for dynamic halfway threshold
-let halfwayThreshold = 0; // Dynamically calculated halfway point between min and max
+//let halfwayThreshold = 5; // Dynamically calculated halfway point between min and max
+let halfwayThreshold = 5; // Dynamically calculated halfway point between min and max
 let currentMin = Infinity;  // Track current cycle's minimum
 let currentMax = -Infinity; // Track current cycle's maximum
        
@@ -403,7 +404,7 @@ function updateMagnitudes(magnitude) {
              if(direction=="up" ? l_sym = ">" : l_sym = "<");
             const elapsedTime = (Date.now() - stepStartTime) / 60000; // Convert to minutes
             const stepsPerMinute = stepCount / elapsedTime;
-            document.getElementById('steps-per-minute').innerText = Math.round(stepsPerMinute) + ' (' + Math.round(stepCount) + '/' + Math.round(elapsedTime*60) + 's ) @' + Math.round(deltaTime) + l_sym + ' ^' + Math.round(combinedMovement);
+            document.getElementById('steps-per-minute').innerText = Math.round(stepsPerMinute) + ' (' + Math.round(stepCount) + '/' + Math.round(elapsedTime*60) + 's ) @' + Math.round(deltaTime) + l_sym + ' ^' + Math.round(combinedMovement) + ' /' + halfwayThreshold;
         }
 
         
