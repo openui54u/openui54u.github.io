@@ -520,20 +520,20 @@ function updateMagnitudes(magnitude) {
         deltaMagnitude      = Math.abs( previousMagnitude - magnitude );
             
 // NEW STEP INTEGRATION    
-//        if (deltaMagnitude > thresholdDelta){
+        if (deltaMagnitude > thresholdDelta){
             // Update the cyclic min and max values
         updateCycleMinMax(Accel.x, Accel.y, Accel.z);
 
         // Calculate new thresholds if we have enough data
         if (minValues.x.length === numCycles) {
-            calculateThresholds();
+           // calculateThresholds();
         }
 
         // Check if a step is detected
         checkStep(Accel.x, Accel.y, Accel.z);
         
         updateStepFrequency();
-//        }
+        }
 // NEW STEP INTEGRATION            
             
             
