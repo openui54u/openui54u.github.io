@@ -184,7 +184,7 @@ const maxRecentValues = 100; // Limit the number of stored values for performanc
         let stepCount = 0; // Count steps
         let stepStartTime = Date.now(); // Track start time for frequency calculation
 
-        
+        let deltaTime = 0;
         
         const statusText       = document.getElementById('status');
         const timerDisplay     = document.getElementById('timer');
@@ -285,7 +285,7 @@ function checkStep(x, y, z) {
         const val = { x, y, z }[checkAxis];
 
     const currentTime = Date.now(); // Get current time
-
+          deltaTime   = currentTime - lastStepTime;
 //    if (currentTime - lastStepTime > stepDelay) { // Check time since last step
         
         if (val > halfway && !beepTriggered) {  // "Up" crossing
@@ -334,7 +334,7 @@ function updateMagnitudes(magnitude) {
          function updateStepFrequency() {
             const elapsedTime = (Date.now() - stepStartTime) / 60000; // Convert to minutes
             const stepsPerMinute = stepCount / elapsedTime;
-            document.getElementById('steps-per-minute').innerText = Math.round(stepsPerMinute) + ' (' + Math.round(stepCount) + '/' + Math.round(elapsedTime*60) + 's )'  ;
+            document.getElementById('steps-per-minute').innerText = Math.round(stepsPerMinute) + ' (' + Math.round(stepCount) + '/' + Math.round(elapsedTime*60) + 's ) @' Math.round(deltaTime)  ;
         }
 
         
