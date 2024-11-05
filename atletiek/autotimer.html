@@ -451,9 +451,9 @@ function updateMagnitudes(magnitude) {
             barYdelta.style.width = Math.min(Math.abs(deltaAccel.y) * 10, 100) + '%';
             barZdelta.style.width = Math.min(Math.abs(deltaAccel.z) * 10, 100) + '%';
             
-            barX.style.width = Math.min(Math.abs(Accel.x) * 1, 100) + '%';
-            barY.style.width = Math.min(Math.abs(Accel.y) * 1, 100) + '%';
-            barZ.style.width = Math.min(Math.abs(Accel.z) * 1, 100) + '%';
+            barX.style.width = Math.min(Math.abs(Accel.x) * 10, 100) + '%';
+            barY.style.width = Math.min(Math.abs(Accel.y) * 10, 100) + '%';
+            barZ.style.width = Math.min(Math.abs(Accel.z) * 10, 100) + '%';
 
             const magnitude = Math.max(Math.abs(Accel.x), Math.abs(Accel.y), Math.abs(Accel.z));
             const currentThreshold = updateMagnitudes(magnitude); // Get the dynamic threshold
