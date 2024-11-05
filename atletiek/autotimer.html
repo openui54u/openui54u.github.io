@@ -186,6 +186,7 @@ const maxRecentValues = 100; // Limit the number of stored values for performanc
 
         let deltaTime = 0;
         let lastStepTime = 0;
+        let direction = "up";
         
         const statusText       = document.getElementById('status');
         const timerDisplay     = document.getElementById('timer');
@@ -289,15 +290,17 @@ function checkStep(x, y, z) {
           deltaTime   = currentTime - lastStepTime;
 //    if (currentTime - lastStepTime > stepDelay) { // Check time since last step
         
-        if (val > halfway && !beepTriggered) {  // "Up" crossing
+        if (val > halfway && !beepTriggered && direction === "up") {  // "Up" crossing
             if (beepOn === "up") triggerBeep();
             stepCount++;
             beepTriggered = true;  // Avoid double counting
             lastStepTime = currentTime; // Update last step time
-        } else if (val < halfway && beepTriggered) {  // "Down" crossing
+            direction = "down";
+        } else if (val < halfway && beepTriggered && direction === "down") {  // "Down" crossing
             if (beepOn === "down") triggerBeep();
             stepCount++;
             beepTriggered = false;  // Reset for the next cycle
+            direction = "up"; // next time only when going up
         }
 //    }
 }
