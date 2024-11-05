@@ -185,6 +185,7 @@ const maxRecentValues = 100; // Limit the number of stored values for performanc
         let stepStartTime = Date.now(); // Track start time for frequency calculation
 
         let deltaTime = 0;
+        let lastStepTime = 0;
         
         const statusText       = document.getElementById('status');
         const timerDisplay     = document.getElementById('timer');
