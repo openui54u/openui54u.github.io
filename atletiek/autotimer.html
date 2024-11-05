@@ -273,14 +273,14 @@ function updateCycleMinMax(x, y, z) {
 /**
  * Calculates halfway thresholds for each axis based on current cycle min and max values.
  */
-//function calculateThresholds() {
+function calculateThresholds() {
 //    ["x", "y", "z"].forEach(axis => {
 //        const avgMin = minValues[axis].reduce((a, b) => a + b, 0) / minValues[axis].length;
 //        const avgMax = maxValues[axis].reduce((a, b) => a + b, 0) / maxValues[axis].length;
 //        halfwayThresholds[axis] = (avgMin + avgMax) / 2;
 //        deltaThresholds[axis] = Math.abs(avgMin - avgMax);
 //    });
-//}
+}
 
 // function getMaxAxis(deltaThresholds) {
 //    const { x, y, z } = deltaThresholds;
@@ -336,7 +336,8 @@ function checkStep(x, y, z) {
 //    }
     
     // Detect upward crossing
-    if (combinedMovement > currentMax - halfwayThreshold && !beepTriggered) {
+//    if (combinedMovement > currentMax - halfwayThreshold && !beepTriggered) {
+     if (combinedMovement >  halfwayThreshold && !beepTriggered) {
         // Count and trigger beep on upward crossing
         stepCount++;
         triggerBeep();
@@ -344,7 +345,8 @@ function checkStep(x, y, z) {
         direction = "up";
 
     // Detect downward crossing
-    } else if (combinedMovement < currentMin + halfwayThreshold && beepTriggered) {
+//    } else if (combinedMovement < currentMin + halfwayThreshold && beepTriggered) {
+          } else if (combinedMovement < halfwayThreshold && beepTriggered) {
         beepTriggered = false;  // Reset for the next cycle
         // Once downward crossing is detected, save the peak-to-peak range
         updatePeakRanges();
@@ -526,7 +528,7 @@ function updateMagnitudes(magnitude) {
 
         // Calculate new thresholds if we have enough data
         if (minValues.x.length === numCycles) {
-           // calculateThresholds();
+            calculateThresholds();
         }
 
         // Check if a step is detected
