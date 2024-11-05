@@ -334,7 +334,7 @@ function updateMagnitudes(magnitude) {
          function updateStepFrequency() {
             const elapsedTime = (Date.now() - stepStartTime) / 60000; // Convert to minutes
             const stepsPerMinute = stepCount / elapsedTime;
-            document.getElementById('steps-per-minute').innerText = Math.round(stepsPerMinute) + ' (' + Math.round(stepCount) + '/' + Math.round(elapsedTime*60) + 's ) @' Math.round(deltaTime)  ;
+            document.getElementById('steps-per-minute').innerText = Math.round(stepsPerMinute) + ' (' + Math.round(stepCount) + '/' + Math.round(elapsedTime*60) + 's ) @' + Math.round(deltaTime)  ;
         }
 
         
