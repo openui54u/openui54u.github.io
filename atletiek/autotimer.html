@@ -295,6 +295,38 @@ function updateCycleMinMax(x, y, z) {
 //
 //    return { axis, value: maxVal };
 //}
+        
+        
+function getDominantAxis(x, y, z) {
+  
+    const delta ={};
+    
+    ["x", "y", "z"].forEach(axis => {
+        const avgMin = minValues[axis].reduce((a, b) => a + b, 0) / minValues[axis].length;
+        const avgMax = maxValues[axis].reduce((a, b) => a + b, 0) / maxValues[axis].length;
+        delta[axis] = avgMax - avgMin;
+    });
+    
+    let maxAxis = Object.keys(delta).reduce((a, b) => delta[a] > delta[b] ? a : b);
+    
+    return { axis: maxAxis, value: delta[maxAxis] };
+    
+//    const absX = Math.abs(x);
+//    const absY = Math.abs(y);
+//    const absZ = Math.abs(z);
+//    // Find the dominant axis based on the largest absolute movement
+//    if (absX > absY && absX > absZ) return { axis: 'x', value: x };
+//    else if (absY > absX && absY > absZ) return { axis: 'y', value: y };
+//    return { axis: 'z', value: z };
+}
+
+function calculateDirectionalCombinedMovement(x, y, z) {
+    const dominantAxis = getDominantAxis(x, y, z).value;
+
+    // Combine movement while keeping the dominant axis’ sign
+    return Math.sqrt(x * x + y * y + z * z) * Math.sign(dominantAxis);
+}
+        
 /**
  * Checks if a step is detected based on crossing halfway thresholds.
  */
@@ -304,7 +336,10 @@ function checkStep(x, y, z) {
     
     // Calculate the combined magnitude of movement
     // https://www.mathportal.org/calculators/matrices-calculators/vector-calculator.php
-    combinedMovement = Math.sqrt( ((x+20) * (x+20) + (y+20) * (y+20) + (z+20) * (z+20)) );
+    //combinedMovement = Math.sqrt( ((x+20) * (x+20) + (y+20) * (y+20) + (z+20) * (z+20)) );
+     //combinedMovement = Math.sqrt( x * x + y * y + z * z );
+    
+      const combinedMovement = calculateDirectionalCombinedMovement(x, y, z);
     
     // Update current cycle's min and max based on the current combined movement
     currentMin = Math.min(currentMin, combinedMovement);
