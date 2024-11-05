@@ -123,14 +123,14 @@
     <p id="step-frequency">Steps per Minute: <span id="steps-per-minute">0</span></p>
 
     <div class="bar-container">
-        <div id="bar-x" class="bar" style="width: 0;"></div>
-        <div id="bar-y" class="bar" style="width: 0;"></div>
-        <div id="bar-z" class="bar" style="width: 0;"></div>
+        <div id="bar-x" class="bar" style="width: 1;"></div>
+        <div id="bar-y" class="bar" style="width: 1;"></div>
+        <div id="bar-z" class="bar" style="width: 1;"></div>
     </div>
        <div class="bar-container">
-        <div id="bar-x-delta" class="bar" style="width: 0;"></div>
-        <div id="bar-y-delta" class="bar" style="width: 0;"></div>
-        <div id="bar-z-delta" class="bar" style="width: 0;"></div>
+        <div id="bar-x-delta" class="bar" style="width: 1;"></div>
+        <div id="bar-y-delta" class="bar" style="width: 1;"></div>
+        <div id="bar-z-delta" class="bar" style="width: 1;"></div>
     </div>
     
          <div class="values-container">
@@ -212,6 +212,7 @@ const maxRecentValues = 100; // Limit the number of stored values for performanc
         const barX = document.getElementById('bar-x');
         const barY = document.getElementById('bar-y');
         const barZ = document.getElementById('bar-z');
+        
         const barXdelta = document.getElementById('bar-x-delta');
         const barYdelta = document.getElementById('bar-y-delta');
         const barZdelta = document.getElementById('bar-z-delta');
