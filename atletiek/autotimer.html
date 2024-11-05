@@ -227,6 +227,7 @@ let maxValues = { x: [], y: [], z: [] };
 
 // Thresholds based on halfway points between averaged min and max values
 let halfwayThresholds = { x: 0, y: 0, z: 0 };
+let deltaThresholds   = { x: 0, y: 0, z: 0 }; // max-min delta value
 let beepTriggered = false;  // To prevent double counting
 
         function triggerBeep(){
@@ -256,16 +257,31 @@ function calculateThresholds() {
         const avgMin = minValues[axis].reduce((a, b) => a + b, 0) / minValues[axis].length;
         const avgMax = maxValues[axis].reduce((a, b) => a + b, 0) / maxValues[axis].length;
         halfwayThresholds[axis] = (avgMin + avgMax) / 2;
+        deltaThresholds[axis] = Math.abs(avgMin - avgMax);
     });
 }
 
+ function getMaxAxis(deltaThresholds) {
+    const { x, y, z } = deltaThresholds;
+    const maxVal = Math.max(x, y, z);
+
+    let axis = 'x';
+    if (maxVal === y) axis = 'y';
+    else if (maxVal === z) axis = 'z';
+
+    return { axis, value: maxVal };
+}
 /**
  * Checks if a step is detected based on crossing halfway thresholds.
  */
 function checkStep(x, y, z) {
-    ["x", "y", "z"].forEach((axis, idx) => {
-        const halfway = halfwayThresholds[axis];
-        const val = [x, y, z][idx];
+    
+    // Which axis to check movement on ?
+    let checkAxis = getMaxAxis(deltaThresholds).axis;
+    
+//    ["x", "y", "z"].forEach((axis, idx) => {
+        const halfway = halfwayThresholds[checkAxis];
+        const val = [checkAxis][idx];
 
         if (val > halfway && !beepTriggered) {  // "Up" crossing
             if (beepOn === "up") triggerBeep();
@@ -277,7 +293,23 @@ function checkStep(x, y, z) {
             stepCount++;
             beepTriggered = false;  // Reset for the next cycle
         }
-    });
+//    });
+    
+//    ["x", "y", "z"].forEach((axis, idx) => {
+//        const halfway = halfwayThresholds[axis];
+//        const val = [x, y, z][idx];
+//
+//        if (val > halfway && !beepTriggered) {  // "Up" crossing
+//            if (beepOn === "up") triggerBeep();
+//            stepCount++;
+//            beepTriggered = true;  // Avoid double counting
+//
+//        } else if (val < halfway && beepTriggered) {  // "Down" crossing
+//            if (beepOn === "down") triggerBeep();
+//            stepCount++;
+//            beepTriggered = false;  // Reset for the next cycle
+//        }
+//    });
 }        
         
 // END OF STEP INTEGRATION        
