@@ -304,7 +304,7 @@ function checkStep(x, y, z) {
     
     // Calculate the combined magnitude of movement
     // https://www.mathportal.org/calculators/matrices-calculators/vector-calculator.php
-    combinedMovement = Math.sqrt( ((x+20) * (x+20) + (y+20) * (y+20) + (z+20) * (z+20));
+    combinedMovement = Math.sqrt( ((x+20) * (x+20) + (y+20) * (y+20) + (z+20) * (z+20)) );
     // Update current cycle's min and max based on the current combined movement
     currentMin = Math.min(currentMin, combinedMovement);
     currentMax = Math.max(currentMax, combinedMovement);
