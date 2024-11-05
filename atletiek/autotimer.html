@@ -401,7 +401,7 @@ function updateMagnitudes(magnitude) {
              if(direction=="up" ? l_sym = ">" : l_sym = "<");
             const elapsedTime = (Date.now() - stepStartTime) / 60000; // Convert to minutes
             const stepsPerMinute = stepCount / elapsedTime;
-            document.getElementById('steps-per-minute').innerText = Math.round(stepsPerMinute) + ' (' + Math.round(stepCount) + '/' + Math.round(elapsedTime*60) + 's ) @' + Math.round(deltaTime) + l_sym + ' ^'Math.round(combinedMovement);
+            document.getElementById('steps-per-minute').innerText = Math.round(stepsPerMinute) + ' (' + Math.round(stepCount) + '/' + Math.round(elapsedTime*60) + 's ) @' + Math.round(deltaTime) + l_sym + ' ^' + Math.round(combinedMovement);
         }
 
         
