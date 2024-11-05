@@ -90,43 +90,49 @@
 <body>
     <h1>Gyroscopic Timer</h1>
        <div class="values-container">
-    <p>Set threshold:</p>
+            <button id="start-stop-btn">Start Monitoring</button>
+<!--    <p>Step threshold:</p>-->
            
+<!--
     <div class="value-group">
     <input type="number" id="accel-threshold" value="20" step="100">-
-<!--    <input type="number" id="accel-threshold-Stop" value="15" step="1">-->
+    <input type="number" id="accel-threshold-Stop" value="15" step="1">
     </div>
-     <button id="auto-thres-btn">Auto</button>
+-->
+     <button id="auto-thres-btn">Auto threshold</button>
     </div>
      <div class="values-container">
+     <p>Start/Stop threshold:</p>
         <div class="value-group">
         <input type="number" id="accel-delta-threshold" value="1" step="1">-
         <input type="number" id="accel-delta-threshold-Stop" value="15" step="1">
         </div>
     </div>       
    
-    <button id="start-stop-btn">Start Monitoring</button>
+   
 <!--
     <button id="tare-btn">Tare (Gyro)</button>
     <button id="auto-tare-btn">Auto Tare</button>
 -->
-     <div class="values-container">
-         <div class="value-group">
-            <button id="manual-start-btn">Manual Start</button>
-            <button id="manual-stop-btn" disabled>Manual Stop</button>
-         </div>
-    </div>
+
     
     <p id="status">Status: Not Started</p>
     <p id="timer">Timer: 00:00:00:000</p>
 <!--    <p>Magnitude: <span id="magnitude-value">0.00</span></p>-->
-    <p>Delta Magnitude: <span id="magnitude-delta-value">0.00</span></p>
+    <p>Magnitude: <span id="magnitude-delta-value">0.00</span></p>
     <p id="step-frequency">Steps per Minute: <span id="steps-per-minute">0</span></p>
 
     <div class="bar-container">
         <div id="bar-x" class="bar" style="width: 0;"></div>
         <div id="bar-y" class="bar" style="width: 0;"></div>
         <div id="bar-z" class="bar" style="width: 0;"></div>
+    </div>
+    
+         <div class="values-container">
+         <div class="value-group">
+            <button id="manual-start-btn">Manual Start</button>
+            <button id="manual-stop-btn" disabled>Manual Stop</button>
+         </div>
     </div>
     
     <div class="values-container">
@@ -138,7 +144,7 @@
         </div>
     </div>
     <div class="values-container">
-    <p>Delta XYZ</p>
+    <p>∆ XYZ</p>
         <div class="value-group">
             X: <span id="x-d-value">0.00</span>,
             Y: <span id="y-d-value">0.00</span>,
@@ -148,7 +154,7 @@
 
     <script>
         let monitoring       = false;
-        let threshold        = 20;
+//        let threshold        = 20;
 //        let thresholdStop    = 50;
         let thresholdDelta        = 2;
         let thresholdDeltaStop    = 10;
@@ -191,7 +197,7 @@ const maxRecentValues = 100; // Limit the number of stored values for performanc
         const manualStartButton = document.getElementById('manual-start-btn');
         const manualStopButton  = document.getElementById('manual-stop-btn');
         
-        const accelThreshold           = document.getElementById('accel-threshold');
+//        const accelThreshold           = document.getElementById('accel-threshold');
 //        const accelThresholdStop       = document.getElementById('accel-threshold-Stop');
         const accelDeltaThreshold      = document.getElementById('accel-delta-threshold');
         const accelDeltaThresholdStop  = document.getElementById('accel-delta-threshold-Stop');
@@ -208,6 +214,73 @@ const maxRecentValues = 100; // Limit the number of stored values for performanc
         const yDeltaValueDisplay = document.getElementById('y-d-value');
         const zDeltaValueDisplay = document.getElementById('z-d-value');
         
+// NEW STEP INTEGRATION
+
+// Parameters for configuration
+const numCycles = 3;     // Number of cycles to calculate min/max values
+const beepOn = "down";   // Choose to beep on "up" or "down" crossing
+//let stepCount = 0;       // Step counter
+
+// Storage for min and max values across cycles
+let minValues = { x: [], y: [], z: [] };
+let maxValues = { x: [], y: [], z: [] };
+
+// Thresholds based on halfway points between averaged min and max values
+let halfwayThresholds = { x: 0, y: 0, z: 0 };
+let beepTriggered = false;  // To prevent double counting
+
+        function triggerBeep(){
+             beep( 100, 1900, 80 );
+        }
+        
+/**
+ * Updates the cyclic minimum and maximum values for each axis.
+ */
+function updateCycleMinMax(x, y, z) {
+    ["x", "y", "z"].forEach((axis, idx) => {
+        const val = [x, y, z][idx];
+        minValues[axis].push(val);
+        maxValues[axis].push(val);
+
+        // Keep only the latest `numCycles` values
+        if (minValues[axis].length > numCycles) minValues[axis].shift();
+        if (maxValues[axis].length > numCycles) maxValues[axis].shift();
+    });
+}
+
+/**
+ * Calculates halfway thresholds for each axis based on current cycle min and max values.
+ */
+function calculateThresholds() {
+    ["x", "y", "z"].forEach(axis => {
+        const avgMin = minValues[axis].reduce((a, b) => a + b, 0) / minValues[axis].length;
+        const avgMax = maxValues[axis].reduce((a, b) => a + b, 0) / maxValues[axis].length;
+        halfwayThresholds[axis] = (avgMin + avgMax) / 2;
+    });
+}
+
+/**
+ * Checks if a step is detected based on crossing halfway thresholds.
+ */
+function checkStep(x, y, z) {
+    ["x", "y", "z"].forEach((axis, idx) => {
+        const halfway = halfwayThresholds[axis];
+        const val = [x, y, z][idx];
+
+        if (val > halfway && !beepTriggered) {  // "Up" crossing
+            if (beepOn === "up") triggerBeep();
+            stepCount++;
+            beepTriggered = true;  // Avoid double counting
+
+        } else if (val < halfway && beepTriggered) {  // "Down" crossing
+            if (beepOn === "down") triggerBeep();
+            stepCount++;
+            beepTriggered = false;  // Reset for the next cycle
+        }
+    });
+}        
+        
+// END OF STEP INTEGRATION        
         
         // This function should be called every time you calculate a new magnitude
 function updateMagnitudes(magnitude) {
@@ -248,14 +321,14 @@ function updateMagnitudes(magnitude) {
             
             if (isTimerRunning) return;  // Prevent starting if already running
 
-beep(
-    // Set the duration to 0.2 second (200 milliseconds)
-    100,
-    // Set the frequency of the note to A4 (440 Hz)
-    1000,
-    // Set the volume of the beep to 100%
-    100
-);
+            beep(
+                // Set the duration to 0.2 second (200 milliseconds)
+                100,
+                // Set the frequency of the note to A4 (440 Hz)
+                1000,
+                // Set the volume of the beep to 100%
+                100
+            );
             
             isTimerRunning = true;
             
@@ -340,15 +413,31 @@ beep(
             const magnitude = Math.max(Math.abs(Accel.x), Math.abs(Accel.y), Math.abs(Accel.z));
             const currentThreshold = updateMagnitudes(magnitude); // Get the dynamic threshold
 
-            // Detect peaks and play beep
-            if (magnitude > currentThreshold && !isIncreasing && (isTimerRunning && magnitude > threshold)) {
-                isIncreasing = true;
-            } else if (magnitude < currentThreshold && isIncreasing && (isTimerRunning && magnitude > threshold)) {
-                isIncreasing = false;
-                stepCount++; // Increment step count at each peak
-                beep(100, 500, 100); // Play beep sound
-                updateStepFrequency(); // Update step frequency display
-            }
+// ------------------- Detect peaks and play beep
+//            if (magnitude > currentThreshold && !isIncreasing && (isTimerRunning && magnitude > threshold)) {
+//                isIncreasing = true;
+//            } else if (magnitude < currentThreshold && isIncreasing && (isTimerRunning && magnitude > threshold)) {
+//                isIncreasing = false;
+//                stepCount++; // Increment step count at each peak
+//                beep(100, 500, 100); // Play beep sound
+//                updateStepFrequency(); // Update step frequency display
+//            }
+// ------------------- - - - - -- - - - - -- - - -- - - - -- - - - -  
+
+// NEW STEP INTEGRATION            
+            // Update the cyclic min and max values
+        updateCycleMinMax(Accel.x, Accel.y, Accel.z);
+
+        // Calculate new thresholds if we have enough data
+        if (minValues.x.length === numCycles) {
+            calculateThresholds();
+        }
+
+        // Check if a step is detected
+        checkStep(Accel.x, Accel.y, Accel.z);
+// NEW STEP INTEGRATION            
+            
+            
 
             deltaMagnitude      = Math.abs( previousMagnitude - magnitude );
                
@@ -383,8 +472,8 @@ beep(
 
         function startMonitoring() {
 
-            threshold                   = parseFloat(accelThreshold.value);
-//                           = parseFloat(accelThresholdStop.value);
+//            threshold          = parseFloat(accelThreshold.value);
+//            thresholdStop      = parseFloat(accelThresholdStop.value);
             
             thresholdDelta              = parseFloat(accelDeltaThreshold.value);
             thresholdDeltaStop          = parseFloat(accelDeltaThresholdStop.value);
