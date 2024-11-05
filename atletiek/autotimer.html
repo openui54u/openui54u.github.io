@@ -424,7 +424,10 @@ function updateMagnitudes(magnitude) {
 //            }
 // ------------------- - - - - -- - - - - -- - - -- - - - -- - - - -  
 
-// NEW STEP INTEGRATION            
+        deltaMagnitude      = Math.abs( previousMagnitude - magnitude );
+            
+// NEW STEP INTEGRATION    
+        if (deltaMagnitude > thresholdDelta){
             // Update the cyclic min and max values
         updateCycleMinMax(Accel.x, Accel.y, Accel.z);
 
@@ -435,11 +438,12 @@ function updateMagnitudes(magnitude) {
 
         // Check if a step is detected
         checkStep(Accel.x, Accel.y, Accel.z);
+        }
 // NEW STEP INTEGRATION            
             
             
 
-            deltaMagnitude      = Math.abs( previousMagnitude - magnitude );
+ 
                
             if (autoThresActive){
             thresValues = { 
