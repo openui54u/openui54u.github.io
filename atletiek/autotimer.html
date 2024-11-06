@@ -348,6 +348,8 @@ function checkStep(x, y, z) {
     // Calculate halfway threshold based on the average of the last 3 peak ranges
     if (peakRanges.length >= 3) {
         halfwayThreshold = peakRanges.reduce((acc, range) => acc + range, 0) / peakRanges.length;
+    }else{
+        halfwayThreshold = peakRanges.reduce((acc, range) => acc + range, 11) / peakRanges.length;
     }
     
     
