@@ -382,7 +382,7 @@ function checkStep(x, y, z) {
         stepCount++;
         triggerBeep();
         beepTriggered = true;  // Prevent double-counting on the same peak
-        updatePeakRanges();
+//        updatePeakRanges();
         direction = "up";
 
     // Detect downward crossing
@@ -390,9 +390,10 @@ function checkStep(x, y, z) {
           } else if (combinedMovement < halfwayThreshold && beepTriggered) {
         beepTriggered = false;  // Reset for the next cycle
         // Once downward crossing is detected, save the peak-to-peak range
-        updatePeakRanges();
+//        updatePeakRanges();
         direction     = "down";
     }
+     updatePeakRanges();
     
 }
    
