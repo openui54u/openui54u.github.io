@@ -353,6 +353,8 @@ function checkStep(x, y, z) {
         halfwayThreshold = ( currentMax - currentMin ) / 2;
     }
     
+    if (halfwayThreshold == 0){ halfwayThreshold++}; // just to see what is going on
+    
     
     // Which axis to check movement on ?
    // let checkAxis = getMaxAxis(deltaThresholds).axis;
@@ -534,6 +536,7 @@ function updateMagnitudes(magnitude) {
             Accel.y = acceleration.y  || 0 ;
             Accel.z = acceleration.z  || 0 ;
             
+            if (Accel.x == 0 && Accel.y == 0 && Accel.z == 0) return;
 
             deltaAccel.x = Math.abs( previousAccel.x - Accel.x );
             deltaAccel.y = Math.abs( previousAccel.y - Accel.y );
