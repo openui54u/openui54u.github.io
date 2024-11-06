@@ -300,6 +300,7 @@ function updateCycleMinMax(x, y, z) {
 function getDominantAxis(x, y, z) {
   
     const delta ={};
+    let maxAxis = "x";
     
     ["x", "y", "z"].forEach(axis => {
         const avgMin = minValues[axis].reduce((a, b) => a + b, 0) / minValues[axis].length;
@@ -307,9 +308,9 @@ function getDominantAxis(x, y, z) {
         delta[axis] = avgMax - avgMin;
     });
     
-    let maxAxis = Object.keys(delta).reduce((a, b) => delta[a] > delta[b] ? a : b);
+    maxAxis = Object.keys(delta).reduce((a, b) => delta[a] > delta[b] ? a : b);
     
-    return { axis: maxAxis, value: delta[maxAxis] };
+    return { axis: maxAxis, value: delta[maxAxis] }; //delta[maxAxis]
     
 //    const absX = Math.abs(x);
 //    const absY = Math.abs(y);
@@ -321,8 +322,9 @@ function getDominantAxis(x, y, z) {
 }
 
 function calculateDirectionalCombinedMovement(x, y, z) {
-    const dominantAxis = getDominantAxis(x, y, z).value;
-
+    var extracted1 = getDominantAxis;
+    const dominantAxis = extracted1(x, y, z).value;
+beep(100,2000,30);
     // Combine movement while keeping the dominant axis’ sign
     return Math.sqrt(x * x + y * y + z * z) * Math.sign(dominantAxis);
 }
@@ -538,7 +540,6 @@ function updateMagnitudes(magnitude) {
             if (halfwayThreshold == 0){ 
                 halfwayThreshold++;
                 updateStepFrequency();
-                
             }; // just to see what is going on
             
             if (Accel.x == 0 && Accel.y == 0 && Accel.z == 0) return;
