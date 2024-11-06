@@ -402,7 +402,9 @@ function updatePeakRanges() {
     const peakRange = currentMax - currentMin;
 
     // Add the new peak range and keep only the last 3 ranges
+    if (peakRange != 0){
     peakRanges.push(peakRange);
+    }
     if (peakRanges.length > 3) peakRanges.shift(); // Keep only last 3 ranges
 
     // Reset min and max for the next cycle
