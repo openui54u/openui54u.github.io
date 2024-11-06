@@ -535,7 +535,11 @@ function updateMagnitudes(magnitude) {
             Accel.y = acceleration.y  || 0 ;
             Accel.z = acceleration.z  || 0 ;
             
-            if (halfwayThreshold == 0){ halfwayThreshold++}; // just to see what is going on
+            if (halfwayThreshold == 0){ 
+                halfwayThreshold++;
+                updateStepFrequency();
+                
+            }; // just to see what is going on
             
             if (Accel.x == 0 && Accel.y == 0 && Accel.z == 0) return;
 
