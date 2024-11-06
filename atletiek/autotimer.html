@@ -382,6 +382,7 @@ function checkStep(x, y, z) {
         stepCount++;
         triggerBeep();
         beepTriggered = true;  // Prevent double-counting on the same peak
+        updatePeakRanges();
         direction = "up";
 
     // Detect downward crossing
