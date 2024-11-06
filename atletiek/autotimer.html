@@ -376,18 +376,18 @@ function checkStep(x, y, z) {
 //    }
     
     // Detect upward crossing
-    if (combinedMovement > currentMax - halfwayThreshold && !beepTriggered) {
-//     if (combinedMovement >  halfwayThreshold && !beepTriggered) {
+//    if (combinedMovement > currentMax - halfwayThreshold && !beepTriggered) {
+     if (combinedMovement >  halfwayThreshold && !beepTriggered) {
         // Count and trigger beep on upward crossing
         stepCount++;
         triggerBeep();
         beepTriggered = true;  // Prevent double-counting on the same peak
-        updatePeakRanges();
+//        updatePeakRanges();
         direction = "up";
 
     // Detect downward crossing
-    } else if (combinedMovement < currentMin + halfwayThreshold && beepTriggered) {
-//          } else if (combinedMovement < halfwayThreshold && beepTriggered) {
+//    } else if (combinedMovement < currentMin + halfwayThreshold && beepTriggered) {
+          } else if (combinedMovement < halfwayThreshold && beepTriggered) {
         beepTriggered = false;  // Reset for the next cycle
         // Once downward crossing is detected, save the peak-to-peak range
         updatePeakRanges();
