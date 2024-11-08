@@ -303,14 +303,14 @@ function getDominantAxis(x, y, z) {
     let maxAxis = "x";
     
     ["x", "y", "z"].forEach(axis => {
-        const avgMin = minValues[axis].reduce((a, b) => a + b, 0) / minValues[axis].length;
-        const avgMax = maxValues[axis].reduce((a, b) => a + b, 0) / maxValues[axis].length;
-        delta[axis] = avgMax - avgMin;
+        const avgMin = minValues[ axis ].reduce((a, b) => a + b, 0) / minValues[ axis ].length;
+        const avgMax = maxValues[ axis ].reduce((a, b) => a + b, 0) / maxValues[ axis ].length;
+        delta[ axis ] = avgMax - avgMin;
     });
     
     maxAxis = Object.keys(delta).reduce((a, b) => delta[a] > delta[b] ? a : b);
     
-    return { axis: maxAxis, value: delta[maxAxis] }; //delta[maxAxis]
+    return { axis: maxAxis, value: delta[ maxAxis ] }; //delta[maxAxis]
     
 //    const absX = Math.abs(x);
 //    const absY = Math.abs(y);
@@ -323,10 +323,10 @@ function getDominantAxis(x, y, z) {
 
 function calculateDirectionalCombinedMovement(x, y, z) {
     var extracted1 = getDominantAxis(x, y, z);
-    const dominantAxis = extracted1(x, y, z).value;
-    beep(100,2000,30);
+    const dominantAxis = extracted1(x, y, z);
+    beep(100,2600,30);
     // Combine movement while keeping the dominant axis’ sign
-    let lv_return = Math.sqrt(x * x + y * y + z * z) * Math.sign(dominantAxis);
+    let lv_return = Math.sqrt(x * x + y * y + z * z) * Math.sign(dominantAxis.axis);
 //    console.log(lv_return);
     return lv_return;
 }
