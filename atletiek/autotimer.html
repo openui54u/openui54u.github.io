@@ -330,12 +330,14 @@ function checkStep(x, y, z) {
     currentMin = Math.min(currentMin, combinedMovement);
     currentMax = Math.max(currentMax, combinedMovement);
     
-    // Set halfway threshold based on recent peak ranges
+    // Set halfway threshold based on recent peak ranges if available
     if (peakRanges.length >= 3) {
         halfwayThreshold = peakRanges.reduce((acc, range) => acc + range, 0) / peakRanges.length;
     } else {
         halfwayThreshold = (currentMax - currentMin) / 2;
     }
+
+    console.log("combinedMovement:", combinedMovement, "halfwayThreshold:", halfwayThreshold);
     
     if (combinedMovement > halfwayThreshold && !beepTriggered) {
         // Step counted on upward crossing
@@ -352,18 +354,19 @@ function checkStep(x, y, z) {
    
         // Helper function to update peak ranges for dynamic threshold calculation
 function updatePeakRanges() {
-    // Calculate the peak-to-peak range for this cycle
+    // Calculate and store the peak-to-peak range for the last cycle
     const peakRange = currentMax - currentMin;
 
-    // Add the new peak range and keep only the last 3 ranges
-    if (peakRange != 0){
-    peakRanges.push(peakRange);
+    // Only push non-zero peak ranges to avoid noise
+    if (peakRange !== 0) {
+        peakRanges.push(peakRange);
+        if (peakRanges.length > 3) peakRanges.shift();  // Keep only the last 3 ranges
     }
-    if (peakRanges.length > 3) peakRanges.shift(); // Keep only last 3 ranges
 
     // Reset min and max for the next cycle
     currentMin = Infinity;
     currentMax = -Infinity;
+    console.log("Updated peakRanges:", peakRanges);
 }
         
 // END OF STEP INTEGRATION        
@@ -485,8 +488,9 @@ function updateMagnitudes(magnitude) {
             Accel.z = acceleration.z  || 0 ;
             
             if (halfwayThreshold == 0){ 
-                halfwayThreshold++;
-                updateStepFrequency();
+                //halfwayThreshold++;
+                beep(100, 200, 50); // low short beep
+                //updateStepFrequency();
             }; // just to see what is going on
             
             if (Accel.x == 0 && Accel.y == 0 && Accel.z == 0) return;
