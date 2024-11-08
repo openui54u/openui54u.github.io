@@ -311,9 +311,10 @@ function getDominantAxis(x, y, z) {
 
 
 function calculateDirectionalCombinedMovement(x, y, z) {
+    console.log( x, y, z);
     const { axis } = getDominantAxis(x, y, z);
     const dominantValue = { x, y, z }[axis];  // Get the dominant axis value
-    
+    console.log( dominantValue );
     // Combine movement magnitudes, maintaining dominant axis' direction
     const combinedMovement = Math.sqrt(x * x + y * y + z * z) * Math.sign(dominantValue);
     return combinedMovement;
@@ -350,6 +351,7 @@ function checkStep(x, y, z) {
         direction = "down";
         updatePeakRanges();  // Save peak range after full up/down cycle
     }
+    console.log(direction);
 }
    
         // Helper function to update peak ranges for dynamic threshold calculation
