@@ -297,38 +297,26 @@ function updateCycleMinMax(x, y, z) {
 //}
         
         
+// Determine dominant axis for movement analysis
 function getDominantAxis(x, y, z) {
-  
-    const delta ={};
-    let maxAxis = "x";
-    
+    const delta = {};
     ["x", "y", "z"].forEach(axis => {
-        const avgMin = minValues[ axis ].reduce((a, b) => a + b, 0) / minValues[ axis ].length;
-        const avgMax = maxValues[ axis ].reduce((a, b) => a + b, 0) / maxValues[ axis ].length;
-        delta[ axis ] = avgMax - avgMin;
+        const avgMin = minValues[axis].reduce((a, b) => a + b, 0) / minValues[axis].length;
+        const avgMax = maxValues[axis].reduce((a, b) => a + b, 0) / maxValues[axis].length;
+        delta[axis] = avgMax - avgMin;
     });
-    
-    maxAxis = Object.keys(delta).reduce((a, b) => delta[a] > delta[b] ? a : b);
-    
-    return { axis: maxAxis, value: delta[ maxAxis ] }; //delta[maxAxis]
-    
-//    const absX = Math.abs(x);
-//    const absY = Math.abs(y);
-//    const absZ = Math.abs(z);
-//    // Find the dominant axis based on the largest absolute movement
-//    if (absX > absY && absX > absZ) return { axis: 'x', value: x };
-//    else if (absY > absX && absY > absZ) return { axis: 'y', value: y };
-//    return { axis: 'z', value: z };
+    const maxAxis = Object.keys(delta).reduce((a, b) => delta[a] > delta[b] ? a : b);
+    return { axis: maxAxis, value: delta[maxAxis] };
 }
 
+
 function calculateDirectionalCombinedMovement(x, y, z) {
-    var extracted1 = getDominantAxis(x, y, z);
-    const dominantAxis = extracted1(x, y, z);
-    beep(100,2600,30);
-    // Combine movement while keeping the dominant axis’ sign
-    let lv_return = Math.sqrt(x * x + y * y + z * z) * Math.sign(dominantAxis.axis);
-//    console.log(lv_return);
-    return lv_return;
+    const { axis } = getDominantAxis(x, y, z);
+    const dominantValue = { x, y, z }[axis];  // Get the dominant axis value
+    
+    // Combine movement magnitudes, maintaining dominant axis' direction
+    const combinedMovement = Math.sqrt(x * x + y * y + z * z) * Math.sign(dominantValue);
+    return combinedMovement;
 }
         
 /**
@@ -337,72 +325,29 @@ function calculateDirectionalCombinedMovement(x, y, z) {
  const stepDelay = 100; // Minimum time (in ms) between steps
 
 function checkStep(x, y, z) {
+    const combinedMovement = calculateDirectionalCombinedMovement(x, y, z);
     
-    // Calculate the combined magnitude of movement
-    // https://www.mathportal.org/calculators/matrices-calculators/vector-calculator.php
-    //combinedMovement = Math.sqrt( ((x+20) * (x+20) + (y+20) * (y+20) + (z+20) * (z+20)) );
-     //combinedMovement = Math.sqrt( x * x + y * y + z * z );
-    
-      const combinedMovement = calculateDirectionalCombinedMovement(x, y, z);
-    
-    // Update current cycle's min and max based on the current combined movement
     currentMin = Math.min(currentMin, combinedMovement);
     currentMax = Math.max(currentMax, combinedMovement);
     
-    // Calculate halfway threshold based on the average of the last 3 peak ranges
+    // Set halfway threshold based on recent peak ranges
     if (peakRanges.length >= 3) {
         halfwayThreshold = peakRanges.reduce((acc, range) => acc + range, 0) / peakRanges.length;
-    }else{
-      //  halfwayThreshold = peakRanges.reduce((acc, range) => acc + range, 0) / peakRanges.length;
-        halfwayThreshold = ( currentMax - currentMin ) / 2;
+    } else {
+        halfwayThreshold = (currentMax - currentMin) / 2;
     }
     
-   
-    
-    // Which axis to check movement on ?
-   // let checkAxis = getMaxAxis(deltaThresholds).axis;
-    //
-//        const halfway = halfwayThresholds[checkAxis];
-//        const val = { x, y, z }[checkAxis];
-//
-//    const currentTime = Date.now(); // Get current time
-//          deltaTime   = currentTime - lastStepTime;
-////    if (currentTime - lastStepTime > stepDelay) { // Check time since last step
-//        
-//        if (val > halfway && !beepTriggered ) {  // "Up" crossing
-//            if (beepOn === "up") triggerBeep();
-//            stepCount++;
-//            beepTriggered = true;  // Avoid double counting
-//            lastStepTime = currentTime; // Update last step time
-//            direction = "up";
-//        } else if (val < halfway && beepTriggered) {  // "Down" crossing
-//            if (beepOn === "down") triggerBeep();
-//            stepCount++;
-//            beepTriggered = false;  // Reset for the next cycle
-//            direction     = "down"; // to show indication on screen of direction
-//        }
-//    }
-    
-    // Detect upward crossing
-//    if (combinedMovement > currentMax - halfwayThreshold && !beepTriggered) {
-     if (combinedMovement >  halfwayThreshold && !beepTriggered) {
-        // Count and trigger beep on upward crossing
+    if (combinedMovement > halfwayThreshold && !beepTriggered) {
+        // Step counted on upward crossing
         stepCount++;
         triggerBeep();
-        beepTriggered = true;  // Prevent double-counting on the same peak
-//        updatePeakRanges();
+        beepTriggered = true;
         direction = "up";
-
-    // Detect downward crossing
-//    } else if (combinedMovement < currentMin + halfwayThreshold && beepTriggered) {
-          } else if (combinedMovement < halfwayThreshold && beepTriggered) {
-        beepTriggered = false;  // Reset for the next cycle
-        // Once downward crossing is detected, save the peak-to-peak range
-//        updatePeakRanges();
-        direction     = "down";
+    } else if (combinedMovement < halfwayThreshold && beepTriggered) {
+        beepTriggered = false;
+        direction = "down";
+        updatePeakRanges();  // Save peak range after full up/down cycle
     }
-     updatePeakRanges();
-    
 }
    
         // Helper function to update peak ranges for dynamic threshold calculation
