@@ -322,11 +322,13 @@ function getDominantAxis(x, y, z) {
 }
 
 function calculateDirectionalCombinedMovement(x, y, z) {
-    var extracted1 = getDominantAxis;
+    var extracted1 = getDominantAxis(x, y, z);
     const dominantAxis = extracted1(x, y, z).value;
-beep(100,2000,30);
+//beep(100,2000,30);
     // Combine movement while keeping the dominant axis’ sign
-    return Math.sqrt(x * x + y * y + z * z) * Math.sign(dominantAxis);
+    let lv_return = Math.sqrt(x * x + y * y + z * z) * Math.sign(dominantAxis);
+//    console.log(lv_return);
+    return lv_return;
 }
         
 /**
@@ -444,7 +446,7 @@ function updateMagnitudes(magnitude) {
     // Calculate threshold based on percentage of values above baseline
     const percentage = 0.8; // For 80%
     const local_threshold = (countAboveBaseline / magnitudes.length) > percentage ? average : baseline;
-
+//    local_threshold == local_threshold / 2;
     return local_threshold;
 }
         
