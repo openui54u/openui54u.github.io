@@ -149,7 +149,7 @@
     </div>
 -->
       <!-- Canvas element for the graph -->
-    <canvas id="graphCanvas" width="200" height="100"></canvas>
+    <canvas id="graphCanvas" width="300" height="70"></canvas>
     
          <div class="values-container">
          <div class="value-group">
@@ -647,9 +647,9 @@ function drawGraphRot(rotationRate) {
     const barHeight = 20; // Arbitrary height for the bar
             
    
-    const barYB = canvas.height / 2 - barHeight / 2 - 30;
+    const barYB = canvas.height / 2 - barHeight / 2 - 20;
     const barYG = canvas.height / 2 - barHeight / 2 ;
-     const barYA = canvas.height / 2 - barHeight / 2 + 30;
+     const barYA = canvas.height / 2 - barHeight / 2 + 20;
 
     // Calculate the x-position based on the rotation rate's direction
     const barXA = rotationRate.alpha >= 0 ? centerX : centerX - barWidthA;
