@@ -187,7 +187,7 @@
         let Accel           = { x: 0, y: 0, z: 0 };
         let previousAccel   = { x: 0, y: 0, z: 0 };
         let deltaAccel      = { x: 0, y: 0, z: 0 };
-        let rotAccel      = { x: 0, y: 0, z: 0 };
+        let rotAccel      = { alpha: 0, beta: 0, gamma: 0 };
         
         let myAudioContext = null;
         let autoThresActive = false;
@@ -526,9 +526,9 @@ function updateMagnitudes(magnitude) {
             deltaAccel.z = Math.abs( previousAccel.z - Accel.z );
                 
             
-            rotAccel.x = rotation.x;
-            rotAccel.y = rotation.y;
-            rotAccel.z = rotation.z;
+            rotAccel.a = rotation.alpha;
+            rotAccel.b = rotation.beta;
+            rotAccel.g = rotation.gamma;
             
              xValueDisplay.innerText            = Accel.x.toFixed(1) ;
              yValueDisplay.innerText            = Accel.y.toFixed(1) ;
@@ -551,9 +551,9 @@ function updateMagnitudes(magnitude) {
             barY.style.width = Math.min(Math.abs(Accel.y) * 10, 100) + '%';
             barZ.style.width = Math.min(Math.abs(Accel.z) * 10, 100) + '%';
                       
-            barXrot.style.width = Math.min(Math.abs(rotAccel.x) * 10, 100) + '%';
-            barYrot.style.width = Math.min(Math.abs(rotAccel.y) * 10, 100) + '%';
-            barZrot.style.width = Math.min(Math.abs(rotAccel.z) * 10, 100) + '%';
+            barXrot.style.width = Math.min(Math.abs(rotAccel.a) * 10, 100) + '%';
+            barYrot.style.width = Math.min(Math.abs(rotAccel.b) * 10, 100) + '%';
+            barZrot.style.width = Math.min(Math.abs(rotAccel.g) * 10, 100) + '%';
                         
             const magnitude = Math.max(Math.abs(Accel.x), Math.abs(Accel.y), Math.abs(Accel.z));
             const currentThreshold = updateMagnitudes(magnitude); // Get the dynamic threshold
