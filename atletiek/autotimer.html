@@ -89,6 +89,11 @@
     align-items: center;
 }
         
+          canvas {
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+        
 </style>
 </head>
 <body>
@@ -136,11 +141,15 @@
         <div id="bar-y-delta" class="bar" style="width: 1;"></div>
         <div id="bar-z-delta" class="bar" style="width: 1;"></div>
     </div>
+<!--
       <div class="bar-container">
         <div id="bar-x-rot" class="bar" style="width: 1;"></div>
         <div id="bar-y-rot" class="bar" style="width: 1;"></div>
         <div id="bar-z-rot" class="bar" style="width: 1;"></div>
     </div>
+-->
+      <!-- Canvas element for the graph -->
+    <canvas id="graphCanvas" width="600" height="200"></canvas>
     
          <div class="values-container">
          <div class="value-group">
@@ -243,9 +252,19 @@ let currentMax = -Infinity; // Track current cycle's maximum
         const barYdelta = document.getElementById('bar-y-delta');
         const barZdelta = document.getElementById('bar-z-delta');
         
-        const barXrot = document.getElementById('bar-x-rot');
-        const barYrot = document.getElementById('bar-y-rot');
-        const barZrot = document.getElementById('bar-z-rot');
+        //Rotation
+//        const barXrot = document.getElementById('bar-x-rot');
+//        const barYrot = document.getElementById('bar-y-rot');
+//        const barZrot = document.getElementById('bar-z-rot');
+        
+         // JavaScript code to handle drawing on the canvas
+        const canvas = document.getElementById("graphCanvas");
+        const ctx = canvas.getContext("2d");
+        
+        
+        const centerX = canvas.width / 2; // Horizontal center of the graph
+        const scaleFactor = 10;            // Scale factor to amplify the rotationRate values
+        //
         
         const xValueDisplay = document.getElementById('x-value');
         const yValueDisplay = document.getElementById('y-value');
@@ -541,7 +560,7 @@ function updateMagnitudes(magnitude) {
              xRotValueDisplay.innerText       = rotAccel.a.toFixed(1);
              yRotValueDisplay.innerText       = rotAccel.b.toFixed(1);
              zRotValueDisplay.innerText       = rotAccel.g.toFixed(1);
-            
+                        
 
             barXdelta.style.width = Math.min(Math.abs(deltaAccel.x) * 10, 100) + '%';
             barYdelta.style.width = Math.min(Math.abs(deltaAccel.y) * 10, 100) + '%';
@@ -551,10 +570,15 @@ function updateMagnitudes(magnitude) {
             barY.style.width = Math.min(Math.abs(Accel.y) * 10, 100) + '%';
             barZ.style.width = Math.min(Math.abs(Accel.z) * 10, 100) + '%';
                       
-            barXrot.style.width = Math.min(Math.abs(rotAccel.a) * 1, 360) + 'px';
-            barYrot.style.width = Math.min(Math.abs(rotAccel.b) * 1, 360) + 'px';
-            barZrot.style.width = Math.min(Math.abs(rotAccel.g) * 1, 360) + 'px';
-                        
+            
+            //const rotationRate = event.rotationRate.alpha; // For example, using alpha rotation rate
+//const barWidthRot = Math.abs(rotationRate) * scaleFactor;
+//const barXRot = rotationRate >= 0 ? centerX : centerX - barWidth;
+//            
+//            barXrot.style.width = Math.min(Math.abs(rotAccel.a) * 1, 360) + 'px';
+//            barYrot.style.width = Math.min(Math.abs(rotAccel.b) * 1, 360) + 'px';
+//            barZrot.style.width = Math.min(Math.abs(rotAccel.g) * 1, 360) + 'px';
+drawGraphRot( rotAccel );                        
             const magnitude = Math.max(Math.abs(Accel.x), Math.abs(Accel.y), Math.abs(Accel.z));
             const currentThreshold = updateMagnitudes(magnitude); // Get the dynamic threshold
 
@@ -608,6 +632,46 @@ function updateMagnitudes(magnitude) {
 
         };
 
+        
+function drawGraph(rotationRate) {
+    // Clear previous frame
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Set bar properties
+    const barWidthA = Math.abs(rotationRate.alpha) * scaleFactor;
+    const barWidthB = Math.abs(rotationRate.beta) * scaleFactor;
+    const barWidthG = Math.abs(rotationRate.gamma) * scaleFactor;
+    
+    const barHeight = 20; // Arbitrary height for the bar
+            
+    const barYA = canvas.height / 2 - barHeight / 2;
+    const barYB = canvas.height / 2 - barHeight / 2;
+    const barYG = canvas.height / 2 - barHeight / 2;
+
+    // Calculate the x-position based on the rotation rate's direction
+    const barXA = rotationRate.alpha >= 0 ? centerX : centerX - barWidthA;
+    const barXB = rotationRate.beta >= 0 ? centerX : centerX - barWidthB;
+    const barXG = rotationRate.gamma >= 0 ? centerX : centerX - barWidthG;
+
+    // Draw the bar
+    ctx.fillStyle = rotationRate.alpha >= 0 ? "blue" : "red";
+    ctx.fillRect(barXA, barYA, barWidthA, barHeight);
+
+    ctx.fillStyle = rotationRate.beta >= 0 ? "blue" : "red";
+    ctx.fillRect(barXB, barYB, barWidthB, barHeight);
+            
+    ctx.fillStyle = rotationRate.gamma >= 0 ? "blue" : "red";
+    ctx.fillRect(barXG, barYG, barWidthG, barHeight);
+            
+    // Draw the center line
+    ctx.beginPath();
+    ctx.moveTo(centerX, 0);
+    ctx.lineTo(centerX, canvas.height);
+    ctx.strokeStyle = "black";
+    ctx.stroke();
+}
+        
+        
         function startMonitoring() {
 
 //            threshold          = parseFloat(accelThreshold.value);
