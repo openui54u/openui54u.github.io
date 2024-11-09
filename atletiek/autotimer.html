@@ -646,9 +646,9 @@ function drawGraphRot(rotationRate) {
     
     const barHeight = 20; // Arbitrary height for the bar
             
-    const barYA = canvas.height / 2 - barHeight / 2;
+    const barYA = canvas.height / 2 - barHeight / 2 - 30;
     const barYB = canvas.height / 2 - barHeight / 2;
-    const barYG = canvas.height / 2 - barHeight / 2;
+    const barYG = canvas.height / 2 - barHeight / 2 + 30;
 
     // Calculate the x-position based on the rotation rate's direction
     const barXA = rotationRate.alpha >= 0 ? centerX : centerX - barWidthA;
