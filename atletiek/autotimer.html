@@ -545,9 +545,9 @@ function updateMagnitudes(magnitude) {
             deltaAccel.z = Math.abs( previousAccel.z - Accel.z );
                 
             
-            rotAccel.a = rotation.alpha;
-            rotAccel.b = rotation.beta;
-            rotAccel.g = rotation.gamma;
+            rotAccel.alpha = rotation.alpha;
+            rotAccel.beta = rotation.beta;
+            rotAccel.gamma = rotation.gamma;
             
              xValueDisplay.innerText            = Accel.x.toFixed(1) ;
              yValueDisplay.innerText            = Accel.y.toFixed(1) ;
@@ -557,9 +557,9 @@ function updateMagnitudes(magnitude) {
              yDeltaValueDisplay.innerText       = deltaAccel.y.toFixed(1);
              zDeltaValueDisplay.innerText       = deltaAccel.z.toFixed(1);
             
-             xRotValueDisplay.innerText       = rotAccel.a.toFixed(1);
-             yRotValueDisplay.innerText       = rotAccel.b.toFixed(1);
-             zRotValueDisplay.innerText       = rotAccel.g.toFixed(1);
+             xRotValueDisplay.innerText       = rotAccel.alpa.toFixed(1);
+             yRotValueDisplay.innerText       = rotAccel.beta.toFixed(1);
+             zRotValueDisplay.innerText       = rotAccel.gamma.toFixed(1);
                         
 
             barXdelta.style.width = Math.min(Math.abs(deltaAccel.x) * 10, 100) + '%';
