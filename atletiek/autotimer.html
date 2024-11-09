@@ -332,13 +332,13 @@ function checkStep(x, y, z) {
     currentMax = Math.max(currentMax, combinedMovement);
     
     // Set halfway threshold based on recent peak ranges if available
-    if (peakRanges.length >= 3) {
-        halfwayThreshold = peakRanges.reduce((acc, range) => acc + range, 0) / peakRanges.length;
-    } else {
+   // if (peakRanges.length >= 3) {
+//        halfwayThreshold = peakRanges.reduce((acc, range) => acc + range, 0) / peakRanges.length;
+//    } else {
         halfwayThreshold = (currentMax - currentMin) / 2;
-    }
+  //  }
 
-    console.log("combinedMovement:", combinedMovement, "halfwayThreshold:", halfwayThreshold);
+    console.log("combinedMovement:", combinedMovement, "halfwayThreshold:", halfwayThreshold, 'Max' , currentMax, 'Min', currentMin );
     
     if (combinedMovement > halfwayThreshold && !beepTriggered) {
         // Step counted on upward crossing
@@ -405,6 +405,7 @@ function updateMagnitudes(magnitude) {
              if(direction=="up" ? l_sym = ">" : l_sym = "<");
             const elapsedTime = (Date.now() - stepStartTime) / 60000; // Convert to minutes
             const stepsPerMinute = stepCount / elapsedTime;
+             console.log("stepsPerMinute", stepsPerMinute);
             
             document.getElementById('steps-per-minute').innerText = Math.round(stepsPerMinute) ;
             
