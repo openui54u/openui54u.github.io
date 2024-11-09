@@ -506,7 +506,9 @@ function updateMagnitudes(magnitude) {
         const accelerometerHandler = function(event) {
 
             const acceleration = event.accelerationIncludingGravity || { x: 0, y: 0, z: 0 };
+            const rotation     = event.rotationRate || { x: 0, y: 0, z: 0 };
 
+            
             Accel.x = acceleration.x  || 0 ;
             Accel.y = acceleration.y  || 0 ;
             Accel.z = acceleration.z  || 0 ;
@@ -524,9 +526,9 @@ function updateMagnitudes(magnitude) {
             deltaAccel.z = Math.abs( previousAccel.z - Accel.z );
                 
             
-            rotAccel.x = Math.abs(  Accel.x - deltaAccel.x );
-            rotAccel.y = Math.abs(  Accel.y - deltaAccel.y );
-            rotAccel.z = Math.abs(  Accel.z - deltaAccel.z );
+            rotAccel.x = rotation.x;
+            rotAccel.y = rotation.y;
+            rotAccel.z = rotation.z;
             
              xValueDisplay.innerText            = Accel.x.toFixed(1) ;
              yValueDisplay.innerText            = Accel.y.toFixed(1) ;
