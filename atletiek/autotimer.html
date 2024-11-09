@@ -332,11 +332,11 @@ function checkStep(x, y, z) {
     currentMax = Math.max(currentMax, combinedMovement);
     
     // Set halfway threshold based on recent peak ranges if available
-   // if (peakRanges.length >= 3) {
-//        halfwayThreshold = peakRanges.reduce((acc, range) => acc + range, 0) / peakRanges.length;
-//    } else {
-        halfwayThreshold = (currentMax - currentMin) / 2;
-  //  }
+ if (peakRanges.length >= 3) {
+        halfwayThreshold = peakRanges.reduce((acc, range) => acc + range, 0) / peakRanges.length;
+    } else {
+//        halfwayThreshold = (currentMax - currentMin) / 2;
+    }
 
     console.log("combinedMovement:", combinedMovement, "halfwayThreshold:", halfwayThreshold, 'Max' , currentMax, 'Min', currentMin );
     
