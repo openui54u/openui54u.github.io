@@ -538,7 +538,7 @@ function updateMagnitudes(magnitude) {
             
              xRotValueDisplay.innerText       = rotAccel.x.toFixed(1);
              yRotValueDisplay.innerText       = rotAccel.y.toFixed(1);
-             zRotValueDisplay.innerText       = removeEventListenerAccel.z.toFixed(1);
+             zRotValueDisplay.innerText       = rotAccel.z.toFixed(1);
             
 
             barXdelta.style.width = Math.min(Math.abs(deltaAccel.x) * 10, 100) + '%';
