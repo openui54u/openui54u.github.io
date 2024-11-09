@@ -526,7 +526,7 @@ function updateMagnitudes(magnitude) {
 
             const acceleration = event.accelerationIncludingGravity || { x: 0, y: 0, z: 0 };
             const rotation     = event.rotationRate || { x: 0, y: 0, z: 0 };
-
+            const interval     = event.interval;
             
             Accel.x = acceleration.x  || 0 ;
             Accel.y = acceleration.y  || 0 ;
