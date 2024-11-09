@@ -637,6 +637,8 @@ function drawGraphRot(rotationRate) {
     // Clear previous frame
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    console.log(rotationRate);
+    
     // Set bar properties
     const barWidthA = Math.abs(rotationRate.alpha) * scaleFactor;
     const barWidthB = Math.abs(rotationRate.beta) * scaleFactor;
