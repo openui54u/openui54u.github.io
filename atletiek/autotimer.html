@@ -550,28 +550,13 @@ function updateMagnitudes(magnitude) {
             barX.style.width = Math.min(Math.abs(Accel.x) * 10, 100) + '%';
             barY.style.width = Math.min(Math.abs(Accel.y) * 10, 100) + '%';
             barZ.style.width = Math.min(Math.abs(Accel.z) * 10, 100) + '%';
-            
-            
+                      
             barXrot.style.width = Math.min(Math.abs(rotAccel.x) * 10, 100) + '%';
             barYrot.style.width = Math.min(Math.abs(rotAccel.y) * 10, 100) + '%';
             barZrot.style.width = Math.min(Math.abs(rotAccel.z) * 10, 100) + '%';
-            
-            
-            
-
+                        
             const magnitude = Math.max(Math.abs(Accel.x), Math.abs(Accel.y), Math.abs(Accel.z));
             const currentThreshold = updateMagnitudes(magnitude); // Get the dynamic threshold
-
-// ------------------- Detect peaks and play beep
-//            if (magnitude > currentThreshold && !isIncreasing && (isTimerRunning && magnitude > threshold)) {
-//                isIncreasing = true;
-//            } else if (magnitude < currentThreshold && isIncreasing && (isTimerRunning && magnitude > threshold)) {
-//                isIncreasing = false;
-//                stepCount++; // Increment step count at each peak
-//                beep(100, 500, 100); // Play beep sound
-//                updateStepFrequency(); // Update step frequency display
-//            }
-// ------------------- - - - - -- - - - - -- - - -- - - - -- - - - -  
 
         deltaMagnitude      = Math.abs( previousMagnitude - magnitude );
             
