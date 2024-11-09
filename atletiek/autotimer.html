@@ -64,13 +64,13 @@
             min-width:2px;
             max-width:90vw;
         }
-        #bar-x, #bar-x-delta {
+        #bar-x, #bar-x-delta, #bar-x-rot {
             background-color: red;
         }
-        #bar-y, #bar-y-delta {
+        #bar-y, #bar-y-delta, #bar-y-rot {
             background-color: green;
         }
-        #bar-z, #bar-z-delta {
+        #bar-z, #bar-z-delta, #bar-z-rot {
             background-color: blue;
         }
         
@@ -131,10 +131,15 @@
         <div id="bar-y" class="bar" style="width: 1;"></div>
         <div id="bar-z" class="bar" style="width: 1;"></div>
     </div>
-       <div class="bar-container">
+    <div class="bar-container">
         <div id="bar-x-delta" class="bar" style="width: 1;"></div>
         <div id="bar-y-delta" class="bar" style="width: 1;"></div>
         <div id="bar-z-delta" class="bar" style="width: 1;"></div>
+    </div>
+      <div class="bar-container">
+        <div id="bar-x-rot" class="bar" style="width: 1;"></div>
+        <div id="bar-y-rot" class="bar" style="width: 1;"></div>
+        <div id="bar-z-rot" class="bar" style="width: 1;"></div>
     </div>
     
          <div class="values-container">
@@ -160,6 +165,13 @@
             Z: <span id="z-d-value">0.00</span> m/s²
         </div>
     </div>
+        <p>Rota.</p>
+        <div class="value-group">
+            X: <span id="x-r-value">0.00</span>,
+            Y: <span id="y-r-value">0.00</span>,
+            Z: <span id="z-r-value">0.00</span> m/s²
+        </div>
+
     
     <p id="Detail_text">Details: <span id="details">- - - -</span></p>
 
@@ -175,6 +187,7 @@
         let Accel           = { x: 0, y: 0, z: 0 };
         let previousAccel   = { x: 0, y: 0, z: 0 };
         let deltaAccel      = { x: 0, y: 0, z: 0 };
+        let rotAccel      = { x: 0, y: 0, z: 0 };
         
         let myAudioContext = null;
         let autoThresActive = false;
@@ -230,6 +243,10 @@ let currentMax = -Infinity; // Track current cycle's maximum
         const barYdelta = document.getElementById('bar-y-delta');
         const barZdelta = document.getElementById('bar-z-delta');
         
+        const barXrot = document.getElementById('bar-x-rot');
+        const barYrot = document.getElementById('bar-y-rot');
+        const barZrot = document.getElementById('bar-z-rot');
+        
         const xValueDisplay = document.getElementById('x-value');
         const yValueDisplay = document.getElementById('y-value');
         const zValueDisplay = document.getElementById('z-value');
@@ -238,21 +255,25 @@ let currentMax = -Infinity; // Track current cycle's maximum
         const yDeltaValueDisplay = document.getElementById('y-d-value');
         const zDeltaValueDisplay = document.getElementById('z-d-value');
         
+        const xRotValueDisplay = document.getElementById('x-r-value');
+        const yRotValueDisplay = document.getElementById('y-r-value');
+        const zRotValueDisplay = document.getElementById('z-r-value');
+        
 // NEW STEP INTEGRATION
 
 // Parameters for configuration
 const numCycles = 3;     // Number of cycles to calculate min/max values
 const beepOn = "down";   // Choose to beep on "up" or "down" crossing
-//let stepCount = 0;       // Step counter
+//let stepCount = 0;     // Step counter
 
 // Storage for min and max values across cycles
 let minValues = { x: [], y: [], z: [] };
 let maxValues = { x: [], y: [], z: [] };
 
 // Thresholds based on halfway points between averaged min and max values
-let halfwayThresholds = { x: 0, y: 0, z: 0 };
-let deltaThresholds   = { x: 0, y: 0, z: 0 }; // max-min delta value
-let beepTriggered = false;  // To prevent double counting
+let halfwayThresholds   = { x: 0, y: 0, z: 0 };
+let deltaThresholds     = { x: 0, y: 0, z: 0 }; // max-min delta value
+let beepTriggered       = false;  // To prevent double counting
 
         function triggerBeep(){
              beep( 100, 1900, 80 );
@@ -400,17 +421,17 @@ function updateMagnitudes(magnitude) {
     return local_threshold;
 }
         
-         function updateStepFrequency() {
-             let l_sym = "-";
-             if(direction=="up" ? l_sym = ">" : l_sym = "<");
-            const elapsedTime = (Date.now() - stepStartTime) / 60000; // Convert to minutes
-            const stepsPerMinute = stepCount / elapsedTime;
-             console.log("stepsPerMinute", stepsPerMinute);
-            
-            document.getElementById('steps-per-minute').innerText = Math.round(stepsPerMinute) ;
-            
-            document.getElementById('details').innerText = ' ( n:' + Math.round(stepCount) + '/ t:' + Math.round(elapsedTime*60) + 's ) ∆t' + Math.round(deltaTime) + 'dir:' + l_sym + ' ^' + 'comb:' + Math.round(combinedMovement) + ' / hwt:' + Math.round(halfwayThreshold);
-        }
+     function updateStepFrequency() {
+         let l_sym = "-";
+         if(direction=="up" ? l_sym = ">" : l_sym = "<");
+        const elapsedTime = (Date.now() - stepStartTime) / 60000; // Convert to minutes
+        const stepsPerMinute = stepCount / elapsedTime;
+         console.log("stepsPerMinute", stepsPerMinute);
+
+        document.getElementById('steps-per-minute').innerText = Math.round(stepsPerMinute) ;
+
+        document.getElementById('details').innerText = ' ( n:' + Math.round(stepCount) + '/ t:' + Math.round(elapsedTime*60) + 's ) ∆t' + Math.round(deltaTime) + 'dir:' + l_sym + ' ^' + 'comb:' + Math.round(combinedMovement) + ' / hwt:' + Math.round(halfwayThreshold);
+    }
 
         
         
@@ -502,6 +523,11 @@ function updateMagnitudes(magnitude) {
             deltaAccel.y = Math.abs( previousAccel.y - Accel.y );
             deltaAccel.z = Math.abs( previousAccel.z - Accel.z );
                 
+            
+            rotAccel.x = Math.abs(  Accel.x - deltaAccel.x );
+            rotAccel.y = Math.abs(  Accel.y - deltaAccel.y );
+            rotAccel.z = Math.abs(  Accel.z - deltaAccel.z );
+            
              xValueDisplay.innerText            = Accel.x.toFixed(1) ;
              yValueDisplay.innerText            = Accel.y.toFixed(1) ;
              zValueDisplay.innerText            = Accel.z.toFixed(1) ;
@@ -509,6 +535,11 @@ function updateMagnitudes(magnitude) {
              xDeltaValueDisplay.innerText       = deltaAccel.x.toFixed(1);
              yDeltaValueDisplay.innerText       = deltaAccel.y.toFixed(1);
              zDeltaValueDisplay.innerText       = deltaAccel.z.toFixed(1);
+            
+             xRotValueDisplay.innerText       = rotAccel.x.toFixed(1);
+             yRotValueDisplay.innerText       = rotAccel.y.toFixed(1);
+             zRotValueDisplay.innerText       = removeEventListenerAccel.z.toFixed(1);
+            
 
             barXdelta.style.width = Math.min(Math.abs(deltaAccel.x) * 10, 100) + '%';
             barYdelta.style.width = Math.min(Math.abs(deltaAccel.y) * 10, 100) + '%';
@@ -517,6 +548,14 @@ function updateMagnitudes(magnitude) {
             barX.style.width = Math.min(Math.abs(Accel.x) * 10, 100) + '%';
             barY.style.width = Math.min(Math.abs(Accel.y) * 10, 100) + '%';
             barZ.style.width = Math.min(Math.abs(Accel.z) * 10, 100) + '%';
+            
+            
+            barX.style.width = Math.min(Math.abs(rotAccel.x) * 1, 100) + 'px';
+            barY.style.width = Math.min(Math.abs(rotAccel.y) * 1, 100) + 'px';
+            barZ.style.width = Math.min(Math.abs(rotAccel.z) * 1, 100) + 'px';
+            
+            
+            
 
             const magnitude = Math.max(Math.abs(Accel.x), Math.abs(Accel.y), Math.abs(Accel.z));
             const currentThreshold = updateMagnitudes(magnitude); // Get the dynamic threshold
