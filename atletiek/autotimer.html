@@ -646,9 +646,10 @@ function drawGraphRot(rotationRate) {
     
     const barHeight = 20; // Arbitrary height for the bar
             
-    const barYA = canvas.height / 2 - barHeight / 2 - 30;
-    const barYB = canvas.height / 2 - barHeight / 2;
-    const barYG = canvas.height / 2 - barHeight / 2 + 30;
+   
+    const barYB = canvas.height / 2 - barHeight / 2 - 30;
+    const barYG = canvas.height / 2 - barHeight / 2 ;
+     const barYA = canvas.height / 2 - barHeight / 2 + 30;
 
     // Calculate the x-position based on the rotation rate's direction
     const barXA = rotationRate.alpha >= 0 ? centerX : centerX - barWidthA;
@@ -656,14 +657,17 @@ function drawGraphRot(rotationRate) {
     const barXG = rotationRate.gamma >= 0 ? centerX : centerX - barWidthG;
 
     // Draw the bar
-    ctx.fillStyle = rotationRate.alpha >= 0 ? "blue" : "red";
-    ctx.fillRect(barXA, barYA, barWidthA, barHeight);
 
-    ctx.fillStyle = rotationRate.beta >= 0 ? "blue" : "red";
+    // x
+    ctx.fillStyle = rotationRate.beta >= 0 ? "orange" : "red" ;
     ctx.fillRect(barXB, barYB, barWidthB, barHeight);
-            
-    ctx.fillStyle = rotationRate.gamma >= 0 ? "blue" : "red";
+    // y        
+    ctx.fillStyle = rotationRate.gamma >= 0 ? "yellow" : "green" ;
     ctx.fillRect(barXG, barYG, barWidthG, barHeight);
+    // z
+    ctx.fillStyle = rotationRate.alpha >= 0 ? "purple" : "blue";
+    ctx.fillRect(barXA, barYA, barWidthA, barHeight);
+    
             
     // Draw the center line
     ctx.beginPath();
