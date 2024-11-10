@@ -368,7 +368,7 @@ function calculateDirectionalCombinedMovement(x, y, z) {
  const stepDelay = 100; // Minimum time (in ms) between steps
 
 function checkStep(x, y, z) {
-    const combinedMovement = calculateDirectionalCombinedMovement(x, y, z);
+    combinedMovement = calculateDirectionalCombinedMovement(x, y, z);
     
     currentMin = Math.min(currentMin, combinedMovement);
     currentMax = Math.max(currentMax, combinedMovement);
