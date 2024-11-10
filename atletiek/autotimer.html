@@ -358,7 +358,7 @@ function checkStep(x, y, z) {
         direction = "up";
     } else if (combinedMovement < halfwayThreshold && beepTriggered) {
         beepTriggered = false;
-        triggerBeepDown();
+        //triggerBeepDown();
         direction = "down";
         updatePeakRanges(x, y, z);  // Save peak range after full up/down cycle
     }
