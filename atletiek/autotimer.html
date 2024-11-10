@@ -374,7 +374,8 @@ function checkStep(x, y, z) {
     // Set halfway threshold based on recent peak ranges if available
  if (peakRanges.length >= 3) {
  //       halfwayThreshold = peakRanges.reduce((acc, range) => acc + range, 0) / peakRanges.length;
-    } else {
+   const halfwayThreshold = (Math.max(...peakRanges) + Math.min(...peakRanges)) / 2; 
+ } else {
 //        halfwayThreshold = (currentMax - currentMin) / 2;
     }
 
@@ -397,7 +398,7 @@ function checkStep(x, y, z) {
         // Helper function to update peak ranges for dynamic threshold calculation
 function updatePeakRanges() {
     // Calculate and store the peak-to-peak range for the last cycle
-    const peakRange = currentMax - currentMin;
+    const peakRange = ( currentMax + currentMin ) / 2;
 
     // Only push non-zero peak ranges to avoid noise
     if (peakRange !== 0) {
