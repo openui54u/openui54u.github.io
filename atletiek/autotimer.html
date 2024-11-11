@@ -351,8 +351,8 @@ function checkStep(x, y, z) {
  if (peakRanges.length >= 3) {
         halfwayThreshold = peakRanges.reduce((acc, range) => acc + range, 0) / peakRanges.length;
  //     halfwayThreshold = (Math.max(...peakRanges) + Math.min(...peakRanges)) / 2; 
-     halfwayThresholdDown = halfwayThreshold ;//+ currentMax / 2;
-   halfwayThresholdUp     = halfwayThreshold ;// currentMin / 2;
+     halfwayThresholdDown = Math.sign( halfwayThreshold ) * (Math.abs(halfwayThreshold) + Math.abs(currentMin)/3;
+     halfwayThresholdUp   = Math.sign( halfwayThreshold ) * (Math.abs(halfwayThreshold) - Math.abs(currentMin)/3;
      
     }
 
@@ -434,7 +434,7 @@ function updateMagnitudes(magnitude) {
 
         document.getElementById('steps-per-minute').innerText = Math.round(stepsPerMinute) ;
 
-        document.getElementById('details').innerText = ' ( n:' + Math.round(stepCount) + '/ t:' + Math.round(elapsedTime*60) + 's ) ∆t' + Math.round(deltaTime) + 'dir:' + l_sym + ' ^' + 'comb:' + Math.round(combinedMovement) + ' / hwt:' + Math.round(halfwayThreshold);
+        document.getElementById('details').innerText = ' ( n:' + Math.round(stepCount) + '/ t:' + Math.round(elapsedTime*60) + 's ) ∆t' + Math.round(deltaTime) + 'dir:' + l_sym + ' ^' + 'comb:' + Math.round(combinedMovement) + ' / hwt:' + Math.round(halfwayThreshold) + 'U' + halfwayThresholdUp + 'D' + halfwayThresholdDown ; 
     }
 
         
