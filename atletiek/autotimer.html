@@ -328,6 +328,7 @@ function calculateDirectionalCombinedMovement(x, y, z) {
     console.log( dominantValue );
     // Combine movement magnitudes, maintaining dominant axis' direction
     const signRotation = Math.sign(rotAccel.alpha) * Math.sign(rotAccel.beta) * Math.sign(rotAccel.gamma); 
+    
 //    const combinedMovement = Math.sqrt(x * x + y * y + z * z) * Math.sign(dominantValue);
     const combinedMovement = Math.sqrt(x * x + y * y + z * z) * signRotation;
     return combinedMovement;
@@ -359,7 +360,7 @@ function checkStep(x, y, z) {
         beepTriggered = true;
         direction = "up";
     } else if (combinedMovement < halfwayThreshold && beepTriggered) {
-        beepTriggered = false;
+        beepTriggered = false; // should make beep only once in 1 direction...
         //triggerBeepDown();
         //triggerBeepDown();
         direction = "down";
