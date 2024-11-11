@@ -351,8 +351,8 @@ function checkStep(x, y, z) {
  if (peakRanges.length >= 3) {
         halfwayThreshold = peakRanges.reduce((acc, range) => acc + range, 0) / peakRanges.length;
  //     halfwayThreshold = (Math.max(...peakRanges) + Math.min(...peakRanges)) / 2; 
-     halfwayThresholdDown += halfwayThreshold + currentMax / 2;
-   halfwayThresholdUp   -= halfwayThreshold - currentMin / 2;
+     halfwayThresholdDown += halfwayThreshold ;//+ currentMax / 2;
+   halfwayThresholdUp   += halfwayThreshold ;// currentMin / 2;
      
     }
 
