@@ -185,6 +185,8 @@
         let peakRanges = [];  // Store last 3 peak-to-peak ranges for dynamic halfway threshold
         //let halfwayThreshold = 5; // Dynamically calculated halfway point between min and max
         let halfwayThreshold = 10; // Dynamically calculated halfway point between min and max
+        let halfwayThresholdDown = 15;
+        let halfwayThresholdUp   = -5;
         let currentMin = Infinity;  // Track current cycle's minimum
         let currentMax = -Infinity; // Track current cycle's maximum
 
@@ -349,17 +351,22 @@ function checkStep(x, y, z) {
  if (peakRanges.length >= 3) {
         halfwayThreshold = peakRanges.reduce((acc, range) => acc + range, 0) / peakRanges.length;
  //     halfwayThreshold = (Math.max(...peakRanges) + Math.min(...peakRanges)) / 2; 
+        halfwayThresholdDown += currentMax / 2;
+        halfwayThresholdUp   -= currentMin / 2;
+     
     }
 
-    console.log("combinedMovement:", combinedMovement, "halfwayThreshold:", halfwayThreshold, 'Max' , currentMax, 'Min', currentMin );
+    console.log("combinedMovement:", combinedMovement, "halfwayThreshold:", halfwayThreshold, 'Max' , currentMax, 'Min', currentMin, "HalfDown", halfwayThresholdDown, "HalfUp", halfwayThresholdUp );
     
-    if (combinedMovement > halfwayThreshold && !beepTriggered) {
+//    if (combinedMovement > halfwayThreshold && !beepTriggered) {
+    if (combinedMovement > halfwayThresholdDown && !beepTriggered) {
         // Step counted on upward crossing
         stepCount++;
         triggerBeepUp();
         beepTriggered = true;
         direction = "up";
-    } else if (combinedMovement < halfwayThreshold && beepTriggered) {
+//    } else if (combinedMovement < halfwayThreshold && beepTriggered) {
+        } else if (combinedMovement < halfwayThresholdUp && beepTriggered) {
         beepTriggered = false; // should make beep only once in 1 direction...
         //triggerBeepDown();
         //triggerBeepDown();
