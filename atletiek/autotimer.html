@@ -512,7 +512,8 @@ function updateMagnitudes(magnitude) {
 
             const accelerometerHandler = function(event) {
 
-            const acceleration = event.accelerationIncludingGravity || { x: 0, y: 0, z: 0 };
+//            const acceleration = event.accelerationIncludingGravity || { x: 0, y: 0, z: 0 };
+            const acceleration = event.acceleration || { x: 0, y: 0, z: 0 };
             const rotation     = event.rotationRate || { x: 0, y: 0, z: 0 };
             const interval     = event.interval;
             
