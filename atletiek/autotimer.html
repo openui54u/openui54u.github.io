@@ -333,8 +333,8 @@ function calculateDirectionalCombinedMovement(x, y, z) {
     const dominantValue = { x, y, z }[axis];  // Get the dominant axis value
     console.log( dominantValue );
     if ( axis == "x" ){ dominantRotation = "beta"};
-    if ( axis == "y" ){ dominantRotation = "alpha"};
-    if ( axis == "z" ){ dominantRotation = "gamma"};
+    if ( axis == "y" ){ dominantRotation = "gamma"};
+    if ( axis == "z" ){ dominantRotation = "alpha"};
     console.log(dominantRotation);
     
     // Combine movement magnitudes, maintaining dominant axis' direction
