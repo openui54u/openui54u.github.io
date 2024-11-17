@@ -194,6 +194,16 @@
         let rotationRange ={ alpha:0 , beta:0 , gamma:0 };// rotation value average
         let dominantRotation = "beta";
         
+        //---
+        let dominantAxis = null;
+let initialOrientation = null;
+let allowedAngleRange = 15; // Degrees of allowed tilt
+let threshold = { max: -Infinity, min: Infinity, halfway: 0 };
+
+// For debugging or visualization
+let rotationRates = { x: [], y: [], z: [] }; 
+let currentOrientation = { alpha: 0, beta: 0, gamma: 0 };
+        //---
         
         let previousMagnitude = 0;
         let deltaMagnitude = 0;
@@ -275,6 +285,20 @@ let beepTriggered       = false;  // To prevent double counting
              beep( 100, 2400, 80 );
         }
         
+        
+    function calculateVariance(data) {
+    if (data.length === 0) return 0;
+    const mean = data.reduce((sum, value) => sum + value, 0) / data.length;
+    return data.reduce((sum, value) => sum + Math.pow(value - mean, 2), 0) / data.length;
+}
+        function calculateAngleDifference(current, initial) {
+    const diffAlpha = Math.abs(current.alpha - initial.alpha);
+    const diffBeta = Math.abs(current.beta - initial.beta);
+    const diffGamma = Math.abs(current.gamma - initial.gamma);
+
+    // Return the largest difference as the metric
+    return Math.max(diffAlpha, diffBeta, diffGamma);
+}
 /**
  * Updates the cyclic minimum and maximum values for each axis.
  */
@@ -584,6 +608,31 @@ function updateMagnitudes(magnitude) {
 
             deltaMagnitude      = Math.abs( previousMagnitude - magnitude );
             
+// new 2 step
+   // Update current orientation
+    currentOrientation.alpha = event.rotationRate.alpha;
+    currentOrientation.beta = event.rotationRate.beta;
+    currentOrientation.gamma = event.rotationRate.gamma;
+
+    // Check orientation difference
+    const angleDiff = calculateAngleDifference(currentOrientation, initialOrientation);
+    if (angleDiff > allowedAngleRange) {
+        console.log("Orientation out of range. Skipping detection.");
+        return;
+    }
+
+    // Focus on dominant axis
+    const axisValue = event.rotationRate[dominantAxis];
+
+    // Update thresholds and detect peaks
+    updateThreshold(axisValue);              
+                
+//                
+                
+                
+                
+                
+                
 // NEW STEP INTEGRATION            
         if (deltaMagnitude > thresholdDelta){
             // Update the cyclic min and max values
@@ -608,6 +657,12 @@ function updateMagnitudes(magnitude) {
                 rotationRanges.push(rotAccel);
                 if (rotationRanges.length > 3) rotationRanges.shift();  // Keep only the last 3 ranges
             }
+        
+        // Collect data for variance calculation
+        rotationRates.x.push(event.rotationRate.alpha);
+        rotationRates.y.push(event.rotationRate.beta);
+        rotationRates.z.push(event.rotationRate.gamma);
+                
                 
             }
                              
@@ -635,6 +690,11 @@ function updateMagnitudes(magnitude) {
 
         };
 
+  function updateThreshold(value) {
+    if (value > threshold.max) threshold.max = value;
+    if (value < threshold.min) threshold.min = value;
+    threshold.halfway = (threshold.max + threshold.min) / 2;
+}
         
 function drawGraphRot(rotationRate) {
     // Clear previous frame
@@ -770,6 +830,13 @@ myAudioContext = new AudioContext() };
          autoThresButton.addEventListener('click', () => {
             thresValues = { x: 0, y: 0, z: 0 };
             thresDeltaValues = { x: 0, y: 0, z: 0 };
+             
+             dominantAxis = null;
+    initialOrientation = null;
+
+    // Clear rotation rate data
+    rotationRates = { x: [], y: [], z: [] };
+             
             autoThresActive = true;
             statusText.innerText = "Status: Auto-threshold in progress...";
   
@@ -798,6 +865,22 @@ myAudioContext = new AudioContext() };
             //document.getElementById('accel-threshold-Stop').value = thresholdStop; 
            accelDeltaThresholdStop.value = thresholdDeltaStop;
         };
+                
+                //   // Calculate variances and find dominant axis
+            const variances = {
+                x: calculateVariance(rotationRates.x),
+                y: calculateVariance(rotationRates.y),
+                z: calculateVariance(rotationRates.z)
+            };
+            dominantAxis = Object.keys(variances).reduce((a, b) => variances[a] > variances[b] ? a : b);
+
+            // Record initial orientation
+            initialOrientation = { ...currentOrientation };
+
+            console.log("Calibration complete. Dominant axis:", dominantAxis);
+            console.log("Initial orientation:", initialOrientation);
+     
+                //
                 
                 // Simple beep
                 //    duration, frequency, volume             
