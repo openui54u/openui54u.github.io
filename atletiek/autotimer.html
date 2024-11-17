@@ -190,8 +190,10 @@
         let currentMin = Infinity;  // Track current cycle's minimum
         let currentMax = -Infinity; // Track current cycle's maximum
         
-        let rotationRanges = []; 
-
+        let rotationRanges = [];     // values during autothreshold recorded
+        let rotationRange ={ alpha:0 , beta:0 , gamma:0 };// rotation value average
+        let dominantRotation = "beta";
+        
         
         let previousMagnitude = 0;
         let deltaMagnitude = 0;
@@ -330,6 +332,11 @@ function calculateDirectionalCombinedMovement(x, y, z) {
     const { axis } = getDominantAxis(x, y, z);
     const dominantValue = { x, y, z }[axis];  // Get the dominant axis value
     console.log( dominantValue );
+    if ( axis = "x" ){ dominantRotation = "beta"};
+    if ( axis = "y" ){ dominantRotation = "alpha"};
+    if ( axis = "z" ){ dominantRotation = "gamma"};
+    console.log(dominantRotation);
+    
     // Combine movement magnitudes, maintaining dominant axis' direction
     const signRotation = Math.sign(rotAccel.alpha) * Math.sign(rotAccel.beta) * Math.sign(rotAccel.gamma); 
     // remember the phone position
@@ -364,7 +371,7 @@ function checkStep(x, y, z) {
     }
 // rotationRanges   
      if (rotationRanges.length >= 3) {
-        rotationBase = rotationRanges.reduce((acc, range) => acc + range, 0) / rotationRanges.length;
+        rotationRange = rotationRanges.reduce((acc, range) => acc + range, 0) / rotationRanges.length;
      }
     
 
@@ -609,8 +616,10 @@ function updateMagnitudes(magnitude) {
             magnitudeDeltaDisplay.innerText = deltaMagnitude.toFixed(1) + ' ^' + Math.round(combinedMovement);
             
             if ( ( deltaMagnitude > thresholdDelta ) && !intervalID) {
+                if (!autoThresActive){
                 startTimer();
                 statusText.innerText = `Status: Timer started at Delta magnitude ${deltaMagnitude.toFixed(2)}`;
+                }
             } else if ( ( deltaMagnitude > thresholdDeltaStop ) && intervalID ) {
                 
                 if (!autoThresActive){
