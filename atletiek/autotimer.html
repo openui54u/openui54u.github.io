@@ -189,6 +189,8 @@
         let halfwayThresholdUp   = -5;
         let currentMin = Infinity;  // Track current cycle's minimum
         let currentMax = -Infinity; // Track current cycle's maximum
+        
+        let rotationRanges = []; 
 
         
         let previousMagnitude = 0;
@@ -330,6 +332,8 @@ function calculateDirectionalCombinedMovement(x, y, z) {
     console.log( dominantValue );
     // Combine movement magnitudes, maintaining dominant axis' direction
     const signRotation = Math.sign(rotAccel.alpha) * Math.sign(rotAccel.beta) * Math.sign(rotAccel.gamma); 
+    // remember the phone position
+    // updatePhoneOrientation(rotAccel);
     
 //    const combinedMovement = Math.sqrt(x * x + y * y + z * z) * Math.sign(dominantValue);
     x += 50;
@@ -358,8 +362,14 @@ function checkStep(x, y, z) {
      halfwayThresholdUp   = Math.round( Math.sign( halfwayThreshold ) * (Math.abs(halfwayThreshold) - Math.abs(currentMin)/3 ) );
      
     }
+// rotationRanges   
+     if (rotationRanges.length >= 3) {
+        rotationBase = rotationRanges.reduce((acc, range) => acc + range, 0) / rotationRanges.length;
+     }
+    
 
     console.log("combinedMovement:", combinedMovement, "halfwayThreshold:", halfwayThreshold, 'Max' , currentMax, 'Min', currentMin, "HalfDown", halfwayThresholdDown, "HalfUp", halfwayThresholdUp );
+    console.log( rotationRanges );
     
 //    if (combinedMovement > halfwayThreshold && !beepTriggered) {
     if (combinedMovement > halfwayThresholdDown && !beepTriggered) {
@@ -375,6 +385,8 @@ function checkStep(x, y, z) {
         //triggerBeepDown();
         direction = "down";
         updatePeakRanges(x, y, z);  // Save peak range after full up/down cycle
+
+            
     }
     console.log(direction);
 }
@@ -578,10 +590,18 @@ function updateMagnitudes(magnitude) {
 // NEW STEP INTEGRATION            
                
             if (autoThresActive){
+                
             thresValues = { 
                 x: Math.max( Math.abs(deltaAccel.x), thresValues.x ), 
                 y: Math.max( Math.abs(deltaAccel.y), thresValues.y ), 
                 z: Math.max( Math.abs(deltaAccel.z), thresValues.z ) };
+            
+            // rotAccel
+            if (rotAccel.alpha !== 0) {
+                rotationRanges.push(rotAccel);
+                if (rotationRanges.length > 3) rotationRanges.shift();  // Keep only the last 3 ranges
+            }
+                
             }
                              
           // Update magnitude display (rest of your code)
