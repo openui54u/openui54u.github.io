@@ -636,7 +636,7 @@ function updateMagnitudes(magnitude) {
                 
 // NEW STEP INTEGRATION            
 //        if (deltaMagnitude > thresholdDelta){
-//    if (deltaMagnitude > 0 ){
+    if (deltaMagnitude > 10 ){
             // Update the cyclic min and max values
         updateCycleMinMax(Accel.x, Accel.y, Accel.z);
 
