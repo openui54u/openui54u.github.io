@@ -355,7 +355,7 @@ function calculateDirectionalCombinedMovement(x, y, z) {
     console.log( x, y, z);
     const { axis } = getDominantAxis(x, y, z);
     const dominantValue = { x, y, z }[axis];  // Get the dominant axis value
-    axis = "y";// testing
+    axis = "z";// testing
     console.log( dominantValue );
     if ( axis == "x" ){ dominantRotation = "beta"};
     if ( axis == "y" ){ dominantRotation = "gamma"};
@@ -363,7 +363,9 @@ function calculateDirectionalCombinedMovement(x, y, z) {
     console.log(dominantRotation);
     
     // Combine movement magnitudes, maintaining dominant axis' direction
-    const signRotation = Math.sign(rotAccel.alpha) * Math.sign(rotAccel.beta) * Math.sign(rotAccel.gamma); 
+    const signRotation = 
+//          Math.sign(rotAccel.alpha) * Math.sign(rotAccel.beta) * 
+          Math.sign(rotAccel.gamma); 
     // remember the phone position
     // updatePhoneOrientation(rotAccel);
     
