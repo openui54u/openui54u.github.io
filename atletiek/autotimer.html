@@ -355,6 +355,7 @@ function calculateDirectionalCombinedMovement(x, y, z) {
     console.log( x, y, z);
     const { axis } = getDominantAxis(x, y, z);
     const dominantValue = { x, y, z }[axis];  // Get the dominant axis value
+    axis = "y";// testing
     console.log( dominantValue );
     if ( axis == "x" ){ dominantRotation = "beta"};
     if ( axis == "y" ){ dominantRotation = "gamma"};
@@ -635,7 +636,7 @@ function updateMagnitudes(magnitude) {
                 
 // NEW STEP INTEGRATION            
 //        if (deltaMagnitude > thresholdDelta){
-    if (deltaMagnitude > 0 ){
+//    if (deltaMagnitude > 0 ){
             // Update the cyclic min and max values
         updateCycleMinMax(Accel.x, Accel.y, Accel.z);
 
