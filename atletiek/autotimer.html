@@ -396,6 +396,7 @@ function checkStep(x, y, z) {
      halfwayThresholdUp   = Math.round( Math.sign( halfwayThreshold ) * (Math.abs(halfwayThreshold) - Math.abs(currentMin)/3 ) );
      
     }
+    halfwayThresholdDown = 10; //test
 // rotationRanges   
      if (rotationRanges.length >= 3) {
         rotationRange = rotationRanges.reduce((acc, range) => acc + range, 0) / rotationRanges.length;
@@ -413,7 +414,7 @@ function checkStep(x, y, z) {
         beepTriggered = true;
         direction = "up";
 //    } else if (combinedMovement < halfwayThreshold && beepTriggered) {
-        } else if (combinedMovement < halfwayThresholdUp && beepTriggered) {
+        } else if (combinedMovement < ( -1 * halfwayThresholdUp ) && beepTriggered) {
         beepTriggered = false; // should make beep only once in 1 direction...
         //triggerBeepDown();
         //triggerBeepDown();
