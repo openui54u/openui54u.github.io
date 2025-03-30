@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P1 Reader with Water Meter</title>
+
+    <style>
+        body { font-family: Arial, sans-serif; }
+        #P1 { color: #00FF00; }
+        #P2 { color: #d6d610; }
+        #P3 { color: purple; }
+        #PT { color: #0b95d3; }
+        #WaterUsage { color: blue; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 8px; border: 1px solid #ddd; }
+        th { background: #9cd1e9; }
+        tr:nth-child(even) { background: #f2f2f2; }
+        .container { max-width: 900px; margin: auto; }
+        .slidecontainer { width: 100%; margin-top: 20px; }
+        .slider { width: 100%; }
+        .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .sliderB { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; }
+        .sliderB:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; }
+        input:checked + .sliderB { background-color: #2196F3; }
+        input:checked + .sliderB:before { transform: translateX(26px); }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>HomeWizard P1 Reader with Water Meter</h1>
+    
+    <label for="IP_P1">IP P1:</label>
+    <input type="text" id="IP_P1" placeholder="192.168.2.*">
+    <label for="IP_WTR">IP Water:</label>
+    <input type="text" id="IP_WTR" placeholder="192.168.2.*">
+
+    <button onclick="run()">Start</button>
+    <button onclick="stop()">Stop</button>
+    <button onclick="scanIP()">Scan</button>
+
+    <h2>Electricity Usage</h2>
+    <canvas id="E" width="800" height="300"></canvas>
+    <h3>Total Power (W): <span id="PT">0</span></h3>
+
+    <h2>Gas Usage</h2>
+    <canvas id="G" width="800" height="300"></canvas>
+    <h3>Total Gas (m3): <span id="GasTotal">0</span></h3>
+
+    <h2>Water Usage</h2>
+    <canvas id="W" width="800" height="300"></canvas>
+    <h3>Current Flow (l/min): <span id="WaterFlow">0</span></h3>
+    <h3>Total Water (m3): <span id="WaterTotal">0</span></h3>
+
+    <label>Show Water Data</label>
+    <label class="switch">
+        <input type="checkbox" id="toggleWater" onclick="toggleWaterChart()" checked>
+        <span class="sliderB round"></span>
+    </label>
+</div>
+
+<script>
+    let ip = {};
+    let dataWaterFlow = [], dataWaterTotal = [], dataXW = [];
+    let ctxW;
+
+    function scanIP() {
+        let baseIP = document.getElementById('IP_P1').value.replace('*', '');
+        for (let i = 1; i <= 255; i++) {
+            let testIP = baseIP + i;
+            fetch('http://' + testIP + '/api').then(response => response.json()).then(json => {
+                if (json.product_type === 'HWE-P1') { ip.P1 = testIP; document.getElementById('IP_P1').value = testIP; }
+                if (json.product_type === 'HWE-WTR') { ip.WTR = testIP; document.getElementById('IP_WTR').value = testIP; }
+            }).catch(() => {});
+        }
+    }
+
+    function run() {
+        ip.P1 = document.getElementById('IP_P1').value;
+        ip.WTR = document.getElementById('IP_WTR').value;
+        if (ip.P1) meter();
+        if (ip.WTR) meterW();
+    }
+
+    function stop() { clearInterval(intervalE); clearInterval(intervalW); }
+
+    async function meter() {
+        let response = await fetch('http://' + ip.P1 + '/api/v1/data');
+        if (response.ok) {
+            let json = await response.json();
+            document.getElementById('PT').innerText = json.active_power_w;
+        }
+    }
+
+    async function meterW() {
+        let response = await fetch('http://' + ip.WTR + '/api/v1/data');
+        if (response.ok) {
+            let json = await response.json();
+            dataWaterFlow.push(json.active_liter_lpm);
+            dataWaterTotal.push(json.total_liter_m3);
+            dataXW.push(new Date().toLocaleTimeString());
+
+            document.getElementById('WaterFlow').innerText = json.active_liter_lpm;
+            document.getElementById('WaterTotal').innerText = json.total_liter_m3;
+            drawWaterChart();
+        }
+    }
+
+    function drawWaterChart() {
+        let canvas = document.getElementById("W");
+        let ctx = canvas.getContext("2d");
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.beginPath();
+        ctx.strokeStyle = "blue";
+        for (let i = 0; i < dataXW.length; i++) {
+            let x = (i / dataXW.length) * canvas.width;
+            let y = canvas.height - (dataWaterFlow[i] / Math.max(...dataWaterFlow)) * canvas.height;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+
+    function toggleWaterChart() {
+        let canvas = document.getElementById("W");
+        let visible = document.getElementById("toggleWater").checked;
+        canvas.style.display = visible ? "block" : "none";
+    }
+
+    let intervalE = setInterval(meter, 5000);
+    let intervalW = setInterval(meterW, 5000);
+
+    window.onload = function() {
+        ctxW = document.getElementById("W").getContext("2d");
+    };
+</script>
+</body>
+</html>

@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gyroscope Web App with Timer</title>
+    
+<link rel="icon" type="image/png" href="favicon-96x96.png" sizes="96x96" />
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
+<link rel="shortcut icon" href="favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+<link rel="manifest" href="site.webmanifest" />
+    
+    
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding-top: 50px;
+        }
+        #status, #timer {
+            margin-top: 20px;
+            font-size: 18px;
+            color: green;
+        }
+        #x-value, #gyro-x-value {
+            color: red;
+        }
+        #y-value, #gyro-y-value {
+            color: green;
+        }
+        #z-value, #gyro-z-value {
+            color: blue;
+        }
+        input, button {
+            font-size: 16px;
+            padding: 10px;
+            margin: 10px;
+        }
+        input {
+            max-width: 10vw;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 18px;
+        }
+        #manual-start-btn, #manual-stop-btn {
+            background-color: lightblue;
+            margin: 5px;
+        }
+        .bar-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .bar {
+            height: 20px;
+            margin: 0 5px;
+            background-color: blue;
+            transition: width 0.1s;
+        }
+        #bar-x {
+            background-color: red;
+        }
+        #bar-y {
+            background-color: green;
+        }
+        #bar-z {
+            background-color: blue;
+        }
+        
+.values-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px; /* Adjust space between each element */
+    font-size: 10px;
+    margin-top: 20px;
+}
+
+.value-group {
+    display: flex;
+    gap: 10px; /* Space between each value in the group */
+    align-items: center;
+}
+        
+    </style>
+</head>
+<body>
+    <h1>Gyroscopic Timer</h1>
+    <p>Set acceleration threshold (XYZ-axis):</p>
+    <input type="number" id="accel-threshold" value="20" step="1">-
+    <input type="number" id="accel-threshold-Stop" value="50" step="1">
+    <button id="auto-thres-btn">Auto Threshold</button>
+    <button id="start-stop-btn">Start Monitoring (Gyro)</button>
+    <button id="tare-btn">Tare (Gyro)</button>
+    <button id="auto-tare-btn">Auto Tare</button>
+    <button id="manual-start-btn">Manual Start</button>
+    <button id="manual-stop-btn" disabled>Manual Stop</button>
+   
+    
+    <p id="status">Status: Not Started</p>
+    <p id="timer">Timer: 00:00:00:000</p>
+    <p>Magnitude: <span id="magnitude-value">0.00</span></p>
+    <p>Delta Magnitude: <span id="magnitude-delta-value">0.00</span></p>
+        <p id="step-frequency">Steps per Minute: <span id="steps-per-minute">0</span></p>
+
+    
+    <div class="bar-container">
+        <div id="bar-x" class="bar" style="width: 0;"></div>
+        <div id="bar-y" class="bar" style="width: 0;"></div>
+        <div id="bar-z" class="bar" style="width: 0;"></div>
+    </div>
+    
+    <div class="values-container">
+    <p>XYZ</p>
+    <div class="value-group">
+    X: <span id="x-value">0.00</span>,
+    Y: <span id="y-value">0.00</span>,
+    Z: <span id="z-value">0.00</span> m/s²
+    </div>
+    </div>
+    
+    <div class="values-container">
+        <p>Gyro: </p>
+        <div class="value-group">
+    X: <span id="gyro-x-value">0.00</span>,
+    Y: <span id="gyro-y-value">0.00</span>,
+    Z: <span id="gyro-z-value">0.00</span> °/s
+        </div>
+    </div>
+    
+    <div class="values-container">
+        <p>Absolute: </p>
+         <div class="value-group">
+        X: <span id="absolute-x-value">0.00</span>, 
+        Y: <span id="absolute-y-value">0.00</span>, 
+        Z: <span id="absolute-z-value">0.00</span>
+    </div></div>
+
+    <script>
+        let monitoring       = false;
+        let threshold        = 20;
+        let thresholdStop    = 50;
+        let startTime        = null;
+        let intervalID       = null;
+        let autoTareActive   = false;
+        let autoTareDuration = 5000;
+        let tareStartTime    = null;
+        let tareValues  = { x: 0, y: 0, z: 0 };
+        let Accel       = { x: 0, y: 0, z: 0 };
+        let Gyro        = { x: 0, y: 0, z: 0 };
+        
+        let myAudioContext = null;
+        let autoThresActive = false;
+        let autoThresDuration = 5000;
+        let thresStartTime    = null;
+        let thresValues = { x: 0, y: 0, z: 0 };
+        
+        let isTimerRunning = false;  // New flag to indicate if the timer is active
+
+        let magnitudes = []; // To store recent magnitude values
+const maxRecentValues = 100; // Limit the number of stored values for performance
+
+
+        let previousMagnitude = 0;
+        let deltaMagnitude = 0;
+        let isIncreasing = false; // Track whether the magnitude trend is increasing
+        let stepCount = 0; // Count steps
+        let stepStartTime = Date.now(); // Track start time for frequency calculation
+
+        
+        
+        const statusText       = document.getElementById('status');
+        const timerDisplay     = document.getElementById('timer');
+        const magnitudeDisplay = document.getElementById('magnitude-value');
+        const magnitudeDeltaDisplay = document.getElementById('magnitude-delta-value');
+        const startStopButton  = document.getElementById('start-stop-btn');
+        const tareButton       = document.getElementById('tare-btn');
+        const autoTareButton   = document.getElementById('auto-tare-btn'); // Auto Tare
+        const autoThresButton   = document.getElementById('auto-thres-btn'); // Auto Threshold
+        const manualStartButton = document.getElementById('manual-start-btn');
+        const manualStopButton  = document.getElementById('manual-stop-btn');
+        
+        const accelThreshold  = document.getElementById('accel-threshold');
+        const accelThresholdStop  = document.getElementById('accel-threshold-Stop');
+   
+        const barX = document.getElementById('bar-x');
+        const barY = document.getElementById('bar-y');
+        const barZ = document.getElementById('bar-z');
+        
+        const xValueDisplay = document.getElementById('x-value');
+        const yValueDisplay = document.getElementById('y-value');
+        const zValueDisplay = document.getElementById('z-value');
+        
+        const gyroXDisplay = document.getElementById('gyro-x-value');
+        const gyroYDisplay = document.getElementById('gyro-y-value');
+        const gyroZDisplay = document.getElementById('gyro-z-value');
+
+        const absoluteXDisplay = document.getElementById('absolute-x-value');
+        const absoluteYDisplay = document.getElementById('absolute-y-value');
+        const absoluteZDisplay = document.getElementById('absolute-z-value');
+        
+        
+        
+        // This function should be called every time you calculate a new magnitude
+function updateMagnitudes(magnitude) {
+    // Add the new magnitude to the array
+    magnitudes.push(magnitude);
+    
+    // Limit the array size
+    if (magnitudes.length > maxRecentValues) {
+        magnitudes.shift(); // Remove the oldest value
+    }
+
+    // Calculate the average
+    const sum = magnitudes.reduce((acc, val) => acc + val, 0);
+    const average = sum / magnitudes.length;
+
+    // Calculate the baseline (half the average)
+    const baseline = average / 2;
+
+    // Count how many values are above the baseline
+    const countAboveBaseline = magnitudes.filter(val => val > baseline).length;
+
+    // Calculate threshold based on percentage of values above baseline
+    const percentage = 0.8; // For 80%
+    const threshold = (countAboveBaseline / magnitudes.length) > percentage ? average : baseline;
+
+    return threshold;
+}
+        
+         function updateStepFrequency() {
+            const elapsedTime = (Date.now() - stepStartTime) / 60000; // Convert to minutes
+            const stepsPerMinute = stepCount / elapsedTime;
+            document.getElementById('steps-per-minute').innerText = Math.round(stepsPerMinute);
+        }
+
+        
+        
+        function startTimer() {
+            
+            if (isTimerRunning) return;  // Prevent starting if already running
+
+            beep(
+    // Set the duration to 0.2 second (200 milliseconds)
+    100,
+    // Set the frequency of the note to A4 (440 Hz)
+    1000,
+    // Set the volume of the beep to 100%
+    100
+);
+            
+            isTimerRunning = true;
+            
+            statusText.innerText = "Status: Manual timer start.";
+                manualStartButton.disabled = true;
+                manualStopButton.disabled = false;
+            
+            startTime = Date.now();
+            intervalID = setInterval(() => {
+                const elapsedTime = Date.now() - startTime;
+                const hours = Math.floor(elapsedTime / 3600000).toString().padStart(2, '0');
+                const minutes = Math.floor((elapsedTime % 3600000) / 60000).toString().padStart(2, '0');
+                const seconds = Math.floor((elapsedTime % 60000) / 1000).toString().padStart(2, '0');
+                const milliseconds = (elapsedTime % 1000).toString().padStart(3, '0');
+                timerDisplay.innerText = `Timer: ${hours}:${minutes}:${seconds}:${milliseconds}`;
+            }, 10);
+        }
+
+        function stopTimer() {
+
+            if (!isTimerRunning) return;  // Prevent stopping if timer is not running
+            isTimerRunning = false;
+        
+                        beep(
+    // Set the duration to 0.2 second (200 milliseconds)
+    600,
+    // Set the frequency of the note to A4 (440 Hz)
+    1200,
+    // Set the volume of the beep to 100%
+    100
+);
+            
+            clearInterval(intervalID);
+            intervalID = null;
+            //timerDisplay.innerText = `Timer: 00:00:00:000`;
+            statusText.innerText = "Status: Manual timer stop.";
+            manualStartButton.disabled = false;
+            manualStopButton.disabled = true;
+            
+        }
+
+// Request permission for iOS devices
+        function requestGyroPermission() {
+            if (typeof DeviceMotionEvent.requestPermission === 'function') {
+                return DeviceMotionEvent.requestPermission()
+                    .then(response => {
+                        if (response === 'granted') {
+                            return true;
+                        } else {
+                            alert("Permission not granted for motion sensors.");
+                            return false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error requesting permission:", error);
+                        return false;
+                    });
+            }
+            return Promise.resolve(true); // Non-iOS devices don't need permission
+        }        
+        
+         // Function to adjust acceleration based on gyroscope orientation
+        function adjustForOrientation(accel, gyro) {
+            return {
+                x: accel.x - gyro.x,
+                y: accel.y - gyro.y,
+                z: accel.z - gyro.z
+            };
+        }
+
+        const accelerometerHandler = function(event) {
+            Accel.x = event.accelerationIncludingGravity.x - tareValues.x;
+            Accel.y = event.accelerationIncludingGravity.y - tareValues.y;
+            Accel.z = event.accelerationIncludingGravity.z - tareValues.z;
+
+            const adjustedAccel = adjustForOrientation(Accel, Gyro);
+            
+            xValueDisplay.innerText = adjustedAccel.x.toFixed(1);
+            yValueDisplay.innerText = adjustedAccel.y.toFixed(1);
+            zValueDisplay.innerText = adjustedAccel.z.toFixed(1);
+
+            barX.style.width = Math.min(Math.abs(adjustedAccel.x) * 10, 100) + '%';
+            barY.style.width = Math.min(Math.abs(adjustedAccel.y) * 10, 100) + '%';
+            barZ.style.width = Math.min(Math.abs(adjustedAccel.z) * 10, 100) + '%';
+
+            const magnitude = Math.max(Math.abs(adjustedAccel.x), Math.abs(adjustedAccel.y), Math.abs(adjustedAccel.z));
+            
+            const currentThreshold = updateMagnitudes(magnitude); // Get the dynamic threshold
+
+            
+             // Detect peaks and play beep
+            if (magnitude > currentThreshold && !isIncreasing && (isTimerRunning && magnitude > threshold)) {
+                isIncreasing = true;
+            } else if (magnitude < currentThreshold && isIncreasing && (isTimerRunning && magnitude > threshold)) {
+                isIncreasing = false;
+                stepCount++; // Increment step count at each peak
+                beep(100, 500, 100); // Play beep sound
+                updateStepFrequency(); // Update step frequency display
+            }
+
+            
+            deltaMagnitude      = Math.abs( previousMagnitude - magnitude );
+            previousMagnitude   = magnitude;
+            
+            if (autoThresActive){
+            thresValues = { 
+                x: Math.max( Math.abs(adjustedAccel.x), thresValues.x ), 
+                y: Math.max( Math.abs(adjustedAccel.y), thresValues.y ), 
+                z: Math.max( Math.abs(adjustedAccel.z), thresValues.z ) };
+            }
+                             
+          // Update magnitude display (rest of your code)
+            magnitudeDisplay.innerText      = magnitude.toFixed(1);
+            magnitudeDeltaDisplay.innerText = deltaMagnitude.toFixed(1);
+
+          // Display absolute orientation values
+            absoluteXDisplay.innerText = Math.abs(adjustedAccel.x).toFixed(1); 
+            absoluteYDisplay.innerText = Math.abs(adjustedAccel.y).toFixed(1); 
+            absoluteZDisplay.innerText = Math.abs(adjustedAccel.z).toFixed(1); 
+            
+            if ( ( deltaMagnitude > threshold ) && !intervalID) {
+                startTimer();
+                statusText.innerText = `Status: Timer started at Delta magnitude ${deltaMagnitude.toFixed(2)}`;
+            } else if ( ( deltaMagnitude > thresholdStop ) && intervalID ) {
+                
+                if (!autoThresActive){
+                stopTimer();
+                statusText.innerText = `Status: Timer stopped at Delta magnitude ${deltaMagnitude.toFixed(2)}`;                
+                stopMonitoring()
+                };
+            }
+        };
+
+        function startMonitoring() {
+
+            threshold                   = parseFloat(accelThreshold.value);
+            thresholdStop               = parseFloat(accelThresholdStop.value);
+            monitoring                  = true;
+            autoThresButton.disabled    = false;
+            tareButton.disabled         = false;
+            autoTareButton.disabled     = false;
+            timerDisplay.innerText      = `Timer: 00:00:00:000`; // Reset timer and display
+            startStopButton.innerText   = 'Stop Monitoring (Gyro)';
+            statusText.innerText        = 'Status: Monitoring started.';
+            
+            window.addEventListener('devicemotion', gyroHandler);
+            window.addEventListener('devicemotion', accelerometerHandler);
+        }
+
+        function stopMonitoring() {
+            monitoring                  = false;
+            autoThresButton.disabled    = true;
+            tareButton.disable          = true;
+            autoTareButton.disabled     = true;
+
+            stopTimer();
+
+            startStopButton.innerText = 'Start Monitoring (Gyro)';
+            statusText.innerText = 'Status: Monitoring stopped.';
+        
+            window.removeEventListener('devicemotion', gyroHandler);
+            window.removeEventListener('devicemotion', accelerometerHandler);
+        
+
+        }
+
+         const gyroHandler = function(event) {
+            Gyro.x = event.rotationRate.alpha || 0;
+            Gyro.y = event.rotationRate.beta || 0;
+            Gyro.z = event.rotationRate.gamma || 0;
+
+            gyroXDisplay.innerText = Gyro.x.toFixed(1);
+            gyroYDisplay.innerText = Gyro.y.toFixed(1);
+            gyroZDisplay.innerText = Gyro.z.toFixed(1);
+        };
+
+       
+         startStopButton.addEventListener('click', async () => {
+             
+// The browser will limit the number of concurrent audio contexts
+// So be sure to re-use them whenever you can
+myAudioContext = new AudioContext();
+
+             
+            if (!monitoring) {
+                const permissionGranted = await requestGyroPermission();
+                if (permissionGranted) {
+                    startMonitoring();
+                    stepStartTime = Date.now(); // Reset start time for frequency tracking
+                stepCount = 0; // Reset step count
+                }
+            } else {
+                stopMonitoring();
+            }
+        });
+
+        // Manual start and stop button functionality
+        manualStartButton.addEventListener('click', () => {
+             if (!isTimerRunning) {
+                 
+                 if (!myAudioContext){
+                  myAudioContext = new AudioContext();   
+                 }
+                startTimer();
+                
+            }
+        });
+
+              manualStopButton.addEventListener('click', () => {
+            if (isTimerRunning) {
+                stopTimer();
+            }
+        });
+
+        // Tare button functionality
+        tareButton.addEventListener('click', () => {
+            tareValues = { ...Accel };
+            statusText.innerText = "Status: Tare values set.";
+            // Reset timer and display
+            timerDisplay.innerText = `Timer: 00:00:00:000`;
+            thresValues = { x: 0, y: 0, z: 0 };
+        });
+
+        // Auto-tare functionality
+        autoTareButton.addEventListener('click', () => {
+            autoTareActive = true;
+            statusText.innerText = "Status: Auto-tare in progress...";           
+           
+// Simple beep
+beep(
+    // Set the duration to 0.2 second (200 milliseconds)
+    100,
+    // Set the frequency of the note to A4 (440 Hz)
+    443,
+    // Set the volume of the beep to 100%
+    100
+);
+
+            
+            setTimeout(() => {
+                tareValues = { ...Accel };
+                autoTareActive = false;
+                statusText.innerText = "Status: Auto-tare completed.";
+    
+                // Simple beep
+beep(
+    // Set the duration to 0.2 second (200 milliseconds)
+    200,
+    // Set the frequency of the note to A4 (440 Hz)
+    886,
+    // Set the volume of the beep to 100%
+    100
+);
+                
+            }, autoTareDuration);
+        });
+
+        // Auto-threshold functionality
+         autoThresButton.addEventListener('click', () => {
+            autoThresActive = true;
+            statusText.innerText = "Status: Auto-threshold in progress...";
+  
+                             // Simple beep
+beep(
+    // Set the duration to 0.2 second (200 milliseconds)
+    100,
+    // Set the frequency of the note to A4 (440 Hz)
+    320,
+    // Set the volume of the beep to 100%
+    100
+);
+             
+            setTimeout(() => {
+
+            //Set the values 
+       if (Object.values(thresValues).some(value => value !== 0)) {
+            threshold = Math.round( Math.max( Math.abs(thresValues.x), Math.abs(thresValues.y), Math.abs(thresValues.z) ));
+            //document.getElementById('accel-threshold').value = threshold;
+           accelThreshold.value = threshold;
+            
+            thresholdStop = threshold * 3;
+            //document.getElementById('accel-threshold-Stop').value = thresholdStop; 
+           accelThresholdStop.value = thresholdStop;
+        };
+              
+   beep(
+    // Set the duration to 0.2 second (200 milliseconds)
+    100,
+    // Set the frequency of the note to A4 (440 Hz)
+    640,
+    // Set the volume of the beep to 100%
+    100
+);
+                autoThresActive = false;
+                statusText.innerText = "Status: Auto-threshold completed."              
+            }, autoThresDuration);
+        });
+        
+        
+/**
+ * Helper function to emit a beep sound in the browser using the Web Audio API.
+ * 
+ * @param {number} duration - The duration of the beep sound in milliseconds.
+ * @param {number} frequency - The frequency of the beep sound.
+ * @param {number} volume - The volume of the beep sound.
+ * 
+ * @returns {Promise} - A promise that resolves when the beep sound is finished.
+ */
+function beep(duration, frequency, volume){
+    return new Promise((resolve, reject) => {
+        // Set default duration if not provided
+        duration = duration || 200;
+        frequency = frequency || 440;
+        volume = volume || 100;
+
+        try{
+            let oscillatorNode = myAudioContext.createOscillator();
+            let gainNode = myAudioContext.createGain();
+            oscillatorNode.connect(gainNode);
+
+            // Set the oscillator frequency in hertz
+            oscillatorNode.frequency.value = frequency;
+
+            // Set the type of oscillator
+            oscillatorNode.type= "square";
+            gainNode.connect(myAudioContext.destination);
+
+            // Set the gain to the volume
+            gainNode.gain.value = volume * 0.01;
+
+            // Start audio with the desired duration
+            oscillatorNode.start(myAudioContext.currentTime);
+            oscillatorNode.stop(myAudioContext.currentTime + duration * 0.001);
+
+            // Resolve the promise when the sound is finished
+            oscillatorNode.onended = () => {
+                resolve();
+            };
+        }catch(error){
+            reject(error);
+        }
+    });
+}
+
+
+
+        
+        
+        // Disable buttons initially
+        manualStopButton.disabled = true;
+        autoThresButton.disabled  = true;
+        tareButton.disabled       = true;
+        autoTareButton.disabled   = true;
+
+        // Ensure monitoring state reflects whether intervalID is active
+        window.addEventListener('beforeunload', stopMonitoring);
+        
+        
+        
+        
+        
+    </script>
+</body>
+</html>

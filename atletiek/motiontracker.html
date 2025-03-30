@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT Motion Tracker with Auto Tare</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 50px;
+            background-color: white; /* Default background */
+        }
+        #connectBtn, #startBtn, #gyroBtn {
+            padding: 15px 30px;
+            font-size: 18px;
+            margin: 20px;
+            cursor: pointer;
+            border: none;
+            border-radius: 10px;
+        }
+        #connectBtn {
+            background-color: blue;
+            color: white;
+        }
+        #startBtn {
+            background-color: green;
+            color: white;
+        }
+        #gyroBtn {
+            background-color: orange;
+            color: white;
+        }
+        #startBtn.running {
+            background-color: red;
+        }
+        #output {
+            margin-top: 30px;
+            font-size: 18px;
+        }
+        #tareValues {
+            margin-top: 20px;
+            font-size: 18px;
+            color: blue;
+        }
+        canvas {
+            margin-top: 30px;
+            max-width: 80%;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>IoT Device Motion Tracker with Auto Tare</h1>
+
+    <button id="connectBtn">CONNECT</button>
+    <button id="startBtn">START</button>
+    <button id="gyroBtn">USE INTERNAL GYROSCOPE</button>
+
+    <div id="output">
+        <p><strong>x:</strong> <span id="x">0</span></p>
+        <p><strong>y:</strong> <span id="y">0</span></p>
+        <p><strong>z:</strong> <span id="z">0</span></p>
+        <p><strong>Acceleration:</strong> <span id="acceleration">0</span></p>
+        <p><strong>Relative Speed:</strong> <span id="relativeSpeed">0</span> m/s</p>
+        <p><strong>Total Distance:</strong> <span id="distance">0</span> meters</p>
+        <p><strong>Zero Speed Count:</strong> <span id="zeroSpeedCount">0</span></p>
+        <p><strong>Total Zero Speed Time:</strong> <span id="zeroSpeedTime">0</span> s</p>
+    </div>
+
+    <div id="tareValues">
+        <p><strong>Tare X:</strong> <span id="tareX">0</span></p>
+        <p><strong>Tare Y:</strong> <span id="tareY">0</span></p>
+        <p><strong>Tare Z:</strong> <span id="tareZ">0</span></p>
+    </div>
+
+    <canvas id="motionChart"></canvas>
+    <canvas id="ellipseChart"></canvas>
+    <canvas id="verticalZChart"></canvas>
+
+    <script>
+        let isRunning = false;
+        let useInternalGyro = false;
+        let tareComplete = false;
+        let tareValues = { x: 0, y: 0, z: 0 };
+        let tareCount = 0;
+        let tareSum = { x: 0, y: 0, z: 0 };
+        let measurements = [];
+        let timeElapsed = 0;
+        let maxPoints = 50;
+        let totalDistance = 0;
+        let zeroSpeedCount = 0;
+        let totalZeroSpeedTime = 0;
+        const zeroSpeedThreshold = 0.05;
+
+        const motionData = {
+            labels: [],
+            datasets: [
+                { label: 'Foot Motion (X)', borderColor: 'rgb(255, 99, 132)', data: [], fill: false },
+                { label: 'Foot Motion (Y)', borderColor: 'rgb(54, 162, 235)', data: [], fill: false },
+                { label: 'Foot Motion (Z)', borderColor: 'rgb(75, 192, 192)', data: [], fill: false }
+            ]
+        };
+
+        const ellipseData = {
+            datasets: [{ label: 'Foot Ellipse (X vs Y)', borderColor: 'rgb(75, 192, 192)', data: [], fill: false, tension: 0 }]
+        };
+
+        const verticalZData = {
+            datasets: [{ label: 'Vertical Position vs Z', borderColor: 'rgb(255, 206, 86)', data: [], fill: false, tension: 0 }]
+        };
+
+        const motionChart = new Chart(document.getElementById('motionChart').getContext('2d'), { type: 'line', data: motionData });
+        const ellipseChart = new Chart(document.getElementById('ellipseChart').getContext('2d'), { type: 'line', data: ellipseData });
+        const verticalZChart = new Chart(document.getElementById('verticalZChart').getContext('2d'), { type: 'line', data: verticalZData });
+
+        const tareXDisplay = document.getElementById('tareX');
+        const tareYDisplay = document.getElementById('tareY');
+        const tareZDisplay = document.getElementById('tareZ');
+        const connectBtn = document.getElementById('connectBtn');
+        const startBtn = document.getElementById('startBtn');
+        const gyroBtn = document.getElementById('gyroBtn');
+        const xOutput = document.getElementById('x');
+        const yOutput = document.getElementById('y');
+        const zOutput = document.getElementById('z');
+        const accOutput = document.getElementById('acceleration');
+        const relativeSpeedOutput = document.getElementById('relativeSpeed');
+        const distanceOutput = document.getElementById('distance');
+        const zeroSpeedCountOutput = document.getElementById('zeroSpeedCount');
+        const zeroSpeedTimeOutput = document.getElementById('zeroSpeedTime');
+        const body = document.body;
+
+        function autoTare() {
+            body.style.backgroundColor = 'blue'; // Change background to blue during Tare
+            console.log('Auto Tare in progress...');
+            tareSum = { x: 0, y: 0, z: 0 };
+            tareCount = 0;
+            tareComplete = false;
+
+            const tareInterval = setInterval(() => {
+                if (tareCount >= 10) {
+                    clearInterval(tareInterval);
+                    tareValues.x = tareSum.x / 10;
+                    tareValues.y = tareSum.y / 10;
+                    tareValues.z = tareSum.z / 10;
+                    tareXDisplay.textContent = tareValues.x.toFixed(2);
+                    tareYDisplay.textContent = tareValues.y.toFixed(2);
+                    tareZDisplay.textContent = tareValues.z.toFixed(2);
+                    tareComplete = true;
+                    body.style.backgroundColor = 'white'; // Tare completed
+                    console.log('Tare complete. Values:', tareValues);
+                } else {
+                    console.log(`Tare count: ${tareCount}, waiting for more data...`);
+                }
+            }, 100); // Try accumulating data every 100ms
+        }
+
+        // Handle DeviceMotion event
+        function handleMotionEvent(event) {
+            const acc = event.accelerationIncludingGravity;
+            if (!tareComplete) {
+                tareSum.x += acc.x;
+                tareSum.y += acc.y;
+                tareSum.z += acc.z;
+                tareCount++;
+                console.log(`Collecting tare data: X=${acc.x}, Y=${acc.y}, Z=${acc.z}`);
+                return; // Wait until tare is complete
+            }
+
+            const gyroX = acc.x - tareValues.x;
+            const gyroY = acc.y - tareValues.y;
+            const gyroZ = acc.z - tareValues.z;
+            xOutput.textContent = gyroX.toFixed(2);
+            yOutput.textContent = gyroY.toFixed(2);
+                       zOutput.textContent = gyroZ.toFixed(2);
+
+            // Calculate magnitude of acceleration
+            const acceleration = Math.sqrt(gyroX ** 2 + gyroY ** 2 + gyroZ ** 2);
+            accOutput.textContent = acceleration.toFixed(2);
+
+            // Time handling for speed/distance calculations
+            const currentTime = new Date().getTime();
+            const deltaTime = (currentTime - timeElapsed) / 1000; // Convert to seconds
+            timeElapsed = currentTime;
+
+            // Speed approximation: Acceleration * deltaTime
+            let relativeSpeed = acceleration * deltaTime;
+            if (acceleration < zeroSpeedThreshold) {
+                relativeSpeed = 0; // Consider no movement if below threshold
+                zeroSpeedCount++;
+                totalZeroSpeedTime += deltaTime;
+            }
+
+            relativeSpeedOutput.textContent = relativeSpeed.toFixed(2);
+            zeroSpeedCountOutput.textContent = zeroSpeedCount;
+            zeroSpeedTimeOutput.textContent = totalZeroSpeedTime.toFixed(2);
+
+            // Update total distance (integral of speed)
+            totalDistance += relativeSpeed * deltaTime;
+            distanceOutput.textContent = totalDistance.toFixed(2);
+
+            // Update the charts with new data
+            updateCharts(gyroX, gyroY, gyroZ, timeElapsed);
+        }
+
+        // Function to update the charts
+        function updateCharts(gyroX, gyroY, gyroZ, timeElapsed) {
+            const label = (timeElapsed / 1000).toFixed(2); // Time in seconds
+            motionData.labels.push(label);
+            motionData.datasets[0].data.push(gyroX);
+            motionData.datasets[1].data.push(gyroY);
+            motionData.datasets[2].data.push(gyroZ);
+            
+            ellipseData.datasets[0].data.push({ x: gyroX, y: gyroY });
+            verticalZData.datasets[0].data.push({ x: timeElapsed / 1000, y: gyroZ });
+
+            if (motionData.labels.length > maxPoints) {
+                motionData.labels.shift();
+                motionData.datasets[0].data.shift();
+                motionData.datasets[1].data.shift();
+                motionData.datasets[2].data.shift();
+            }
+
+            if (ellipseData.datasets[0].data.length > maxPoints) {
+                ellipseData.datasets[0].data.shift();
+            }
+
+            if (verticalZData.datasets[0].data.length > maxPoints) {
+                verticalZData.datasets[0].data.shift();
+            }
+
+            motionChart.update();
+            ellipseChart.update();
+            verticalZChart.update();
+        }
+
+        // Start collecting motion data when the button is clicked
+        startBtn.addEventListener('click', () => {
+            if (!isRunning) {
+                startMotionTracking();
+            } else {
+                stopMotionTracking();
+            }
+        });
+
+        // Toggle between using internal gyroscope and manual tare
+        gyroBtn.addEventListener('click', () => {
+            useInternalGyro = !useInternalGyro;
+            gyroBtn.textContent = useInternalGyro ? 'USE MANUAL TARE' : 'USE INTERNAL GYROSCOPE';
+        });
+
+        // Start motion tracking
+        function startMotionTracking() {
+            if (!tareComplete) {
+                autoTare();
+            }
+
+            startBtn.classList.add('running');
+            startBtn.textContent = 'STOP';
+            isRunning = true;
+            window.addEventListener('devicemotion', handleMotionEvent);
+        }
+
+        // Stop motion tracking
+        function stopMotionTracking() {
+            startBtn.classList.remove('running');
+            startBtn.textContent = 'START';
+            isRunning = false;
+            window.removeEventListener('devicemotion', handleMotionEvent);
+        }
+    </script>
+
+</body>
+</html>
