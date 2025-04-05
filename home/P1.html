@@ -800,7 +800,7 @@ function drawLine(){
 }
 
 async function tryIP(_ip){
-    let url = 'http://' + _ip + '/api'; // '/api/v1/data';
+    let url = 'https://' + _ip + '/api'; // '/api/v1/data';
     // http://192.168.2.4/api   {"product_type":"HWE-P1","product_name":"P1 meter",
 
     const promise1 = new Promise( (resolve,reject) =>{
@@ -1025,7 +1025,7 @@ function stop(){
 
 async function meter(i){
     iteration = i;
-    let url = 'http://' + ip.P1 + '/api/v1/data';
+    let url = 'https://' + ip.P1 + '/api/v1/data';
     let response = await fetch(url);
 
     if (response.ok) { // if HTTP-status is 200-299
@@ -1193,14 +1193,14 @@ async function meter(i){
 
     }           // response OK 
     else {      // response ERROR
-      alert("HTTP-Error: " + response.status);
+      alert("HTTPS-Error: " + response.status);
     }
 
 }
 
 async function meterW(iW){
     iterationW = iW;
-    let url = 'http://' + ip.WTR + '/api/v1/data';
+    let url = 'https://' + ip.WTR + '/api/v1/data';
     let response = await fetch(url);
 
     if (response.ok) { // if HTTP-status is 200-299
@@ -1227,7 +1227,7 @@ async function meterW(iW){
 
     }           // response OK 
     else {      // response ERROR
-      alert("HTTP-Error: " + response.status);
+      alert("HTTPS-Error: " + response.status);
     }
 
 }
