@@ -238,8 +238,8 @@ th{
 // Credits o.a.:
 // Linechart source based on:  https://codepen.io/yahiaelbnna/pen/KKgLOro
 
-
-
+// Tip:
+// Run Terminal with ns-sd -B _hwenergy._tcp to find v1 devices
 
 // {ip}/api
 // P1
@@ -905,10 +905,11 @@ for ( let iii = 1; iii < _i ; iii++ ){
     let _l2 = Math.floor(ran2 * 400);
     let _l3 = Math.floor(ran3 * 400);
     let _tot = _l1 + _l2 + _l3;
+    if ( _l1 != undefined &&  _l2 != undefined && _l3 != undefined ){
     datal1.push(_l1);
     datal2.push(_l2);
     datal3.push(_l3);
-    dataL_Total.push(_tot);
+    dataL_Total.push(_tot) };
 }
     // dataX = [1,2,3,4,5,6,7,8,9,10,11,12,13,14];  // x-axis :) 
     dataXG = [1,2,3,4,5,6,7,8,9,10]; // x-axis :) 
@@ -1778,6 +1779,7 @@ function leftPad(number, targetLength) {
 <div id = main_container class ="main_container">
 
 <div id="test">Homewizard Devices</div>
+<div id="sub">Download html to local and run</div>
 
 <div id = 'main'>
     <form>
