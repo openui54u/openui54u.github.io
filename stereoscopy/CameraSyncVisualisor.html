@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Camera Sync — Kolommen & Microseconden (met debug)</title>
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --fg: #eef6fb;
+      --accent: #2ad1d6;
+      --panel: #061019;
+      --muted: #98a2b3;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: var(--bg);
+      color: var(--fg);
+      touch-action: manipulation;
+    }
+
+    .header {
+      padding: 12px 10px;
+      text-align: center;
+      background: #0f1720;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    }
+
+    #microDisplay {
+      font-size: 44px;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .controlsBar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      background: #0b1116;
+      flex: 0 0 auto;
+    }
+
+    .controlsBar label {
+      color: var(--muted);
+      font-size: 13px;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .controlsBar input[type="number"] {
+      width: 70px;
+      padding: 6px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      background: transparent;
+      color: inherit;
+    }
+
+    main {
+      display: flex;
+      gap: 8px;
+      padding: 10px;
+      box-sizing: border-box;
+      align-items: stretch;
+      justify-content: stretch;
+      flex: 1 1 auto;
+      overflow: hidden;
+    }
+
+    .portrait-padding {
+      padding-bottom: 10vh;
+    }
+
+    .column {
+      background: var(--panel);
+      border-radius: 8px;
+      box-sizing: border-box;
+      flex: 1 1 0;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 8px;
+    }
+
+    .canvas-wrap {
+      flex: 1 1 auto;
+      display: flex;
+      align-items: stretch;
+    }
+
+    .column canvas {
+      width: 100%;
+      display: block;
+      border-radius: 6px;
+      background: #07121a;
+    }
+
+    .col-controls {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 8px;
+      align-items: center;
+    }
+
+    .col-controls label {
+      font-size: 12px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .col-controls input {
+      width: 100%;
+      padding: 6px;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      background: transparent;
+      color: inherit;
+      text-align: center;
+    }
+
+    .btn {
+      background: var(--accent);
+      border: none;
+      color: #022;
+      padding: 8px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .btn.secondary {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      color: var(--muted);
+    }
+
+    footer {
+      flex: 0 0 auto;
+      padding: 8px 10px;
+      font-size: 13px;
+      color: var(--muted);
+      background: #07121a;
+      border-top: 1px solid rgba(255, 255, 255, 0.02);
+    }
+
+    #debug {
+      position: fixed;
+      left: 10px;
+      right: 10px;
+      height: 140px;
+      bottom: 10px;
+      background: rgba(10, 12, 15, 0.96);
+      color: #8cffb6;
+      font-family: monospace;
+      font-size: 12px;
+      padding: 8px;
+      overflow: auto;
+      border-radius: 8px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      z-index: 9999;
+      display: none;
+    }
+
+    #debug.visible {
+      display: block;
+    }
+
+    @media (max-width: 520px) {
+      .controlsBar {
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div id="microDisplay">000</div>
+  </div>
+
+  <div class="controlsBar">
+    <label>Kolommen:
+      <input id="colCount" type="number" min="1" max="20" value="3">
+    </label>
+
+    <button class="btn" id="startBtn">Start</button>
+    <button class="btn secondary" id="stopBtn">Stop</button>
+
+    <button class="btn secondary" id="toggleDebugBtn" style="margin-left:8px">Toon Debug</button>
+  </div>
+
+  <main id="columns" role="main" aria-label="Kolommen met scanlijnen"></main>
+
+  <footer>
+    Microseconden teller 0 → 999 → 0. Portrait reserveert 10% onderaan voor advertentie.
+  </footer>
+
+  <div id="debug" aria-hidden="true"></div>
+
+  <script>
+    (function() {
+      const colCountInput = document.getElementById('colCount');
+      const startBtn = document.getElementById('startBtn');
+      const stopBtn = document.getElementById('stopBtn');
+      const toggleDebugBtn = document.getElementById('toggleDebugBtn');
+      const columnsWrap = document.getElementById('columns');
+      const debugEl = document.getElementById('debug');
+      const microDisplay = document.getElementById('microDisplay');
+
+      function stamp() {
+        return new Date().toLocaleTimeString();
+      }
+
+      function debugLog(...args) {
+        const line = document.createElement('div');
+        line.textContent = `[${stamp()}] ` + args.map(a => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(' ');
+        debugEl.appendChild(line);
+        debugEl.scrollTop = debugEl.scrollHeight;
+      }
+
+      window.onerror = function(msg, src, line, col, err) {
+        debugLog('ERROR:', msg, `@ ${src}:${line}:${col}`);
+        if (err && err.stack) debugLog(err.stack);
+      };
+
+      const origConsoleLog = console.log.bind(console);
+      console.log = function(...args) {
+        origConsoleLog(...args);
+        debugLog('LOG: ' + args.join(' '));
+      };
+
+      let columns = [];
+      let running = false;
+      let rafId = null;
+      let lastTime = performance.now();
+      let microValue = 0;
+      let microSpeed = 1;
+
+      function isPortrait() {
+        return window.innerHeight > window.innerWidth;
+      }
+
+      function reservedSpace() {
+        return isPortrait() ? Math.round(window.innerHeight * 0.10) : 0;
+      }
+
+      function createColumns(count) {
+        columnsWrap.innerHTML = '';
+        columns = [];
+        for (let i = 0; i < count; i++) {
+          const col = document.createElement('div');
+          col.className = 'column';
+
+          const cw = document.createElement('div');
+          cw.className = 'canvas-wrap';
+          const canvas = document.createElement('canvas');
+          cw.appendChild(canvas);
+          col.appendChild(cw);
+
+          const controls = document.createElement('div');
+          controls.className = 'col-controls';
+          const lbl = document.createElement('label');
+          lbl.textContent = 'Snelheid (ms / cyclus)';
+          const input = document.createElement('input');
+          input.type = 'number';
+          input.min = 10;
+          input.value = 1000;
+          controls.appendChild(lbl);
+          controls.appendChild(input);
+          col.appendChild(controls);
+
+          columnsWrap.appendChild(col);
+
+          const ctx = canvas.getContext('2d');
+          const colObj = { col, canvas, ctx, input, speed: parseInt(input.value, 10), pos: 0, controlsEl: controls };
+          columns.push(colObj);
+
+          input.addEventListener('change', () => {
+            const v = Math.max(10, parseInt(input.value, 10) || 1000);
+            input.value = v;
+            colObj.speed = v;
+          });
+        }
+        console.log('Created columns:', count);
+        requestAnimationFrame(resizeCanvases);
+      }
+
+      function resizeCanvases() {
+        const headerH = document.querySelector('.header').offsetHeight || 0;
+        const controlsH = document.querySelector('.controlsBar').offsetHeight || 0;
+        const footerH = document.querySelector('footer').offsetHeight || 0;
+        const reserved = reservedSpace();
+        const availableMain = Math.max(80, window.innerHeight - headerH - controlsH - footerH - reserved - 8);
+
+        columns.forEach(c => {
+          const controlsHInside = c.controlsEl.offsetHeight || 40;
+          const cssCanvasH = Math.max(40, availableMain - controlsHInside - 8);
+          c.canvas.style.height = cssCanvasH + 'px';
+
+          const ratio = window.devicePixelRatio || 1;
+          const cssW = c.canvas.clientWidth || (c.col.clientWidth - 16);
+          c.canvas.width = Math.max(1, Math.floor(cssW * ratio));
+          c.canvas.height = Math.max(1, Math.floor(cssCanvasH * ratio));
+          c.ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+
+          c._cssW = cssW;
+          c._cssH = cssCanvasH;
+        });
+      }
+
+      function start() {
+        if (running) return;
+        running = true;
+        lastTime = performance.now();
+        rafId = requestAnimationFrame(loop);
+        console.log('Start');
+      }
+
+      function stop() {
+        if (!running) return;
+        running = false;
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = null;
+        console.log('Stop');
+      }
+
+      function loop(ts) {
+        const dt = ts - lastTime;
+        lastTime = ts;
+
+        microValue += dt * microSpeed;
+        while (microValue >= 1000) microValue -= 1000;
+        microDisplay.textContent = String(Math.floor(microValue)).padStart(3, '0');
+
+        columns.forEach(c => {
+          c.speed = Math.max(10, parseInt(c.input.value, 10) || 1000);
+          c.pos += dt / c.speed;
+          while (c.pos >= 1) c.pos -= 1;
+          drawColumn(c);
+        });
+
+        if (running) rafId = requestAnimationFrame(loop);
+      }
+
+      function drawColumn(c) {
+        const ctx = c.ctx;
+        const w = c._cssW || c.canvas.clientWidth;
+        const h = c._cssH || c.canvas.clientHeight;
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = '#07121a';
+        ctx.fillRect(0, 0, w, h);
+        const y = c.pos * h;
+        ctx.fillStyle = 'rgba(255, 221, 87, 0.08)';
+        ctx.fillRect(0, Math.max(0, y - 6), w, 6);
+        ctx.fillStyle = '#ffdd57';
+        ctx.fillRect(0, Math.max(0, y - 1.5), w, 3);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.font = '12px system-ui, -apple-system';
+        ctx.fillText(`${c.speed} ms`, 6, 16);
+      }
+
+      let debugVisible = false;
+      toggleDebugBtn.addEventListener('click', () => {
+        debugVisible = !debugVisible;
+        debugEl.classList.toggle('visible', debugVisible);
+        debugEl.setAttribute('aria-hidden', debugVisible ? 'false' : 'true');
+        toggleDebugBtn.textContent = debugVisible ? 'Verberg Debug' : 'Toon Debug';
+        requestAnimationFrame(resizeCanvases);
+      });
+
+      window.addEventListener('resize', () => {
+        resizeCanvases();
+      });
+
+      window.addEventListener('orientationchange', () => {
+        setTimeout(() => {
+          resizeCanvases();
+        }, 120);
+      });
+
+      createColumns(Math.max(1, Math.min(20, parseInt(colCountInput.value, 10) || 3)));
+      setTimeout(resizeCanvases, 20);
+
+      colCountInput.addEventListener('change', () => {
+        const c = Math.max(1, Math.min(20, parseInt(colCountInput.value, 10) || 3));
+        colCountInput.value = c;
+        createColumns(c);
+        setTimeout(resizeCanvases, 20);
+      });
+
+      startBtn.addEventListener('click', start);
+      stopBtn.addEventListener('click', stop);
+
+      console.log('App ready. portrait reserved px:', (isPortrait() ? Math.round(window.innerHeight * 0.10) : 0));
+    })();
+  </script>
+</body>
+</html>
