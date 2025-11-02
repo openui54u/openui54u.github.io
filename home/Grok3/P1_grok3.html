@@ -1,0 +1,1377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P1 reader</title>
+
+    <style>
+        #P1 {color: #00FF00}
+        #P2 {color:#d6d610}
+        #P3 {color:purple}
+        #PT {color: #0b95d3}
+        #PTd3 { font-size: .6em}
+        #PTd2 { font-size: .6em}
+        #PTd1 { font-size: .6em}
+        #P1d3 { font-size: .6em}
+        #P1d2 { font-size: .6em}
+        #P1d1 { font-size: .6em}
+        #P2d3 { font-size: .6em}
+        #P2d2 { font-size: .6em}
+        #P2d1 { font-size: .6em}
+        #P3d3 { font-size: .6em}
+        #P3d2 { font-size: .6em}
+        #P3d1 { font-size: .6em}
+
+        table {
+            border-collapse: collapse;
+            border-spacing: 0;
+            width: 100%;
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 8px;
+        }
+
+        tr:first-child{background-color: #9cd1e9;}
+        tr:nth-child(even){background-color: #f2f2f2}
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            border-bottom: 1px dotted black;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 120px;
+            background-color: black;
+            color: #fff;
+            text-align: center;
+            padding: 5px 0;
+            border-radius: 6px;
+            position: absolute;
+            z-index: 1;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+        }
+
+        .slidecontainer {
+            left: 60px;
+            position: relative;
+            width: 740px;
+        }
+
+        .slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 25px;
+            background: #d3d3d3;
+            outline: none;
+            opacity: 0.7;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+        }
+
+        .slider:hover {
+            opacity: 1;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 25px;
+            height: 25px;
+            background: #04AA6D;
+            cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 25px;
+            height: 25px;
+            background: #04AA6D;
+            cursor: pointer;
+        }
+
+        #test {
+            position: relative;
+            font-size: 3em;
+            color: red;
+        }
+        .main_container{
+            position: relative;
+            left: 10px;
+            right: 10px;
+            top: 10px;
+            bottom: 10px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .sliderB {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        .sliderB:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            -webkit-transition: .4s;
+            transition: .4s;
+        }
+
+        input:checked + .sliderB {
+            background-color: #2196F3;
+        }
+
+        input:focus + .sliderB {
+            box-shadow: 0 0 1px #2196F3;
+        }
+
+        input:checked + .sliderB:before {
+            -webkit-transform: translateX(26px);
+            -ms-transform: translateX(26px);
+            transform: translateX(26px);
+        }
+
+        .sliderB.round {
+            border-radius: 34px;
+        }
+
+        .sliderB.round:before {
+            border-radius: 50%;
+        }
+        #table_GAS{
+            left: 2vw;
+            width: 90vw;
+            max-width: 800px;
+            overflow-x: auto;
+            overflow-y: scroll;
+            max-height: 200px;
+        }
+        th {
+            position: -webkit-sticky;
+            position: sticky;
+            top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="main_container" class="main_container">
+        <div id="test">Homewizard Devices</div>
+        <div id="sub">Download html to local and run</div>
+
+        <div id="main">
+            <form>
+                <label for="IP_P1">IP P1:</label><br>
+                <input type="text" id="IP_P1" name="IP_P1" required minlength="7" maxlength="15" size="15"><br>
+                <label for="IP_WTR">IP Water:</label><br>
+                <input type="text" id="IP_WTR" name="IP_WTR" required minlength="7" maxlength="15" size="15"><br>
+                <label for="IP_KWH">IP kWh:</label><br>
+                <input type="text" id="IP_KWH" name="IP_KWH" required minlength="7" maxlength="15" size="15">
+            </form>
+            <br><br>
+            <input id="Start" type="button" value="Start" onclick="run()">
+            <input id="Stop" type="button" value="Stop" onclick="stop()">
+            <div class="tooltip">
+                <input id="Scan" type="button" value="Scan" onclick="scanIP()">
+                <span class="tooltiptext">Use IP syntax with 1 wildcard: ###.###.###.*</span>
+            </div>
+        </div>
+
+        <br><h0>IP no.:<span id="IP_P1_001"></span></h0>
+        <br><h0>Wifi Ssid:<span id="WifiSSID"></span></h0>
+        <br><h0>Wifi Strength:<span id="WifiStrength">0</span>%</h0>
+        <br><h0>Meter model:<span id="MM"></span></h0>
+        <br><h0>SMR version:<span id="SV"></span></h0>
+
+        <br>
+        <h1>Fase 1 (W):<span id="P1">0</span> <span id="P1d3">0</span> <span id="P1d2">0</span> <span id="P1d1">0</span></h1>
+        <h1>Fase 2 (W):<span id="P2">0</span> <span id="P2d3">0</span> <span id="P2d2">0</span> <span id="P2d1">0</span></h1>
+        <h1>Fase 3 (W):<span id="P3">0</span> <span id="P3d3">0</span> <span id="P3d2">0</span> <span id="P3d1">0</span></h1>
+        <h1>Totaal (W):<span id="PT">0</span> <span id="PTd3">0</span> <span id="PTd2">0</span> <span id="PTd1">0</span></h1>
+
+        <input id="Zoom" type="button" value="Zoom" onclick="toggleZoom()">
+
+        <div class="slidecontainer">
+            <span>Timeposition</span><div id="rangeValue_from">0</div>-<div id="rangeValue">10</div>
+            <input type="range" min="1" max="100" value="100" step="0.001" class="slider" id="myRange">
+            <span>Points</span><div id="pointsValue"></div>
+            <input type="range" min="1" max="10" value="2" step="0.05" class="slider" id="myPoints">
+        </div>
+
+        <chart>
+            <canvas le id="E" width="800px" height="420px" tabindex="1"></canvas>
+            <draw-canvas-data-set style='width: fit-content; height: fit-content; padding: 5px 15px; margin: 5px; position: absolute; left: 618px; top: 160px; opacity: 0; transition: all 0.5s ease 0s; color: rgb(255, 255, 255); background: rgb(141, 142, 143);'></draw-canvas-data-set>
+        </chart>
+
+        <br>
+        <h1>Export T1 (kWh) :<span id="ET1">0</span></h1>
+        <h1>Export T2 (kWh) :<span id="ET2">0</span></h1>
+        <h1>Import T1 (kWh) :<span id="IT1">0</span></h1>
+        <h1>Import T2 (kWh) :<span id="IT2">0</span></h1>
+
+        <br>
+        <span>Show GAS table</span><br>
+        <label id="table_switch" class="switch">
+            <input id="tableSwitch_GAS" type="checkbox" checked onclick="tableSwitch_GAS()">
+            <span class="sliderB round"></span>
+        </label><br>
+
+        <div id="table_GAS">
+            <table>
+                <tbody id="TimeGasM3">
+                    <tr><th>Time (hh:mm:ss/dd-mm-yy)</th><th>Gas (m3)</th><th>DeltaSum(liter)</th><th>Delta (liter)</th><th>min.</th><th>Flow (liter/min )</th></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <chartG>
+            <canvas lg id="G" width="800px" height="420px" tabindex="2"></canvas>
+            <draw-canvas-data-setG style='width: fit-content; height: fit-content; padding: 5px 15px; margin: 5px; position: absolute; left: 618px; top: 160px; opacity: 0; transition: all 0.5s ease 0s; color: rgb(255, 255, 255); background: rgb(129, 170, 210);'></draw-canvas-data-setG>
+        </chartG>
+
+        <br><h0>IP no.:<span id="IP_W1_001"></span></h0><br>
+        <h0>Active Water usage ( l/min ) :<span id="AL">0</span></h0>
+        <h1>Total liters (m3) :<span id="TL">0</span></h1>
+
+        <br><h0>IP no.:<span id="IP_KWH_001"></span></h0><br>
+        <h0>Active Power (W) :<span id="KWH_PW">0</span></h0>
+        <h1>Total Import (kWh) :<span id="KWH_IT1">0</span></h1>
+        <h1>Total Export (kWh) :<span id="KWH_ET1">0</span></h1>
+    </div>
+
+    <script>
+        var ip = {};
+        let c = {};
+        let h = 0;
+        let w = 0;
+        let Ctx = {};
+        let CtxG = {};
+        let dataX = [],
+            dataXG = [],
+            dataL_Total = [],
+            datal1 = [],
+            datal2 = [],
+            datal3 = [];
+        let dataGas = [],
+            dataGasPoint = [];
+        var un = 0;
+        let xs = 0;
+        let dataT = [];
+        let button_stop = true;
+        let tabE = {};
+        let tabG = {};
+        var zoomStatus = false;
+        var sliderPercentage = 1;
+        var sliderPoints = 10;
+        let debug = false;
+        var MMU = [];
+        var tabIndexCanvas = 0;
+        var tabIndeX_dataT = 0;
+        const max_seconds = 60*60*24;
+        let e_start = {};
+        let e_stop = {};
+        let e_scan = {};
+        let _string = `<tr><th>Time (hh:mm:ss/dd-mm-yy)</th><th>Gas (m3)</th><th>DeltaSum(liter)</th><th>Delta (liter)</th><th>min.</th><th>Flow (liter/min )</th></tr>`;
+        let min = 0,
+            max = 0;
+        let _s = 0;
+        let _e = 0;
+        let _index = 0;
+        let _length = 0;
+
+        var gVar = {};
+        gVar.zoom = {
+            s: 0,
+            e: 0,
+            zoomStatus: false,
+            get zoom() {
+                if (this.s == undefined) this.s = 0;
+                if (this.e == undefined) this.e = dataX.length || 0;
+                if (this.zoomStatus == undefined) this.zoomStatus = false;
+                return {s: this.s, e: this.e, zoomStatus: this.zoomStatus};
+            },
+            set zoom(o) {
+                this.s = o.s;
+                this.e = o.e;
+                this.zoomStatus = o.zoomStatus;
+            }
+        };
+
+        var _k;
+        let iteration = 0;
+
+        function Init() {
+            var slider = document.getElementById("myRange");
+            var sliderP = document.getElementById("myPoints");
+            var sliderTableSwitch = document.getElementById("tableSwitch_GAS");
+
+            document.getElementById("pointsValue").innerHTML = sliderPoints;
+
+            slider.oninput = function() {
+                sliderPercentage = Number(this.value / 100);
+                let _se = set_s_e(sliderPoints, sliderPercentage);
+                _s = _se.s;
+                _e = _se.e;
+                document.getElementById("rangeValue").innerHTML = _e;
+                document.getElementById("rangeValue_from").innerHTML = _s;
+                document.getElementById("pointsValue").innerHTML = sliderPoints;
+                if (button_stop) {
+                    Ctx.clearRect(0, 0, w, h);
+                    CtxG.clearRect(0, 0, wg, hg);
+                    drawLine();
+                }
+            };
+
+            sliderP.oninput = function() {
+                sliderPoints = Math.floor(Math.exp(Number(this.value)));
+                let _se = set_s_e(sliderPoints, sliderPercentage);
+                _s = _se.s;
+                _e = _se.e;
+                document.getElementById("rangeValue").innerHTML = _e;
+                document.getElementById("rangeValue_from").innerHTML = _s;
+                document.getElementById("pointsValue").innerHTML = sliderPoints;
+                if (button_stop) {
+                    Ctx.clearRect(0, 0, w, h);
+                    CtxG.clearRect(0, 0, wg, hg);
+                    drawLine();
+                }
+            };
+
+            _s = 0;
+            _e = 0;
+            zoomStatus = false;
+            gVar.zoom = {s: _s, e: _e, zoomStatus: zoomStatus};
+
+            if (e_start && e_start.style) e_start.style.opacity = 1;
+            if (e_stop && e_stop.style) e_stop.style.opacity = 0;
+            if (e_scan && e_scan.style) e_scan.style.opacity = 1;
+
+            iteration = 0;
+            dataX = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+            dataL_Total = [0, 100];
+            un = Math.round((Math.max(...dataL_Total) - Math.min(...dataL_Total)) / 10);
+            xs = (w - 80) / dataX.length;
+            dataT = [];
+
+            chart.setCtx(Ctx);
+            chart.chartLine();
+            chart.digram();
+
+            chart.setCtx(CtxG);
+            chart.chartLine();
+            chart.digram();
+        }
+
+        function set_s_e(sliderPoints, sliderPercentage) {
+            let _e = Math.floor(sliderPercentage * dataX.length);
+            if (_e < 10) _e = 10;
+            let _s = _e - sliderPoints;
+            if (_s < 0 || _s == undefined) _s = 0;
+            gVar.zoom = {s: _s, e: _e, zoomStatus: zoomStatus};
+            if (debug) console.log(_s, _e, sliderPoints, sliderPercentage);
+            return {s: _s, e: _e};
+        }
+
+        function tableSwitch_GAS() {
+            let _checkBox = document.getElementById("tableSwitch_GAS").checked;
+            if (debug) console.log(_checkBox);
+            let _container_GAS = document.getElementById("table_GAS");
+            if (_checkBox && _container_GAS) {
+                _container_GAS.style.display = "block";
+            } else {
+                _container_GAS.style.display = "none";
+            }
+        }
+
+        window.onload = function() {
+            e_start = document.getElementById('Start');
+            e_stop = document.getElementById('Stop');
+            e_scan = document.getElementById('Scan');
+
+            if (e_start) e_start.style.opacity = 1;
+            if (e_stop) e_stop.style.opacity = 0;
+            if (e_scan && e_scan.style) e_scan.style.opacity = 1;
+
+            c = document.querySelector("canvas[le]");
+            cg = document.querySelector("canvas[lg]");
+
+            tabE = document.querySelector("draw-canvas-data-set");
+            tabG = document.querySelector("draw-canvas-data-setG");
+
+            h = c.height;
+            w = c.width;
+            hg = cg.height;
+            wg = cg.width;
+
+            Ctx = c.getContext('2d');
+            CtxG = cg.getContext('2d');
+
+            cg.onmousemove = function(e) {
+                document.getElementById('G').focus();
+                tabE.style.opacity = "0";
+                tabG.style.opacity = "0";
+                mouseMove(e);
+            };
+
+            c.onmousemove = function(e) {
+                tabE.style.opacity = "0";
+                tabG.style.opacity = "0";
+                document.getElementById('E').focus();
+                mouseMove(e);
+            };
+
+            function mouseMove(e) {
+                let _ID = e.currentTarget.attributes[1].nodeValue;
+                tabIndexCanvas = e.currentTarget.attributes[4].nodeValue;
+                _index = 0;
+
+                _s = gVar.zoom.s;
+                _e = gVar.zoom.e;
+                zoomStatus = gVar.zoom.zoomStatus;
+
+                if (_e == -1 || isNaN(_e)) {
+                    _s = 0;
+                    _e = dataX.length;
+                    if (debug) console.log('correction');
+                }
+                gVar.zoom = {s: _s, e: _e, zoomStatus: zoomStatus};
+
+                for (let data of dataT) {
+                    for (const [key, value] of Object.entries(data)) {
+                        let dataG = value.split(",");
+                        let lx = Number(e.offsetX),
+                            ly = Number(e.offsetY),
+                            dx = Number(dataG[1]),
+                            dy = Number(dataG[0]);
+                        let _delta = Math.floor(Number(dataG[4]) / 3);
+                        if (_delta < 10) _delta = 10;
+
+                        if ((lx > dx - _delta && lx < dx + _delta) && (ly > dy - _delta && ly < dy + _delta)) {
+                            if (_ID == 'E' && dataG[3] != 'Gas') {
+                                tabE.innerHTML = dataG[3] + ':' + dataG[2];
+                                tabE.style.opacity = "1";
+                                tabE.style.left = e.layerX + "px";
+                                tabE.style.top = e.layerY + "px";
+                                if (debug) console.log(_index, Number(dataG[7]));
+                                tabIndeX_dataT = Number(dataG[7]);
+                            } else if (_ID == 'G' && dataG[3] == 'Gas') {
+                                tabG.innerHTML = dataG[3] + ':' + dataG[2];
+                                tabG.style.opacity = "1";
+                                tabG.style.left = e.layerX + "px";
+                                tabG.style.top = e.layerY + "px";
+                            }
+                        }
+                        lx = lx - 1;
+                        dx = dx - 1;
+                    }
+                    _index++;
+                }
+            }
+
+            Init();
+            document.getElementById('IP_P1').value = '192.168.2.*';
+            document.getElementById('IP_KWH').value = '192.168.2.*';
+        };
+
+        async function wrapper() {
+            console.log('start');
+            await waitInterval(meter, 999);
+            console.log(iteration);
+            button_stop = true;
+            console.log('finish');
+        }
+
+        async function wrapperW() {
+            console.log('start W');
+            await waitInterval(meterW, 999);
+            console.log(iteration);
+            button_stop = true;
+            console.log('finish W');
+        }
+
+        async function wrapperKWH() {
+            console.log('start KWH');
+            await waitInterval(meterKWH, 999);
+            console.log(iteration);
+            button_stop = true;
+            console.log('finish KWH');
+        }
+
+        function toggleZoom() {
+            zoomStatus = !zoomStatus;
+            let _buttonZoom = document.getElementById("Zoom");
+            if (zoomStatus) {
+                _buttonZoom.style.backgroundColor = "lightblue";
+            } else {
+                _buttonZoom.style.backgroundColor = "white";
+            }
+
+            if (gVar.zoom == undefined || gVar.zoom.s == undefined || gVar.zoom.e == 0) {
+                if (sliderPercentage == undefined || sliderPercentage == 0) sliderPercentage = 1;
+                _e = Math.floor(dataX.length * sliderPercentage);
+                if (_e < 10) _e = 10;
+                _s = _e - sliderPoints;
+                if (_s < 0) _s = 0;
+                gVar.zoom = {s: _s, e: _e, zoomStatus: zoomStatus};
+            }
+
+            if (button_stop) {
+                Ctx.clearRect(0, 0, w, h);
+                CtxG.clearRect(0, 0, wg, hg);
+                drawLine();
+            }
+        }
+
+        function getMinMaxUn(AA) {
+            min = 0;
+            max = 0;
+
+            if (AA.length >= 1) {
+                if (Array.isArray(AA[0])) {
+                    let maxArray = AA.map(a => Math.max.apply(null, a));
+                    max = Math.max(...maxArray);
+                    let minArray = AA.map(a => Math.min.apply(null, a));
+                    min = Math.min(...minArray);
+                } else {
+                    max = Math.max(...AA);
+                    min = Math.min(...AA);
+                }
+            }
+
+            if (min == max) {
+                if ((max - min) > 10) {
+                    min = AA[0] * 0.999;
+                    max = AA[0] * 1.001;
+                } else {
+                    min = 0;
+                    max = AA[0] * 1.01;
+                }
+            }
+
+            un = (max - min) / 10;
+
+            if (un >= 1000) {
+                max = Math.ceil(max / 5000) * 5000;
+                min = Math.floor(min / 5000) * 5000;
+                un = (max - min) / 10;
+            } else if (un >= 100) {
+                max = Math.ceil(max / 500) * 500;
+                min = Math.floor(min / 500) * 500;
+                un = (max - min) / 10;
+            } else if (un >= 10) {
+                max = Math.ceil(max / 50) * 50;
+                min = Math.floor(min / 50) * 50;
+                un = (max - min) / 10;
+            } else if (un >= 1) {
+                max = Math.ceil(max / 10) * 10;
+                min = Math.floor(min / 10) * 10;
+                un = (max - min) / 10;
+            } else if (un >= 0) {
+                max = Math.ceil(max * 1) / 1;
+                min = Math.floor(min * 1) / 1;
+                un = (max - min) / 10;
+            }
+
+            if (un == 0) { un = 0.1; max = 10; min = 0; }
+
+            if (debug) console.log(min, max, un);
+            return [min, max, un];
+        }
+
+        function drawLine() {
+            if (dataL_Total.length != 0) {
+                if (zoomStatus) {
+                    _s = gVar.zoom.s;
+                    _e = gVar.zoom.e;
+                    if (sliderPercentage == 1) {
+                        _e = dataX.length;
+                        _s = _e - sliderPoints;
+                        if (_s < 0) _s = 0;
+                    }
+                } else {
+                    _s = 0;
+                    _e = dataX.length;
+                }
+                gVar.zoom = {s: _s, e: _e, zoomStatus: zoomStatus};
+                _length = _e - _s;
+
+                let A = [dataL_Total.slice(_s, _e), datal1.slice(_s, _e), datal2.slice(_s, _e), datal3.slice(_s, _e)];
+                MMU[0] = getMinMaxUn(A);
+                min = MMU[0][0];
+                max = MMU[0][1];
+                un = MMU[0][2];
+
+                xs = (w - 80) / _length;
+
+                dataT = [];
+                chart.setCtx(Ctx);
+                chart.chartLine();
+                chart.digram();
+                chart.data();
+                chart.draw();
+                chart.pointes();
+            }
+
+            if (dataGasPoint.length != 0) {
+                let datag = [];
+                for (let datagas of dataGasPoint) {
+                    datag.push(datagas[5]);
+                }
+
+                _s = 0;
+                _e = dataX.length;
+
+                MMU[1] = getMinMaxUn(datag);
+                MMU[1][0] = min = 0;
+                max = MMU[1][1];
+                un = MMU[1][2];
+
+                xs = (w - 80) / dataXG.length;
+                chart.setCtx(CtxG);
+                chart.chartLine();
+                chart.digram();
+                chart.dataGas();
+                chart.drawG();
+                chart.pointesGas();
+            }
+
+            return true;
+        }
+
+        async function tryIP(_ip) {
+            let url = 'http://' + _ip + '/api'; // Corrected line!
+            const promise1 = new Promise((resolve, reject) => {
+                if (debug) console.log(url);
+                fetch(url)
+                    .then(async function(response) {
+                        if (response.ok) {
+                            let _json = await response.json();
+                            if (_json.product_type == "HWE-P1") {
+                                ip.P1 = _ip;
+                                document.getElementById('IP_P1').value = ip.P1;
+                                if (debug) console.log('Found HWE-P1', url, ip.P1);
+                                resolve();
+                            }
+                            if (_json.product_type == "HWE-WTR") {
+                                ip.WTR = _ip;
+                                document.getElementById('IP_WTR').value = ip.WTR;
+                                if (debug) console.log('Found HWE-WTR', url, ip.WTR);
+                                resolve();
+                            }
+                            if (_json.product_type.includes("HWE-KWH") || _json.product_type.includes("SDM")) {
+                                ip.KWH = _ip;
+                                document.getElementById('IP_KWH').value = ip.KWH;
+                                if (debug) console.log('Found kWh-Meter', url, ip.KWH);
+                                resolve();
+                            }
+                            reject();
+                        } else {
+                            reject();
+                        }
+                    })
+                    .catch((err) => {});
+            });
+            const promise2 = new Promise((resolve, reject) => setTimeout(reject, 100));
+            try {
+                await Promise.race([promise1, promise2]);
+            } catch (e) {
+                if (debug) console.log(url, 'failed');
+            }
+        }
+
+        function scanIP() {
+            ip.P1 = document.getElementById('IP_P1').value;
+            ip.WTR = document.getElementById('IP_WTR').value;
+            ip.KWH = document.getElementById('IP_KWH').value;
+            if ((ip.P1 && ip.P1.split('.')[3].includes('*')) || 
+                (ip.WTR && ip.WTR.split('.')[3].includes('*')) || 
+                (ip.KWH && ip.KWH.split('.')[3].includes('*'))) {
+                let _ip = ip.P1 || ip.WTR || ip.KWH;
+                for (var ii = 1; ii < 256; ii++) {
+                    let _ipArray = _ip.split('.');
+                    _ipArray[3] = ii;
+                    _ip = _ipArray.join('.');
+                    if (debug) console.log(_ip);
+                    tryIP(_ip);
+                }
+            }
+        }
+
+        function setHoverText() {
+            let _hover = document.getElementsByClassName('tooltip')[0];
+            if (_hover) {
+                if (!button_stop) {
+                    _hover.style.display = 'none';
+                } else {
+                    _hover.style.display = 'inline-block';
+                }
+            }
+        }
+
+        function fill_data_random() {
+            let _i = 600;
+            let _interval = 1;
+
+            set_s_e(sliderPoints, sliderPercentage);
+            document.getElementById("rangeValue").innerHTML = _i;
+
+            gVar.zoom = {s: 1, e: _i, zoomStatus};
+            dataX = [];
+            for (let iii = 1; iii < _i; iii++) {
+                dataX.push(iii);
+                let ran1 = Math.random();
+                let ran2 = Math.random();
+                let ran3 = Math.random();
+                let _l1 = Math.floor(ran1 * 400);
+                let _l2 = Math.floor(ran2 * 400);
+                let _l3 = Math.floor(ran3 * 400);
+                let _tot = _l1 + _l2 + _l3;
+                if (_l1 != undefined && _l2 != undefined && _l3 != undefined) {
+                    datal1.push(_l1);
+                    datal2.push(_l2);
+                    datal3.push(_l3);
+                    dataL_Total.push(_tot);
+                }
+            }
+            dataXG = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+            dataGas = [
+                ['21:10:06/22-11-22', 3037.961, 76206],
+                ['21:10:06/22-11-22', 3037.961, 76206],
+                ['21:10:06/22-11-22', 3037.961, 76206],
+                ['21:15:05/22-11-22', 3038.991, 76505],
+                ['21:15:05/22-11-22', 3038.991, 76505],
+                ['21:15:05/22-11-22', 3038.991, 76505],
+                ['21:20:05/22-11-22', 3039.991, 76505],
+                ['21:20:05/22-11-22', 3039.991, 76505]
+            ];
+
+            dataGasPoint = [
+                ["18:10:00/22-11-22", 2000.101, 75005, 2, 5, 0.4],
+                ["18:10:00/22-11-22", 2000.108, 75305, 125, 5, 25],
+                ["18:10:00/22-11-22", 2000.150, 75605, 100, 5, 20],
+                ["18:10:00/22-11-22", 2000.200, 75905, 0.0, 5, 0],
+                ["18:10:00/22-11-22", 2000.202, 76205, 28, 5, 15],
+                ["18:10:00/22-11-22", 2000.205, 76505, 255, 5, 50],
+                ["18:10:00/22-11-22", 2001.206, 76805, 25, 5, 5],
+                ["18:10:00/22-11-22", 2001.209, 77105, 133, 5, 25]
+            ];
+        }
+
+        function run() {
+            button_stop = false;
+            setHoverText();
+            ip.P1 = document.getElementById('IP_P1').value;
+            ip.WTR = document.getElementById('IP_WTR').value;
+            ip.KWH = document.getElementById('IP_KWH').value;
+
+            if (ip.KWH && !ip.KWH.includes('*')) {
+                wrapperKWH();
+            }
+            if (ip.WTR && !ip.WTR.includes('*')) {
+                wrapperW();
+            }
+            if (ip.P1 && !ip.P1.includes('*')) {
+                document.getElementById('test').innerHTML = '';
+                Init();
+                if (e_start) e_start.style.opacity = 0;
+                if (e_stop) e_stop.style.opacity = 1;
+                if (e_scan && e_scan.style) e_scan.style.opacity = 0;
+                dataX = [];
+                dataXG = [];
+                dataL_Total = [];
+                datal1 = [];
+                datal2 = [];
+                datal3 = [];
+                dataT = [];
+                dataGas = [];
+                dataGasPoint = [];
+                iteration = 1;
+                wrapper();
+            } else {
+                document.getElementById('test').innerHTML = 'TESTDATA';
+                fill_data_random();
+                iteration = 1;
+                Ctx.clearRect(0, 0, w, h);
+                CtxG.clearRect(0, 0, wg, hg);
+                drawLine();
+                button_stop = true;
+                writeNumbers_E({
+                    'active_power_w': dataL_Total[dataL_Total.length-1],
+                    'active_power_l1_w': datal1[dataL_Total.length-1],
+                    'active_power_l2_w': datal2[dataL_Total.length-1],
+                    'active_power_l3_w': datal3[dataL_Total.length-1],
+                    'total_gas_m3': dataGasPoint[dataGasPoint.length-1],
+                    'total_power_export_t1_kwh': 1234,
+                    'total_power_export_t2_kwh': 0123,
+                    'total_power_import_t1_kwh': 987,
+                    'total_power_import_t2_kwh': 321
+                });
+            }
+        }
+
+        function stop() {
+            button_stop = true;
+            setHoverText();
+            if (e_start) e_start.style.opacity = 1;
+            if (e_stop) e_stop.style.opacity = 0;
+            if (e_scan && e_scan.style) e_scan.style.opacity = 1;
+        }
+
+        async function meter(i) {
+            iteration = i;
+            let url = 'http://' + ip.P1 + '/api/v1/data';
+            let response = await fetch(url);
+
+            if (response.ok) {
+                let json = await response.json();
+
+                if (isNaN(json.active_power_w)) json.active_power_w = 0;
+                if (isNaN(json.active_power_l1_w)) json.active_power_l1_w = 0;
+                if (isNaN(json.active_power_l2_w)) json.active_power_l2_w = 0;
+                if (isNaN(json.active_power_l3_w)) json.active_power_l3_w = 0;
+                dataL_Total.push(json.active_power_w);
+                datal1.push(json.active_power_l1_w);
+                datal2.push(json.active_power_l2_w);
+                datal3.push(json.active_power_l3_w);
+                dataX.push(i);
+
+                document.getElementById('IP_P1_001').innerHTML = ip.P1;
+                document.getElementById('WifiSSID').innerHTML = json.wifi_ssid;
+                document.getElementById('WifiStrength').innerHTML = json.wifi_strength;
+                document.getElementById('MM').innerHTML = json.meter_model;
+                document.getElementById('SV').innerHTML = json.smr_version;
+
+                writeNumbers_E(json);
+
+                if (!zoomStatus) {
+                    // Ctx.clearRect(0, 0, w, h);
+                    // CtxG.clearRect(0, 0, wg, hg);
+                    // drawLine();
+                } else {
+                    if (debug) console.log('pause');
+                }
+                Ctx.clearRect(0, 0, w, h);
+                CtxG.clearRect(0, 0, wg, hg);
+                drawLine();
+
+                if (sliderPercentage == 1) {
+                    document.getElementById("rangeValue").innerHTML = dataX.length;
+                }
+
+                if (json.gas_timestamp) {
+                    let _stamp = json.gas_timestamp.toString();
+                    let hh = _stamp.substring(6, 8);
+                    let mm = _stamp.substring(8, 10);
+                    let ss = _stamp.substring(10, 12);
+                    let DD = _stamp.substring(4, 6);
+                    let MM = _stamp.substring(2, 4);
+                    let YY = _stamp.substring(0, 2);
+
+                    let _time = hh + ':' + mm + ':' + ss;
+                    let _date = DD + '-' + MM + '-' + YY;
+                    _time = _time + '/' + _date;
+
+                    let _timestamp = (new Date('20' + YY + '-' + MM + '-' + DD + 'T' + hh + ':' + mm + ':' + ss)).getTime();
+                    if (debug) console.log(new Date(_timestamp), _timestamp);
+                    let _deltaGas = 0;
+                    let _min = 0;
+                    let _usage = 0;
+
+                    if (dataGasPoint.length != 0) {
+                        if (dataGasPoint[dataGasPoint.length - 1][2] != _timestamp || debug == true) {
+                            if (debug) console.log(hh, mm, ss, _time, _timestamp);
+                            let _startGas = dataGasPoint[0][1];
+                            let _deltaSum = ((Math.floor(json.total_gas_m3 * 1000) - Math.floor(_startGas * 1000)) * 1000) / 1000;
+
+                            _string = _string + '<tr><td>' + _time + '</td>';
+                            if (dataGasPoint.length > 0) {
+                                _deltaGas = Math.floor((json.total_gas_m3 * 1000 - dataGasPoint[dataGasPoint.length - 1][1] * 1000) * 1000) / 1000;
+                                _min = (_timestamp - dataGasPoint[dataGasPoint.length - 1][2]) / 60000;
+                                _string = _string + '<td>' + json.total_gas_m3 + '</td><td>' + _deltaSum + '</td><td>' + _deltaGas + '</td><td>' + Math.floor(_min * 10) / 10 + '</td>';
+                                if (_min != 0) {
+                                    _usage = Math.round(_deltaGas * 100 / _min) / 100;
+                                    _string = _string + '<td>' + _usage + '</td>';
+                                }
+                            }
+                            _string = _string + '</tr>';
+
+                            dataGasPoint.push([_time, json.total_gas_m3, _timestamp, _deltaGas, _min, _usage]);
+                            dataXG.push(i);
+                        }
+                    } else {
+                        dataGas.push([_time, json.total_gas_m3, _timestamp]);
+                        dataGasPoint.push([_time, json.total_gas_m3, _timestamp, null, null, null]);
+                        dataXG.push(i);
+                        _string = _string + '<tr><td>' + _time + '<td>' + json.total_gas_m3 + '</td></tr>';
+                    }
+
+                    _k = object('#TimeGasM3');
+                    _k.innerHTML = _string;
+                }
+
+                let _return = (i == max_seconds || button_stop);
+                if (_return) stop();
+                return _return;
+            } else {
+                alert("HTTP-Error: " + response.status);
+            }
+        }
+
+        async function meterW(iW) {
+            iteration = iW;
+            let url = 'http://' + ip.WTR + '/api/v1/data';
+            let response = await fetch(url);
+
+            if (response.ok) {
+                let json = await response.json();
+                document.getElementById('IP_W1_001').innerHTML = ip.WTR;
+                if (json.active_liter_lpm) {
+                    document.getElementById('AL').innerHTML = json.active_liter_lpm;
+                    document.getElementById('TL').innerHTML = json.total_liter_m3;
+                } else {
+                    document.getElementById('AL').innerHTML = '';
+                    document.getElementById('TL').innerHTML = '';
+                }
+
+                let _return = (iW == max_seconds || button_stop);
+                if (_return) stop();
+                return _return;
+            } else {
+                alert("HTTP-Error: " + response.status);
+            }
+        }
+
+        async function meterKWH(iKWH) {
+            iteration = iKWH;
+            let url = 'http://' + ip.KWH + '/api/v1/data';
+            let response = await fetch(url);
+
+            if (response.ok) {
+                let json = await response.json();
+                document.getElementById('IP_KWH_001').innerHTML = ip.KWH;
+                document.getElementById('KWH_PW').innerHTML = json.active_power_w || 0;
+                document.getElementById('KWH_IT1').innerHTML = json.total_power_import_t1_kwh || 0;
+                document.getElementById('KWH_ET1').innerHTML = json.total_power_export_t1_kwh || 0;
+
+                let _return = (iKWH == max_seconds || button_stop);
+                if (_return) stop();
+                return _return;
+            } else {
+                alert("HTTP-Error: " + response.status);
+            }
+        }
+
+        function writeNumbers_E(json) {
+            document.getElementById('P1').innerHTML = json.active_power_l1_w;
+            if (json.active_power_l2_w) {
+                document.getElementById('P2').innerHTML = json.active_power_l2_w;
+            } else {
+                document.getElementById('P2').innerHTML = '';
+            }
+            if (json.active_power_l3_w) {
+                document.getElementById('P3').innerHTML = json.active_power_l3_w;
+            } else {
+                document.getElementById('P3').innerHTML = '';
+            }
+            document.getElementById('PT').innerHTML = json.active_power_w;
+
+            let deltas = delta_calc(dataL_Total);
+            document.getElementById('PTd3').innerHTML = deltas[0];
+            document.getElementById('PTd2').innerHTML = deltas[1];
+            document.getElementById('PTd1').innerHTML = deltas[2];
+            let deltal1 = delta_calc(datal1);
+            document.getElementById('P1d3').innerHTML = deltal1[0];
+            document.getElementById('P1d2').innerHTML = deltal1[1];
+            document.getElementById('P1d1').innerHTML = deltal1[2];
+            let deltal2 = delta_calc(datal2);
+            document.getElementById('P2d3').innerHTML = deltal2[0];
+            document.getElementById('P2d2').innerHTML = deltal2[1];
+            document.getElementById('P2d1').innerHTML = deltal2[2];
+            let deltal3 = delta_calc(datal3);
+            document.getElementById('P3d3').innerHTML = deltal3[0];
+            document.getElementById('P3d2').innerHTML = deltal3[1];
+            document.getElementById('P3d1').innerHTML = deltal3[2];
+
+            document.getElementById('ET1').innerHTML = json.total_power_export_t1_kwh;
+            document.getElementById('ET2').innerHTML = json.total_power_export_t2_kwh;
+            document.getElementById('IT1').innerHTML = json.total_power_import_t1_kwh;
+            document.getElementById('IT2').innerHTML = json.total_power_import_t2_kwh;
+        }
+
+        async function waitInterval(callback, ms) {
+            return new Promise(resolve => {
+                const interval = setInterval(async () => {
+                    if (await callback(iteration, interval)) {
+                        resolve();
+                        clearInterval(interval);
+                        return true;
+                    }
+                    iteration++;
+                }, ms);
+            });
+        }
+
+        function delta_calc(_array) {
+            let delta = [];
+            if (_array.length > 3) {
+                delta.push(_array[_array.length - 1] - _array[_array.length - 4]);
+            } else {
+                delta.push(0);
+            }
+            if (_array.length > 2) {
+                delta.push(_array[_array.length - 1] - _array[_array.length - 3]);
+            } else {
+                delta.push(0);
+            }
+            if (_array.length > 1) {
+                delta.push(_array[_array.length - 1] - _array[_array.length - 2]);
+            } else {
+                delta.push(0);
+            }
+            return delta;
+        }
+
+        var chart = {
+            ctx: {},
+            setCtx: function(_ctx) {
+                this.ctx = _ctx;
+            },
+            setStrokeStyle: function(_color) {
+                this.ctx.strokeStyle = _color;
+            },
+            digram: function() {
+                x = 60;
+                y = 1;
+                this.ctx.strokeStyle = "#a7a7a7";
+                while (x < w) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, 0);
+                    this.ctx.lineTo(x, h - 30);
+                    this.ctx.stroke();
+                    x += 30;
+                }
+                while (y < h - 30) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(60, y);
+                    this.ctx.lineTo(w, y);
+                    this.ctx.stroke();
+                    y += 30;
+                }
+            },
+            chartLine: function() {
+                this.ctx.strokeStyle = "#000";
+                this.ctx.beginPath();
+                this.ctx.moveTo(60, 0);
+                this.ctx.lineTo(60, h - 30);
+                this.ctx.stroke();
+
+                this.ctx.beginPath();
+                this.ctx.moveTo(w, h - 30);
+                this.ctx.lineTo(60, h - 30);
+                this.ctx.stroke();
+            },
+            draw: function() {
+                this.ctx.save();
+                this.ctx.strokeStyle = "#0b95d3";
+                this.ctx.lineWidth = 4;
+                this.ctx.beginPath();
+                x = 60;
+                line = 30;
+
+                for (let ix = _s; ix < _e; ix++) {
+                    const data = dataL_Total[ix];
+                    y = 30;
+                    y += ((MMU[0][1] - data) / MMU[0][2]) * line;
+                    this.ctx.lineTo(x, y);
+                    x += xs;
+                }
+                this.ctx.stroke();
+
+                this.setStrokeStyle("#00FF00");
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                x = 60;
+                for (let ix = _s; ix < _e; ix++) {
+                    const data = datal1[ix];
+                    y = 30;
+                    y += ((MMU[0][1] - data) / MMU[0][2]) * line;
+                    this.ctx.lineTo(x, y);
+                    x += xs;
+                }
+                this.ctx.stroke();
+
+                this.setStrokeStyle("#d6d610");
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                x = 60;
+                for (let ix = _s; ix < _e; ix++) {
+                    const data = datal2[ix];
+                    y = 30;
+                    y += ((MMU[0][1] - data) / MMU[0][2]) * line;
+                    this.ctx.lineTo(x, y);
+                    x += xs;
+                }
+                this.ctx.stroke();
+
+                this.setStrokeStyle("#A020F0");
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                x = 60;
+                for (let ix = _s; ix < _e; ix++) {
+                    const data = datal3[ix];
+                    y = 30;
+                    y += ((MMU[0][1] - data) / MMU[0][2]) * line;
+                    this.ctx.lineTo(x, y);
+                    x += xs;
+                }
+                this.ctx.stroke();
+                this.ctx.restore();
+            },
+            drawG: function() {
+                this.ctx.save();
+                this.ctx.strokeStyle = "#0b95d3";
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                x = 60;
+                line = 30;
+
+                for (let data of dataGasPoint) {
+                    y = 30;
+                    y += ((MMU[1][1] - data[5]) / MMU[1][2]) * line;
+                    this.ctx.lineTo(x, y);
+                    x += xs;
+                }
+                this.ctx.stroke();
+                this.ctx.restore();
+            },
+            pointes: function() {
+                let _indexL = 0;
+                this.ctx.fillStyle = "#0b95d3";
+                x = 60;
+                line = 30;
+
+                for (let ix = _s; ix < _e; ix++) {
+                    const data = dataL_Total[ix];
+                    this.points(data, dataL_Total, 'Tot.', _indexL);
+                    _indexL++;
+                }
+
+                _indexL = 0;
+                this.ctx.fillStyle = "#00FF00";
+                x = 60;
+                for (let ix = _s; ix < _e; ix++) {
+                    const data = datal1[ix];
+                    this.points(data, datal1, 'l1', _indexL);
+                    _indexL++;
+                }
+
+                _indexL = 0;
+                this.ctx.fillStyle = "#d6d610";
+                x = 60;
+                for (let ix = _s; ix < _e; ix++) {
+                    const data = datal2[ix];
+                    this.points(data, datal2, 'l2', _indexL);
+                    _indexL++;
+                }
+
+                _indexL = 0;
+                this.ctx.fillStyle = "#A020F0";
+                x = 60;
+                for (let ix = _s; ix < _e; ix++) {
+                    const data = datal3[ix];
+                    this.points(data, datal3, 'l3', _indexL);
+                    _indexL++;
+                }
+                this.ctx.fillStyle = "#00000F";
+                this.ctx.stroke();
+            },
+            points: function(d, dX, f, _indX) {
+                y = 30;
+                y += ((MMU[0][1] - d) / MMU[0][2]) * line;
+                this.circle(x, y);
+                dataT.push({d: Math.round(y) + "," + Math.round(x) + "," + Math.round(d) + "," + f + "," + MMU[0] + ',' + Number(_indX)});
+                x += xs;
+            },
+            pointesGas: function() {
+                this.ctx.fillStyle = "#0b95d3";
+                x = 60;
+                line = 30;
+
+                let _indexG = 0;
+                for (let data of dataGasPoint) {
+                    this.pointsGas(data[5], dataGasPoint, 'Gas', _indexG);
+                    _indexG++;
+                }
+
+                this.ctx.fillStyle = "#00000F";
+                this.ctx.stroke();
+            },
+            pointsGas: function(d, dX, f, _indG) {
+                y = 30;
+                y += ((MMU[1][1] - d) / MMU[1][2]) * line;
+                this.circle(x, y);
+                dataT.push({d: Math.round(y) + "," + Math.round(x) + "," + Math.round(d * 10) / 10 + "," + f + "," + MMU[1] + ',' + Number(_indG)});
+                x += xs;
+            },
+            data: function() {
+                x = 60;
+                y = 30;
+                n = max;
+
+                let _factor = 1;
+                if (zoomStatus) {
+                    _s = gVar.zoom.s;
+                    _e = gVar.zoom.e;
+                } else {
+                    _s = 0;
+                    _e = dataX.length;
+                }
+                _length = _e - _s;
+                if (debug) console.log(_s, _e, _length);
+
+                if (_length > 24000) {
+                    _factor = Math.floor(_length / 3600);
+                    if (_factor < 3600) _factor = 3600;
+                } else if (_length > 6000) {
+                    _factor = Math.floor(_length / 1200);
+                    if (_factor < 1200) _factor = 1200;
+                } else if (_length > 1200) {
+                    _factor = Math.floor(_length / 240);
+                    if (_factor < 240) _factor = 240;
+                } else if (_length > 300) {
+                    _factor = Math.floor(_length / 60);
+                    if (_factor < 60) _factor = 60;
+                } else if (_length > 20) {
+                    _factor = Math.floor(_length / 10);
+                    if (_factor < 1) _factor = 1;
+                }
+
+                let xi = 0;
+                for (let ix = _s; ix < _e; ix++) {
+                    const xdata = dataX[ix];
+                    this.ctx.font = "12px Arial";
+
+                    if (xdata > 3600) {
+                        if ((xi % _factor) == 0) {
+                            this.ctx.fillText(
+                                (Math.floor(xdata / 3600)) + ':' +
+                                leftPad(Math.floor((xdata - 3600 * (Math.floor(xdata / 3600))) / 60), 2) + ':' +
+                                leftPad((xdata - (60 * Math.floor(xdata / 60))) % 60, 2),
+                                x, h - 10
+                            );
+                        }
+                    } else if (xdata > 60) {
+                        if ((xi % _factor) == 0) {
+                            this.ctx.fillText(
+                                (Math.floor(xdata / 60)) + ':' +
+                                leftPad((xdata - (60 * Math.floor(xdata / 60))) % 60, 2),
+                                x, h - 10
+                            );
+                        }
+                    } else {
+                        if ((xi % _factor) == 0) {
+                            this.ctx.fillText(xdata + 's', x, h - 10);
+                        }
+                    }
+                    x += xs;
+                    xi++;
+                }
+                while (y < h - 30) {
+                    this.ctx.font = "11px Arial";
+                    this.ctx.fillText(n, 0, y + 5);
+                    n = n - un;
+                    y += 30;
+                }
+            },
+            dataGas: function() {
+                x = 60;
+                y = 30;
+                n = max;
+
+                for (let xdata of dataXG) {
+                    this.ctx.font = "12px Arial";
+                    if (dataXG.length > 300) {
+                        this.ctx.fillText(xdata * 60, x + 60 * xs - xs, h - 10);
+                        x += xs * 60;
+                    } else if (dataXG.length > 140) {
+                        this.ctx.fillText(xdata * 20, x + 20 * xs - xs, h - 10);
+                        x += xs * 20;
+                    } else if (dataXG.length > 50) {
+                        this.ctx.fillText(xdata * 10, x + 10 * xs - xs, h - 10);
+                        x += xs * 10;
+                    } else if (dataXG.length > 20) {
+                        this.ctx.fillText(xdata * 5, x + 5 * xs - xs, h - 10);
+                        x += xs * 5;
+                    } else if (dataXG.length > 10) {
+                        this.ctx.fillText(xdata * 2, x + 2 * xs - xs, h - 10);
+                        x += xs * 2;
+                    } else {
+                        this.ctx.fillText(xdata, x, h - 10);
+                        x += xs;
+                    }
+                }
+                while (y < h - 30) {
+                    this.ctx.font = "11px Arial";
+                    this.ctx.fillText(n, 0, y + 5);
+                    n = n - un;
+                    n = Math.floor(n * 100) / 100;
+                    y += 30;
+                }
+            },
+            circle: function(x, y) {
+                this.ctx.beginPath();
+                this.ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                this.ctx.fill();
+            }
+        };
+
+        function $(object) {
+            return document.querySelector(object);
+        }
+
+        function object(object) {
+            return document.querySelector(object);
+        }
+
+        function leftPad(number, targetLength) {
+            var output = number + '';
+            while (output.length < targetLength) {
+                output = '0' + output;
+            }
+            return output;
+        }
+    </script>
+</body>
+</html>

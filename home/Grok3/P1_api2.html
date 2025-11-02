@@ -1,0 +1,1711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HomeWizard Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        h1 {
+            font-size: 2.5em;
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        h2 {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        h3 {
+            font-size: 1.2em;
+            color: #444;
+            margin-bottom: 10px;
+        }
+        p {
+            margin: 5px 0;
+            color: #555;
+        }
+        .header-text {
+            text-align: center;
+            color: #777;
+            font-size: 0.9em;
+            margin-bottom: 20px;
+        }
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .control-box {
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .control-box label {
+            display: block;
+            font-size: 0.9em;
+            color: #555;
+            margin-bottom: 5px;
+        }
+        .control-box input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .control-box input[type="text"]:focus {
+            border-color: #4a90e2;
+            outline: none;
+        }
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            color: #fff;
+            font-size: 1em;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .button-start {
+            background-color: #28a745;
+        }
+        .button-start:hover {
+            background-color: #218838;
+        }
+        .button-stop {
+            background-color: #dc3545;
+        }
+        .button-stop:hover {
+            background-color: #c82333;
+        }
+        .button-scan {
+            background-color: #007bff;
+            position: relative;
+        }
+        .button-scan:hover {
+            background-color: #0056b3;
+        }
+        .button-scan:hover .tooltip {
+            display: block;
+        }
+        .tooltip {
+            display: none;
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            white-space: nowrap;
+        }
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .dashboard-section {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        .full-width {
+            grid-column: 1 / -1;
+        }
+        .data-row {
+            margin-bottom: 10px;
+        }
+        .data-label {
+            font-weight: bold;
+            color: #444;
+        }
+        .data-value {
+            color: #666;
+        }
+        .phase-data {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .phase-label-green { color: #28a745; }
+        .phase-label-yellow { color: #d4c010; }
+        .phase-label-purple { color: #800080; }
+        .phase-label-blue { color: #007bff; }
+        .delta {
+            font-size: 0.8em;
+            color: #888;
+        }
+        .meter-data {
+            margin-bottom: 20px;
+        }
+        .graph-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .button-zoom {
+            background-color: #4a90e2;
+            padding: 5px 15px;
+            border-radius: 4px;
+            color: #fff;
+            cursor: pointer;
+        }
+        .button-zoom.active {
+            background-color: #2a6db0;
+        }
+        .slider-container {
+            flex: 1;
+        }
+        .slider-label {
+            font-size: 0.9em;
+            color: #555;
+            margin-bottom: 5px;
+        }
+        .slider {
+            width: 100%;
+            height: 8px;
+            background: #d1d5db;
+            outline: none;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+            border-radius: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .slider:hover {
+            opacity: 1;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #28a745;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: #28a745;
+            cursor: pointer;
+            border-radius: 50%;
+        }
+        .canvas-container {
+            position: relative;
+        }
+        canvas {
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            height: 300px;
+        }
+        .canvas-tooltip {
+            position: absolute;
+            background-color: #333;
+            color: #fff;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .canvas-tooltip-gas {
+            background-color: #007bff;
+        }
+        .switch-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .switch-label {
+            font-size: 0.9em;
+            color: #555;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .switch-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 34px;
+        }
+        .switch-slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+        input:checked + .switch-slider {
+            background-color: #4a90e2;
+        }
+        input:focus + .switch-slider {
+            box-shadow: 0 0 1px #4a90e2;
+        }
+        input:checked + .switch-slider:before {
+            transform: translateX(26px);
+        }
+        .gas-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+        @media (min-width: 768px) {
+            .gas-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+        .table-container {
+            max-height: 320px;
+            overflow-y: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+            color: #555;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #e6f0fa;
+            position: sticky;
+            top: 0;
+        }
+        .socket-tile {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .socket-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>HomeWizard Dashboard</h1>
+            <p class="header-text">Real-time monitoring of your energy and water usage</p>
+        </header>
+
+        <!-- Controls Section -->
+        <section class="controls-grid">
+            <div class="control-box">
+                <label for="IP_P1">P1 Meter IP</label>
+                <input type="text" id="IP_P1" name="IP_P1" required minlength="7" maxlength="15">
+            </div>
+            <div class="control-box">
+                <label for="IP_WTR">Water Meter IP</label>
+                <input type="text" id="IP_WTR" name="IP_WTR" required minlength="7" maxlength="15">
+            </div>
+            <div class="control-box">
+                <label for="IP_KWH">kWh Meter IP</label>
+                <input type="text" id="IP_KWH" name="IP_KWH" required minlength="7" maxlength="15">
+            </div>
+        </section>
+
+        <div class="button-group">
+            <button id="Start" onclick="run()" class="button button-start">Start</button>
+            <button id="Stop" onclick="stop()" class="button button-stop">Stop</button>
+            <div style="position: relative;">
+                <button id="Scan" onclick="scanIP()" class="button button-scan">Scan</button>
+                <span class="tooltip">Use IP syntax with 1 wildcard: ###.###.###.*</span>
+            </div>
+        </div>
+
+        <!-- Main Dashboard Grid -->
+        <div class="dashboard-grid">
+            <!-- P1 Meter Section -->
+            <section class="dashboard-section">
+                <h2>P1 Meter</h2>
+                <div class="data-row">
+                    <p><span class="data-label">IP:</span> <span id="IP_P1_001" class="data-value"></span></p>
+                    <p><span class="data-label">WiFi SSID:</span> <span id="WifiSSID" class="data-value"></span></p>
+                    <p><span class="data-label">WiFi Strength:</span> <span id="WifiStrength" class="data-value">0%</span></p>
+                    <p><span class="data-label">Model:</span> <span id="MM" class="data-value"></span></p>
+                    <p><span class="data-label">SMR Version:</span> <span id="SV" class="data-value"></span></p>
+                </div>
+                <div class="phase-data">
+                    <p><span class="data-label phase-label-green">Phase 1 (W):</span> <span id="P1">0</span> <span class="delta" id="P1d3">0</span> <span class="delta" id="P1d2">0</span> <span class="delta" id="P1d1">0</span></p>
+                    <p><span class="data-label phase-label-yellow">Phase 2 (W):</span> <span id="P2">0</span> <span class="delta" id="P2d3">0</span> <span class="delta" id="P2d2">0</span> <span class="delta" id="P2d1">0</span></p>
+                    <p><span class="data-label phase-label-purple">Phase 3 (W):</span> <span id="P3">0</span> <span class="delta" id="P3d3">0</span> <span class="delta" id="P3d2">0</span> <span class="delta" id="P3d1">0</span></p>
+                    <p><span class="data-label phase-label-blue">Total (W):</span> <span id="PT">0</span> <span class="delta" id="PTd3">0</span> <span class="delta" id="PTd2">0</span> <span class="delta" id="PTd1">0</span></p>
+                </div>
+                <div class="phase-data">
+                    <p><span class="data-label">Export T1 (kWh):</span> <span id="ET1">0</span></p>
+                    <p><span class="data-label">Export T2 (kWh):</span> <span id="ET2">0</span></p>
+                    <p><span class="data-label">Import T1 (kWh):</span> <span id="IT1">0</span></p>
+                    <p><span class="data-label">Import T2 (kWh):</span> <span id="IT2">0</span></p>
+                </div>
+            </section>
+
+            <!-- Water & kWh Meters Section -->
+            <section class="dashboard-section">
+                <h2>Water & kWh Meters</h2>
+                <div class="meter-data">
+                    <h3>Water Meter</h3>
+                    <p><span class="data-label">IP:</span> <span id="IP_W1_001" class="data-value"></span></p>
+                    <p><span class="data-label">Active Usage (l/min):</span> <span id="AL" class="data-value">0</span></p>
+                    <p><span class="data-label">Total (m³):</span> <span id="TL" class="data-value">0</span></p>
+                </div>
+                <div class="meter-data">
+                    <h3>kWh Meter</h3>
+                    <p><span class="data-label">IP:</span> <span id="IP_KWH_001" class="data-value"></span></p>
+                    <p><span class="data-label">Active Power (W):</span> <span id="KWH_PW" class="data-value">0</span></p>
+                    <p><span class="data-label">Total Import (kWh):</span> <span id="KWH_IT1" class="data-value">0</span></p>
+                    <p><span class="data-label">Total Export (kWh):</span> <span id="KWH_ET1" class="data-value">0</span></p>
+                </div>
+            </section>
+
+            <!-- Controls & Graphs Section -->
+            <section class="dashboard-section">
+                <h2>Controls & Graphs</h2>
+                <div class="graph-controls">
+                    <button id="Zoom" onclick="toggleZoom()" class="button-zoom">Zoom</button>
+                    <div class="slider-container">
+                        <label class="slider-label">Time Position (<span id="rangeValue_from">0</span>-<span id="rangeValue">10</span>)</label>
+                        <input type="range" min="1" max="100" value="100" step="0.001" class="slider" id="myRange">
+                    </div>
+                    <div class="slider-container">
+                        <label class="slider-label">Points (<span id="pointsValue">10</span>)</label>
+                        <input type="range" min="1" max="10" value="2" step="0.05" class="slider" id="myPoints">
+                    </div>
+                </div>
+                <div class="canvas-container">
+                    <canvas le id="E" width="600" height="300" tabindex="1"></canvas>
+                    <div class="canvas-tooltip" id="canvasTooltip"></div>
+                </div>
+            </section>
+
+            <!-- Gas Graph & Table Section -->
+            <section class="dashboard-section full-width">
+                <h2>Gas Usage</h2>
+                <div class="switch-container">
+                    <span class="switch-label">Show Gas Table</span>
+                    <label class="switch">
+                        <input id="tableSwitch_GAS" type="checkbox" checked onclick="tableSwitch_GAS()">
+                        <span class="switch-slider"></span>
+                    </label>
+                </div>
+                <div class="gas-grid">
+                    <div class="canvas-container">
+                        <canvas lg id="G" width="600" height="300" tabindex="2"></canvas>
+                        <div class="canvas-tooltip canvas-tooltip-gas" id="canvasTooltipGas"></div>
+                    </div>
+                    <div id="table_GAS" class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Gas (m³)</th>
+                                    <th>Delta Sum (L)</th>
+                                    <th>Delta (L)</th>
+                                    <th>Min.</th>
+                                    <th>Flow (L/min)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="TimeGasM3">
+                                <tr><td colspan="6">No data yet</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Socket Tiles Section -->
+            <section id="socketSection" class="dashboard-section full-width">
+                <h2>Smart Plugs (Sockets)</h2>
+                <div id="socketTiles" class="socket-grid"></div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        var ip = {};
+        let c, cg;
+        let h = 0, w = 0, hg = 0, wg = 0;
+        let Ctx, CtxG;
+        let dataX = [], dataXG = [], dataL_Total = [], datal1 = [], datal2 = [], datal3 = [];
+        let dataGas = [], dataGasPoint = [];
+        var un = 0;
+        let xs = 0;
+        let dataT = [];
+        let button_stop = true;
+        let tabE, tabG;
+        var zoomStatus = false;
+        var sliderPercentage = 1;
+        var sliderPoints = 10;
+        let debug = true;
+        var MMU = [];
+        var tabIndexCanvas = 0;
+        var tabIndeX_dataT = 0;
+        const max_seconds = 60*60*24;
+        let e_start, e_stop, e_scan;
+        let _string = `<tr><th>Time (hh:mm:ss/dd-mm-yy)</th><th>Gas (m3)</th><th>DeltaSum(liter)</th><th>Delta (liter)</th><th>min.</th><th>Flow (liter/min )</th></tr>`;
+        let min = 0, max = 0;
+        let _s = 0, _e = 0, _index = 0, _length = 0;
+
+        var gVar = {};
+        gVar.zoom = {
+            s: 0,
+            e: 0,
+            zoomStatus: false,
+            get zoom() {
+                if (this.s == undefined) this.s = 0;
+                if (this.e == undefined) this.e = dataX.length || 0;
+                if (this.zoomStatus == undefined) this.zoomStatus = false;
+                return {s: this.s, e: this.e, zoomStatus: this.zoomStatus};
+            },
+            set zoom(o) {
+                this.s = o.s;
+                this.e = o.e;
+                this.zoomStatus = o.zoomStatus;
+            }
+        };
+
+        var _k;
+        let iteration = 0;
+
+        // Socket-related variables
+        let sockets = [];
+        let socketData = {};
+        let socketTokens = {}; // Store authentication tokens for each socket
+
+        function Init() {
+            var slider = document.getElementById("myRange");
+            var sliderP = document.getElementById("myPoints");
+            var sliderTableSwitch = document.getElementById("tableSwitch_GAS");
+
+            document.getElementById("pointsValue").innerHTML = sliderPoints;
+
+            slider.oninput = function() {
+                sliderPercentage = Number(this.value / 100);
+                let _se = set_s_e(sliderPoints, sliderPercentage);
+                _s = _se.s;
+                _e = _se.e;
+                document.getElementById("rangeValue").innerHTML = _e;
+                document.getElementById("rangeValue_from").innerHTML = _s;
+                document.getElementById("pointsValue").innerHTML = sliderPoints;
+                if (button_stop) {
+                    Ctx.clearRect(0, 0, w, h);
+                    CtxG.clearRect(0, 0, wg, hg);
+                    drawLine();
+                }
+            };
+
+            sliderP.oninput = function() {
+                sliderPoints = Math.floor(Math.exp(Number(this.value)));
+                let _se = set_s_e(sliderPoints, sliderPercentage);
+                _s = _se.s;
+                _e = _se.e;
+                document.getElementById("rangeValue").innerHTML = _e;
+                document.getElementById("rangeValue_from").innerHTML = _s;
+                document.getElementById("pointsValue").innerHTML = sliderPoints;
+                if (button_stop) {
+                    Ctx.clearRect(0, 0, w, h);
+                    CtxG.clearRect(0, 0, wg, hg);
+                    drawLine();
+                }
+            };
+
+            _s = 0;
+            _e = 0;
+            zoomStatus = false;
+            gVar.zoom = {s: _s, e: _e, zoomStatus: zoomStatus};
+
+            if (e_start && e_start.style) e_start.style.opacity = 1;
+            if (e_stop && e_stop.style) e_stop.style.opacity = 0;
+            if (e_scan && e_scan.style) e_scan.style.opacity = 1;
+
+            iteration = 0;
+            dataX = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+            dataL_Total = [0, 100];
+            un = Math.round((Math.max(...dataL_Total) - Math.min(...dataL_Total)) / 10);
+            xs = (w - 80) / dataX.length;
+            dataT = [];
+
+            chart.setCtx(Ctx);
+            chart.chartLine();
+            chart.digram();
+        }
+
+        function set_s_e(sliderPoints, sliderPercentage) {
+            let _e = Math.floor(sliderPercentage * dataX.length);
+            if (_e < 10) _e = 10;
+            let _s = _e - sliderPoints;
+            if (_s < 0 || _s == undefined) _s = 0;
+            gVar.zoom = {s: _s, e: _e, zoomStatus: zoomStatus};
+            if (debug) console.log(_s, _e, sliderPoints, sliderPercentage);
+            return {s: _s, e: _e};
+        }
+
+        function tableSwitch_GAS() {
+            let _checkBox = document.getElementById("tableSwitch_GAS").checked;
+            let _container_GAS = document.getElementById("table_GAS");
+            if (_checkBox && _container_GAS) {
+                _container_GAS.style.display = "block";
+            } else {
+                _container_GAS.style.display = "none";
+            }
+        }
+
+        // Function to authenticate with HomeWizard version 2 API
+        async function authenticateSocket(ip) {
+            const url = `http://${ip}/api/user`;
+            const userData = { name: "local/dashboard_user" };
+            const headers = {
+                "Content-Type": "application/json",
+                "X-Api-Version": "2"
+            };
+
+            try {
+                // First attempt to create a user
+                let response = await fetch(url, {
+                    method: "POST",
+                    headers: headers,
+                    body: JSON.stringify(userData)
+                });
+
+                if (response.status === 403) {
+                    // Prompt user to press the button on the device
+                    alert(`Please press the button on the Energy Socket at ${ip} to authenticate. You have 30 seconds.`);
+
+                    // Retry the request after user presses the button
+                    const startTime = Date.now();
+                    while (Date.now() - startTime < 30000) { // Retry for 30 seconds
+                        response = await fetch(url, {
+                            method: "POST",
+                            headers: headers,
+                            body: JSON.stringify(userData)
+                        });
+
+                        if (response.ok) {
+                            const data = await response.json();
+                            const token = data.token;
+                            socketTokens[ip] = token;
+                            console.log(`Authenticated with ${ip}, token: ${token}`);
+                            return token;
+                        }
+                        await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second before retrying
+                    }
+                    throw new Error("Authentication timed out. Please try again.");
+                } else if (response.ok) {
+                    const data = await response.json();
+                    const token = data.token;
+                    socketTokens[ip] = token;
+                    console.log(`Authenticated with ${ip}, token: ${token}`);
+                    return token;
+                } else {
+                    throw new Error(`Authentication failed: ${response.status}`);
+                }
+            } catch (error) {
+                console.error(`Authentication error for ${ip}:`, error);
+                return null;
+            }
+        }
+
+        // Function to generate socket tiles
+        function generateSocketTiles() {
+            const container = document.getElementById('socketTiles');
+            container.innerHTML = ''; // Clear existing tiles
+
+            if (sockets.length === 0) {
+                container.innerHTML = '<p>No smart plugs detected.</p>';
+                return;
+            }
+
+            sockets.forEach((socket, index) => {
+                const tile = document.createElement('div');
+                tile.className = 'socket-tile';
+                tile.innerHTML = `
+                    <h3>${socket.product_name} (${socket.serial})</h3>
+                    <p>Firmware: ${socket.firmware_version || 'Unknown'}</p>
+                    <p>Current Power Usage: <span id="powerUsage_${socket.serial}">Unavailable (CORS restricted)</span></p>
+                    <p><em>Graph unavailable due to CORS restrictions.</em></p>
+                `;
+                container.appendChild(tile);
+            });
+        }
+
+        // Function to update socket data (disabled due to CORS)
+        async function updateSocketData() {
+            // Attempt to fetch data for each socket using the authentication token
+            for (const socket of sockets) {
+                const ip = ip.SKT[socket.serial];
+                if (!socketTokens[ip]) {
+                    // Authenticate if we don't have a token yet
+                    const token = await authenticateSocket(ip);
+                    if (!token) continue; // Skip if authentication failed
+                }
+
+                const url = `http://${ip}/api/v1/data`;
+                try {
+                    const response = await fetch(url, {
+                        headers: {
+                            "Authorization": `Bearer ${socketTokens[ip]}`,
+                            "X-Api-Version": "2"
+                        }
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        document.getElementById(`powerUsage_${socket.serial}`).innerHTML = data.power_usage_w || "N/A";
+                    } else {
+                        console.log(`Failed to fetch data for ${ip}: ${response.status}`);
+                    }
+                } catch (error) {
+                    console.error(`Error fetching data for ${ip}:`, error);
+                    // CORS will likely block this request, so we keep the placeholder message
+                }
+            }
+            generateSocketTiles();
+        }
+
+        function scanIP() {
+            ip.P1 = document.getElementById('IP_P1').value;
+            ip.WTR = document.getElementById('IP_WTR').value;
+            ip.KWH = document.getElementById('IP_KWH').value;
+
+            const ipRanges = [];
+            if (ip.P1) ipRanges.push({ base: ip.P1, type: 'P1' });
+            if (ip.WTR) ipRanges.push({ base: ip.WTR, type: 'WTR' });
+            if (ip.KWH) ipRanges.push({ base: ip.KWH, type: 'KWH' });
+
+            ipRanges.forEach(async ({ base, type }) => {
+                const hasWildcard = base.split('.')[3].includes('*');
+                if (!hasWildcard) {
+                    console.log(`Trying exact IP for ${type}: ${base}`);
+                    await tryIP(base);
+                } else {
+                    console.log(`Scanning IP range for ${type}: ${base}`);
+                    for (let ii = 1; ii < 256; ii++) {
+                        const ipArray = base.split('.');
+                        ipArray[3] = ii;
+                        const newIp = ipArray.join('.');
+                        console.log(`Trying ${newIp}`);
+                        await tryIP(newIp);
+                    }
+                }
+            });
+        }
+
+        window.onload = function() {
+            e_start = document.getElementById('Start');
+            e_stop = document.getElementById('Stop');
+            e_scan = document.getElementById('Scan');
+
+            if (e_start) e_start.style.opacity = 1;
+            if (e_stop) e_stop.style.opacity = 0;
+            if (e_scan && e_scan.style) e_scan.style.opacity = 1;
+
+            c = document.querySelector("canvas[le]");
+            cg = document.querySelector("canvas[lg]");
+
+            tabE = document.getElementById("canvasTooltip");
+            tabG = document.getElementById("canvasTooltipGas");
+
+            h = c.height;
+            w = c.width;
+            hg = cg.height;
+            wg = cg.width;
+
+            Ctx = c.getContext('2d');
+            CtxG = cg.getContext('2d');
+
+            cg.onmousemove = function(e) {
+                document.getElementById('G').focus();
+                tabE.style.opacity = "0";
+                tabG.style.opacity = "0";
+                mouseMove(e);
+            };
+
+            c.onmousemove = function(e) {
+                tabE.style.opacity = "0";
+                tabG.style.opacity = "0";
+                document.getElementById('E').focus();
+                mouseMove(e);
+            };
+
+            // Set initial values for all input fields
+            document.getElementById('IP_P1').value = '192.168.2.*';
+            document.getElementById('IP_WTR').value = '192.168.2.*';
+            document.getElementById('IP_KWH').value = '192.168.2.*';
+
+            generateSocketTiles();
+        };
+
+        async function wrapper() {
+            console.log('start');
+            await waitInterval(meter, 999);
+            console.log(iteration);
+            button_stop = true;
+            console.log('finish');
+        }
+
+        async function wrapperW() {
+            console.log('start W');
+            await waitInterval(meterW, 999);
+            console.log(iteration);
+            button_stop = true;
+            console.log('finish W');
+        }
+
+        async function wrapperKWH() {
+            console.log('start KWH');
+            await waitInterval(meterKWH, 999);
+            console.log(iteration);
+            button_stop = true;
+            console.log('finish KWH');
+        }
+
+        async function wrapperSKT() {
+            console.log('start SKT');
+            await waitInterval(meterSKT, 999);
+            console.log(iteration);
+            button_stop = true;
+            console.log('finish SKT');
+        }
+
+        function toggleZoom() {
+            zoomStatus = !zoomStatus;
+            let _buttonZoom = document.getElementById("Zoom");
+            if (zoomStatus) {
+                _buttonZoom.classList.add("active");
+            } else {
+                _buttonZoom.classList.remove("active");
+            }
+
+            if (gVar.zoom == undefined || gVar.zoom.s == undefined || gVar.zoom.e == 0) {
+                if (sliderPercentage == undefined || sliderPercentage == 0) sliderPercentage = 1;
+                _e = Math.floor(dataX.length * sliderPercentage);
+                if (_e < 10) _e = 10;
+                _s = _e - sliderPoints;
+                if (_s < 0) _s = 0;
+                gVar.zoom = {s: _s, e: _e, zoomStatus: zoomStatus};
+            }
+
+            document.getElementById("rangeValue").innerHTML = _e;
+            document.getElementById("rangeValue_from").innerHTML = _s;
+            document.getElementById("pointsValue").innerHTML = sliderPoints;
+
+            Ctx.clearRect(0, 0, w, h);
+            CtxG.clearRect(0, 0, wg, hg);
+            drawLine();
+        }
+
+        async function tryIP(_ip) {
+            let url = 'http://' + _ip + '/api';
+            const promise1 = new Promise((resolve, reject) => {
+                console.log(`Fetching: ${url}`);
+                fetch(url)
+                    .then(async function(response) {
+                        if (response.ok) {
+                            let _json = await response.json();
+                            console.log(`Response from ${_ip}:`, _json);
+                            if (_json.product_type == "HWE-P1") {
+                                ip.P1 = _ip;
+                                document.getElementById('IP_P1').value = ip.P1;
+                                console.log('Found HWE-P1', url, ip.P1);
+                                resolve();
+                            }
+                            if (_json.product_type == "HWE-WTR") {
+                                ip.WTR = _ip;
+                                document.getElementById('IP_WTR').value = ip.WTR;
+                                console.log('Found HWE-WTR', url, ip.WTR);
+                                resolve();
+                            }
+                            if (_json.product_type.includes("HWE-KWH") || _json.product_type.includes("SDM")) {
+                                ip.KWH = _ip;
+                                document.getElementById('IP_KWH').value = ip.KWH;
+                                console.log('Found kWh-Meter', url, ip.KWH);
+                                resolve();
+                            }
+                            reject(new Error('Device type not recognized or CORS issue'));
+                        } else {
+                            reject(new Error(`HTTP Error: ${response.status}`));
+                        }
+                    })
+                    .catch((err) => {
+                        // If the initial fetch fails (likely due to CORS for sockets), try with no-cors mode
+                        fetch(url, { mode: 'no-cors' })
+                            .then((response) => {
+                                console.log(`Detected device at ${_ip} (no-cors mode)`);
+                                const socket = {
+                                    product_type: "HWE-SKT",
+                                    product_name: "Energy Socket",
+                                    serial: `SN${_ip.split('.').pop()}`,
+                                    firmware_version: "Unknown",
+                                    api_version: "v1"
+                                };
+                                if (!ip.SKT) ip.SKT = {};
+                                ip.SKT[socket.serial] = _ip;
+                                sockets.push(socket);
+                                console.log('Assumed HWE-SKT', url, socket.serial);
+                                // Attempt to authenticate with version 2 API
+                                authenticateSocket(_ip);
+                                generateSocketTiles();
+                                resolve();
+                            })
+                            .catch((noCorsErr) => {
+                                console.error(`Fetch error for ${_ip}:`, err);
+                                reject(err);
+                            });
+                    });
+            });
+            const promise2 = new Promise((resolve, reject) => setTimeout(() => reject(new Error('Timeout')), 1000));
+            try {
+                await Promise.race([promise1, promise2]);
+            } catch (e) {
+                console.log(`Failed to connect to ${_ip}: ${e.message}`);
+            }
+        }
+
+        function setHoverText() {
+            let _hover = document.querySelector('.button-scan');
+            if (_hover) {
+                if (!button_stop) {
+                    _hover.style.display = 'none';
+                } else {
+                    _hover.style.display = 'inline-block';
+                }
+            }
+        }
+
+        function fill_data_random() {
+            let _i = 600;
+            let _interval = 1;
+
+            set_s_e(sliderPoints, sliderPercentage);
+            document.getElementById("rangeValue").innerHTML = _i;
+
+            gVar.zoom = {s: 1, e: _i, zoomStatus};
+            dataX = [];
+            for (let iii = 1; iii < _i; iii++) {
+                dataX.push(iii);
+                let ran1 = Math.random();
+                let ran2 = Math.random();
+                let ran3 = Math.random();
+                let _l1 = Math.floor(ran1 * 400);
+                let _l2 = Math.floor(ran2 * 400);
+                let _l3 = Math.floor(ran3 * 400);
+                let _tot = _l1 + _l2 + _l3;
+                if (_l1 != undefined && _l2 != undefined && _l3 != undefined) {
+                    datal1.push(_l1);
+                    datal2.push(_l2);
+                    datal3.push(_l3);
+                    dataL_Total.push(_tot);
+                }
+            }
+            dataXG = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+            dataGas = [
+                ['21:10:06/22-11-22', 3037.961, 76206],
+                ['21:10:06/22-11-22', 3037.961, 76206],
+                ['21:10:06/22-11-22', 3037.961, 76206],
+                ['21:15:05/22-11-22', 3038.991, 76505],
+                ['21:15:05/22-11-22', 3038.991, 76505],
+                ['21:15:05/22-11-22', 3038.991, 76505],
+                ['21:20:05/22-11-22', 3039.991, 76505],
+                ['21:20:05/22-11-22', 3039.991, 76505]
+            ];
+
+            dataGasPoint = [
+                ["18:10:00/22-11-22", 2000.101, 75005, 2, 5, 0.4],
+                ["18:10:00/22-11-22", 2000.108, 75305, 125, 5, 25],
+                ["18:10:00/22-11-22", 2000.150, 75605, 100, 5, 20],
+                ["18:10:00/22-11-22", 2000.200, 75905, 0.0, 5, 0],
+                ["18:10:00/22-11-22", 2000.202, 76205, 28, 5, 15],
+                ["18:10:00/22-11-22", 2000.205, 76505, 255, 5, 50],
+                ["18:10:00/22-11-22", 2001.206, 76805, 25, 5, 5],
+                ["18:10:00/22-11-22", 2001.209, 77105, 133, 5, 25]
+            ];
+
+            sockets = [
+                { product_type: "HWE-SKT", product_name: "Energy Socket", serial: "SN001", firmware_version: "3.02", api_version: "v1" },
+                { product_type: "HWE-SKT", product_name: "Energy Socket", serial: "SN002", firmware_version: "3.02", api_version: "v1" }
+            ];
+            sockets.forEach(socket => {
+                if (!ip.SKT) ip.SKT = {};
+                ip.SKT[socket.serial] = `192.168.2.${Math.floor(Math.random() * 255)}`;
+            });
+            generateSocketTiles();
+        }
+
+        function run() {
+            button_stop = false;
+            setHoverText();
+            ip.P1 = document.getElementById('IP_P1').value;
+            ip.WTR = document.getElementById('IP_WTR').value;
+            ip.KWH = document.getElementById('IP_KWH').value;
+
+            if (ip.KWH && !ip.KWH.includes('*')) {
+                wrapperKWH();
+            }
+            if (ip.WTR && !ip.WTR.includes('*')) {
+                wrapperW();
+            }
+            if (ip.SKT) {
+                wrapperSKT();
+            }
+            if (ip.P1 && !ip.P1.includes('*')) {
+                Init();
+                if (e_start) e_start.style.opacity = 0;
+                if (e_stop) e_stop.style.opacity = 1;
+                if (e_scan && e_scan.style) e_scan.style.opacity = 0;
+                dataX = [];
+                dataXG = [];
+                dataL_Total = [];
+                datal1 = [];
+                datal2 = [];
+                datal3 = [];
+                dataT = [];
+                dataGas = [];
+                dataGasPoint = [];
+                iteration = 1;
+                wrapper();
+            } else {
+                fill_data_random();
+                iteration = 1;
+                Ctx.clearRect(0, 0, w, h);
+                CtxG.clearRect(0, 0, wg, hg);
+                drawLine();
+                button_stop = true;
+                writeNumbers_E({
+                    'active_power_w': dataL_Total[dataL_Total.length-1],
+                    'active_power_l1_w': datal1[dataL_Total.length-1],
+                    'active_power_l2_w': datal2[dataL_Total.length-1],
+                    'active_power_l3_w': datal3[dataL_Total.length-1],
+                    'total_gas_m3': dataGasPoint[dataGasPoint.length-1],
+                    'total_power_export_t1_kwh': 1234,
+                    'total_power_export_t2_kwh': 0123,
+                    'total_power_import_t1_kwh': 987,
+                    'total_power_import_t2_kwh': 321
+                });
+            }
+        }
+
+        function stop() {
+            button_stop = true;
+            setHoverText();
+            if (e_start) e_start.style.opacity = 1;
+            if (e_stop) e_stop.style.opacity = 0;
+            if (e_scan && e_scan.style) e_scan.style.opacity = 1;
+        }
+
+        async function meter(i) {
+            iteration = i;
+            let url = 'http://' + ip.P1 + '/api/v1/data';
+            let response = await fetch(url);
+
+            if (response.ok) {
+                let json = await response.json();
+
+                if (isNaN(json.active_power_w)) json.active_power_w = 0;
+                if (isNaN(json.active_power_l1_w)) json.active_power_l1_w = 0;
+                if (isNaN(json.active_power_l2_w)) json.active_power_l2_w = 0;
+                if (isNaN(json.active_power_l3_w)) json.active_power_l3_w = 0;
+                dataL_Total.push(json.active_power_w);
+                datal1.push(json.active_power_l1_w);
+                datal2.push(json.active_power_l2_w);
+                datal3.push(json.active_power_l3_w);
+                dataX.push(i);
+
+                document.getElementById('IP_P1_001').innerHTML = ip.P1;
+                document.getElementById('WifiSSID').innerHTML = json.wifi_ssid;
+                document.getElementById('WifiStrength').innerHTML = json.wifi_strength;
+                document.getElementById('MM').innerHTML = json.meter_model;
+                document.getElementById('SV').innerHTML = json.smr_version;
+
+                writeNumbers_E(json);
+
+                await updateSocketData();
+
+                Ctx.clearRect(0, 0, w, h);
+                CtxG.clearRect(0, 0, wg, hg);
+                drawLine();
+
+                if (sliderPercentage == 1) {
+                    document.getElementById("rangeValue").innerHTML = dataX.length;
+                }
+
+                if (json.gas_timestamp) {
+                    let _stamp = json.gas_timestamp.toString();
+                    let hh = _stamp.substring(6, 8);
+                    let mm = _stamp.substring(8, 10);
+                    let ss = _stamp.substring(10, 12);
+                    let DD = _stamp.substring(4, 6);
+                    let MM = _stamp.substring(2, 4);
+                    let YY = _stamp.substring(0, 2);
+
+                    let _time = hh + ':' + mm + ':' + ss;
+                    let _date = DD + '-' + MM + '-' + YY;
+                    _time = _time + '/' + _date;
+
+                    let _timestamp = (new Date('20' + YY + '-' + MM + '-' + DD + 'T' + hh + ':' + mm + ':' + ss)).getTime();
+                    if (debug) console.log(new Date(_timestamp), _timestamp);
+                    let _deltaGas = 0;
+                    let _min = 0;
+                    let _usage = 0;
+
+                    if (dataGasPoint.length != 0) {
+                        if (dataGasPoint[dataGasPoint.length - 1][2] != _timestamp || debug == true) {
+                            if (debug) console.log(hh, mm, ss, _time, _timestamp);
+                            let _startGas = dataGasPoint[0][1];
+                            let _deltaSum = ((Math.floor(json.total_gas_m3 * 1000) - Math.floor(_startGas * 1000)) * 1000) / 1000;
+
+                            _string = _string + '<tr><td>' + _time + '</td>';
+                            if (dataGasPoint.length > 0) {
+                                _deltaGas = Math.floor((json.total_gas_m3 * 1000 - dataGasPoint[dataGasPoint.length - 1][1] * 1000) * 1000) / 1000;
+                                _min = (_timestamp - dataGasPoint[dataGasPoint.length - 1][2]) / 60000;
+                                _string = _string + '<td>' + json.total_gas_m3 + '</td><td>' + _deltaSum + '</td><td>' + _deltaGas + '</td><td>' + Math.floor(_min * 10) / 10 + '</td>';
+                                if (_min != 0) {
+                                    _usage = Math.round(_deltaGas * 100 / _min) / 100;
+                                    _string = _string + '<td>' + _usage + '</td>';
+                                }
+                            }
+                            _string = _string + '</tr>';
+
+                            dataGasPoint.push([_time, json.total_gas_m3, _timestamp, _deltaGas, _min, _usage]);
+                            dataXG.push(i);
+                        }
+                    } else {
+                        dataGas.push([_time, json.total_gas_m3, _timestamp]);
+                        dataGasPoint.push([_time, json.total_gas_m3, _timestamp, null, null, null]);
+                        dataXG.push(i);
+                        _string = _string + '<tr><td>' + _time + '<td>' + json.total_gas_m3 + '</td></tr>';
+                    }
+
+                    _k = object('#TimeGasM3');
+                    _k.innerHTML = _string;
+                }
+
+                let _return = (i == max_seconds || button_stop);
+                if (_return) stop();
+                return _return;
+            } else {
+                alert("HTTP-Error: " + response.status);
+            }
+        }
+
+        async function meterW(iW) {
+            iteration = iW;
+            let url = 'http://' + ip.WTR + '/api/v1/data';
+            let response = await fetch(url);
+
+            if (response.ok) {
+                let json = await response.json();
+                document.getElementById('IP_W1_001').innerHTML = ip.WTR;
+                if (json.active_liter_lpm) {
+                    document.getElementById('AL').innerHTML = json.active_liter_lpm;
+                    document.getElementById('TL').innerHTML = json.total_liter_m3;
+                } else {
+                    document.getElementById('AL').innerHTML = '';
+                    document.getElementById('TL').innerHTML = '';
+                }
+
+                let _return = (iW == max_seconds || button_stop);
+                if (_return) stop();
+                return _return;
+            } else {
+                alert("HTTP-Error: " + response.status);
+            }
+        }
+
+        async function meterKWH(iKWH) {
+            iteration = iKWH;
+            let url = 'http://' + ip.KWH + '/api/v1/data';
+            let response = await fetch(url);
+
+            if (response.ok) {
+                let json = await response.json();
+                document.getElementById('IP_KWH_001').innerHTML = ip.KWH;
+                document.getElementById('KWH_PW').innerHTML = json.active_power_w || 0;
+                document.getElementById('KWH_IT1').innerHTML = json.total_power_import_t1_kwh || 0;
+                document.getElementById('KWH_ET1').innerHTML = json.total_power_export_t1_kwh || 0;
+
+                let _return = (iKWH == max_seconds || button_stop);
+                if (_return) stop();
+                return _return;
+            } else {
+                alert("HTTP-Error: " + response.status);
+            }
+        }
+
+        async function meterSKT(iSKT) {
+            iteration = iSKT;
+            await updateSocketData();
+            let _return = (iSKT == max_seconds || button_stop);
+            if (_return) stop();
+            return _return;
+        }
+
+        function writeNumbers_E(json) {
+            document.getElementById('P1').innerHTML = json.active_power_l1_w;
+            if (json.active_power_l2_w) {
+                document.getElementById('P2').innerHTML = json.active_power_l2_w;
+            } else {
+                document.getElementById('P2').innerHTML = '';
+            }
+            if (json.active_power_l3_w) {
+                document.getElementById('P3').innerHTML = json.active_power_l3_w;
+            } else {
+                document.getElementById('P3').innerHTML = '';
+            }
+            document.getElementById('PT').innerHTML = json.active_power_w;
+
+            let deltas = delta_calc(dataL_Total);
+            document.getElementById('PTd3').innerHTML = deltas[0];
+            document.getElementById('PTd2').innerHTML = deltas[1];
+            document.getElementById('PTd1').innerHTML = deltas[2];
+            let deltal1 = delta_calc(datal1);
+            document.getElementById('P1d3').innerHTML = deltal1[0];
+            document.getElementById('P1d2').innerHTML = deltal1[1];
+            document.getElementById('P1d1').innerHTML = deltal1[2];
+            let deltal2 = delta_calc(datal2);
+            document.getElementById('P2d3').innerHTML = deltal2[0];
+            document.getElementById('P2d2').innerHTML = deltal2[1];
+            document.getElementById('P2d1').innerHTML = deltal2[2];
+            let deltal3 = delta_calc(datal3);
+            document.getElementById('P3d3').innerHTML = deltal3[0];
+            document.getElementById('P3d2').innerHTML = deltal3[1];
+            document.getElementById('P3d1').innerHTML = deltal3[2];
+
+            document.getElementById('ET1').innerHTML = json.total_power_export_t1_kwh;
+            document.getElementById('ET2').innerHTML = json.total_power_export_t2_kwh;
+            document.getElementById('IT1').innerHTML = json.total_power_import_t1_kwh;
+            document.getElementById('IT2').innerHTML = json.total_power_import_t2_kwh;
+        }
+
+        async function waitInterval(callback, ms) {
+            return new Promise(resolve => {
+                const interval = setInterval(async () => {
+                    if (await callback(iteration, interval)) {
+                        resolve();
+                        clearInterval(interval);
+                        return true;
+                    }
+                    iteration++;
+                }, ms);
+            });
+        }
+
+        function delta_calc(_array) {
+            let delta = [];
+            if (_array.length > 3) {
+                delta.push(_array[_array.length - 1] - _array[_array.length - 4]);
+            } else {
+                delta.push(0);
+            }
+            if (_array.length > 2) {
+                delta.push(_array[_array.length - 1] - _array[_array.length - 3]);
+            } else {
+                delta.push(0);
+            }
+            if (_array.length > 1) {
+                delta.push(_array[_array.length - 1] - _array[_array.length - 2]);
+            } else {
+                delta.push(0);
+            }
+            return delta;
+        }
+
+        function $(object) {
+            return document.querySelector(object);
+        }
+
+        function object(object) {
+            return document.querySelector(object);
+        }
+
+        function leftPad(number, targetLength) {
+            var output = number + '';
+            while (output.length < targetLength) {
+                output = '0' + output;
+            }
+            return output;
+        }
+
+        function getMinMaxUn(AA) {
+            min = 0;
+            max = 0;
+
+            if (AA.length >= 1) {
+                if (Array.isArray(AA[0])) {
+                    let maxArray = AA.map(a => Math.max.apply(null, a));
+                    max = Math.max(...maxArray);
+                    let minArray = AA.map(a => Math.min.apply(null, a));
+                    min = Math.min(...minArray);
+                } else {
+                    max = Math.max(...AA);
+                    min = Math.min(...AA);
+                }
+            }
+
+            if (min == max) {
+                if ((max - min) > 10) {
+                    min = AA[0] * 0.999;
+                    max = AA[0] * 1.001;
+                } else {
+                    min = 0;
+                    max = AA[0] * 1.01;
+                }
+            }
+
+            let range = max - min;
+            let padding = range * 0.1;
+            max = max + padding;
+            min = min - padding;
+
+            un = (max - min) / 10;
+
+            if (un >= 1000) {
+                max = Math.ceil(max / 5000) * 5000;
+                min = Math.floor(min / 5000) * 5000;
+                un = (max - min) / 10;
+            } else if (un >= 100) {
+                max = Math.ceil(max / 500) * 500;
+                min = Math.floor(min / 500) * 500;
+                un = (max - min) / 10;
+            } else if (un >= 10) {
+                max = Math.ceil(max / 50) * 50;
+                min = Math.floor(min / 50) * 50;
+                un = (max - min) / 10;
+            } else if (un >= 1) {
+                max = Math.ceil(max / 10) * 10;
+                min = Math.floor(min / 10) * 10;
+                un = (max - min) / 10;
+            } else if (un >= 0) {
+                max = Math.ceil(max * 1) / 1;
+                min = Math.floor(min * 1) / 1;
+                un = (max - min) / 10;
+            }
+
+            if (un == 0) { un = 0.1; max = 10; min = 0; }
+
+            if (debug) console.log(min, max, un);
+            return [min, max, un];
+        }
+
+        function drawLine() {
+            if (dataL_Total.length != 0) {
+                if (zoomStatus) {
+                    _s = gVar.zoom.s;
+                    _e = gVar.zoom.e;
+                    if (sliderPercentage == 1) {
+                        _e = dataX.length;
+                        _s = _e - sliderPoints;
+                        if (_s < 0) _s = 0;
+                    }
+                } else {
+                    _s = 0;
+                    _e = dataX.length;
+                }
+                gVar.zoom = {s: _s, e: _e, zoomStatus: zoomStatus};
+                _length = _e - _s;
+
+                let A = [dataL_Total.slice(_s, _e), datal1.slice(_s, _e), datal2.slice(_s, _e), datal3.slice(_s, _e)];
+                MMU[0] = getMinMaxUn(A);
+                min = MMU[0][0];
+                max = MMU[0][1];
+                un = MMU[0][2];
+
+                xs = (w - 80) / _length;
+
+                dataT = [];
+                chart.setCtx(Ctx);
+                chart.chartLine();
+                chart.digram();
+                chart.data();
+                chart.draw();
+                chart.pointes();
+            }
+
+            if (dataGasPoint.length != 0) {
+                let datag = [];
+                for (let datagas of dataGasPoint) {
+                    datag.push(datagas[5]);
+                }
+
+                _s = 0;
+                _e = dataX.length;
+
+                MMU[1] = getMinMaxUn(datag);
+                MMU[1][0] = min = 0;
+                max = MMU[1][1];
+                un = MMU[1][2];
+
+                xs = (w - 80) / dataXG.length;
+                chart.setCtx(CtxG);
+                chart.chartLine();
+                chart.digram();
+                chart.dataGas();
+                chart.drawG();
+                chart.pointesGas();
+            }
+
+            return true;
+        }
+
+        function mouseMove(e) {
+            let _ID = e.currentTarget.attributes[1].nodeValue;
+            tabIndexCanvas = e.currentTarget.attributes[4].nodeValue;
+            _index = 0;
+
+            _s = gVar.zoom.s;
+            _e = gVar.zoom.e;
+            zoomStatus = gVar.zoom.zoomStatus;
+
+            if (_e == -1 || isNaN(_e)) {
+                _s = 0;
+                _e = dataX.length;
+                if (debug) console.log('correction');
+            }
+            gVar.zoom = {s: _s, e: _e, zoomStatus: zoomStatus};
+
+            for (let data of dataT) {
+                for (const [key, value] of Object.entries(data)) {
+                    let dataG = value.split(",");
+                    let lx = Number(e.offsetX),
+                        ly = Number(e.offsetY),
+                        dx = Number(dataG[1]),
+                        dy = Number(dataG[0]);
+                    let _delta = Math.floor(Number(dataG[4]) / 3);
+                    if (_delta < 10) _delta = 10;
+
+                    if ((lx > dx - _delta && lx < dx + _delta) && (ly > dy - _delta && ly < dy + _delta)) {
+                        if (_ID == 'E' && dataG[3] != 'Gas') {
+                            tabE.innerHTML = dataG[3] + ':' + dataG[2];
+                            tabE.style.opacity = "1";
+                            tabE.style.left = e.layerX + "px";
+                            tabE.style.top = e.layerY + "px";
+                            if (debug) console.log(_index, Number(dataG[7]));
+                            tabIndeX_dataT = Number(dataG[7]);
+                        } else if (_ID == 'G' && dataG[3] == 'Gas') {
+                            tabG.innerHTML = dataG[3] + ':' + dataG[2];
+                            tabG.style.opacity = "1";
+                            tabG.style.left = e.layerX + "px";
+                            tabG.style.top = e.layerY + "px";
+                        }
+                    }
+                    lx = lx - 1;
+                    dx = dx - 1;
+                }
+                _index++;
+            }
+        }
+
+        var chart = {
+            ctx: {},
+            setCtx: function(_ctx) {
+                this.ctx = _ctx;
+            },
+            setStrokeStyle: function(_color) {
+                this.ctx.strokeStyle = _color;
+            },
+            digram: function() {
+                let x = 60;
+                let y = 1;
+                this.ctx.strokeStyle = "#a7a7a7";
+                while (x < w) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x, 0);
+                    this.ctx.lineTo(x, h - 30);
+                    this.ctx.stroke();
+                    x += 30;
+                }
+                while (y < h - 30) {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(60, y);
+                    this.ctx.lineTo(w, y);
+                    this.ctx.stroke();
+                    y += 30;
+                }
+            },
+            chartLine: function() {
+                this.ctx.strokeStyle = "#000";
+                this.ctx.beginPath();
+                this.ctx.moveTo(60, 0);
+                this.ctx.lineTo(60, h - 30);
+                this.ctx.stroke();
+
+                this.ctx.beginPath();
+                this.ctx.moveTo(w, h - 30);
+                this.ctx.lineTo(60, h - 30);
+                this.ctx.stroke();
+
+                // Draw axis labels
+                this.ctx.font = "12px Arial";
+                this.ctx.fillStyle = "#000";
+                this.ctx.textAlign = "center";
+                this.ctx.fillText("Time (s)", w / 2, h - 5);
+                this.ctx.save();
+                this.ctx.translate(20, h / 2);
+                this.ctx.rotate(-Math.PI / 2);
+                this.ctx.fillText("Power (W)", 0, 0);
+                this.ctx.restore();
+            },
+            draw: function() {
+                this.ctx.save();
+                this.ctx.strokeStyle = "#0b95d3";
+                this.ctx.lineWidth = 4;
+                this.ctx.beginPath();
+                let x = 60;
+                let line = 30;
+
+                let yRange = max - min;
+                let yScale = (h - 60) / yRange;
+
+                for (let ix = _s; ix < _e; ix++) {
+                    const data = dataL_Total[ix];
+                    let y = h - 30 - (data - min) * yScale;
+                    this.ctx.lineTo(x, y);
+                    x += xs;
+                }
+                this.ctx.stroke();
+
+                this.setStrokeStyle("#00FF00");
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                x = 60;
+                for (let ix = _s; ix < _e; ix++) {
+                    const data = datal1[ix];
+                    let y = h - 30 - (data - min) * yScale;
+                    this.ctx.lineTo(x, y);
+                    x += xs;
+                }
+                this.ctx.stroke();
+
+                this.setStrokeStyle("#d6d610");
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                x = 60;
+                for (let ix = _s; ix < _e; ix++) {
+                    const data = datal2[ix];
+                    let y = h - 30 - (data - min) * yScale;
+                    this.ctx.lineTo(x, y);
+                    x += xs;
+                }
+                this.ctx.stroke();
+
+                this.setStrokeStyle("#A020F0");
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                x = 60;
+                for (let ix = _s; ix < _e; ix++) {
+                    const data = datal3[ix];
+                    let y = h - 30 - (data - min) * yScale;
+                    this.ctx.lineTo(x, y);
+                    x += xs;
+                }
+                this.ctx.stroke();
+                this.ctx.restore();
+            },
+            drawG: function() {
+                this.ctx.save();
+                this.ctx.strokeStyle = "#0b95d3";
+                this.ctx.lineWidth = 3;
+                this.ctx.beginPath();
+                let x = 60;
+                let line = 30;
+
+                if (dataGasPoint.length === 0) {
+                    this.ctx.restore();
+                    return;
+                }
+
+                let yRange = MMU[1][1] - MMU[1][0];
+                let yScale = (h - 60) / yRange;
+
+                let firstData = dataGasPoint[0][5];
+                let firstY = h - 30 - (firstData - MMU[1][0]) * yScale;
+                this.ctx.moveTo(x, firstY);
+
+                for (let i = 0; i < dataGasPoint.length; i++) {
+                    const data = dataGasPoint[i][5];
+                    let y = h - 30 - (data - MMU[1][0]) * yScale;
+                    this.ctx.lineTo(x, y);
+                    x += xs;
+                }
+
+                this.ctx.stroke();
+                this.ctx.restore();
+            },
+            pointes: function() {
+                let _indexL = 0;
+                this.ctx.fillStyle = "#0b95d3";
+                let x = 60;
+                let line = 30;
+
+                let yRange = max - min;
+                let yScale = (h - 60) / yRange;
+
+                for (let ix = _s; ix < _e; ix++) {
+                    const data = dataL_Total[ix];
+                    this.points(data, dataL_Total, 'Tot.', _indexL, yScale);
+                    _indexL++;
+                }
+
+                _indexL = 0;
+                this.ctx.fillStyle = "#00FF00";
+                x = 60;
+                for (let ix = _s; ix < _e; ix++) {
+                    const data = datal1[ix];
+                    this.points(data, datal1, 'l1', _indexL, yScale);
+                    _indexL++;
+                }
+
+                _indexL = 0;
+                this.ctx.fillStyle = "#d6d610";
+                x = 60;
+                for (let ix = _s; ix < _e; ix++) {
+                    const data = datal2[ix];
+                    this.points(data, datal2, 'l2', _indexL, yScale);
+                    _indexL++;
+                }
+
+                _indexL = 0;
+                this.ctx.fillStyle = "#A020F0";
+                x = 60;
+                for (let ix = _s; ix < _e; ix++) {
+                    const data = datal3[ix];
+                    this.points(data, datal3, 'l3', _indexL, yScale);
+                    _indexL++;
+                }
+                this.ctx.fillStyle = "#00000F";
+                this.ctx.stroke();
+            },
+            points: function(d, dX, f, _indX, yScale) {
+                let y = h - 30 - (d - min) * yScale;
+                this.circle(x, y);
+                dataT.push({d: Math.round(y) + "," + Math.round(x) + "," + Math.round(d) + "," + f + "," + MMU[0] + ',' + Number(_indX)});
+                x += xs;
+            },
+            pointesGas: function() {
+                this.ctx.fillStyle = "#0b95d3";
+                let x = 60;
+                let line = 30;
+
+                let yRange = MMU[1][1] - MMU[1][0];
+                let yScale = (h - 60) / yRange;
+
+                let _indexG = 0;
+                for (let data of dataGasPoint) {
+                    this.pointsGas(data[5], dataGasPoint, 'Gas', _indexG, yScale);
+                    _indexG++;
+                }
+
+                this.ctx.fillStyle = "#00000F";
+                this.ctx.stroke();
+            },
+            pointsGas: function(d, dX, f, _indG, yScale) {
+                let y = h - 30 - (d - MMU[1][0]) * yScale;
+                this.circle(x, y);
+                dataT.push({d: Math.round(y) + "," + Math.round(x) + "," + Math.round(d * 10) / 10 + "," + f + "," + MMU[1] + ',' + Number(_indG)});
+                x += xs;
+            },
+            data: function() {
+                let yRange = max - min;
+                let yScale = (h - 60) / yRange;
+                let xRange = _e - _s;
+                let xScale = (w - 80) / xRange;
+
+                // Draw Y-axis labels (Power)
+                this.ctx.font = "12px Arial";
+                this.ctx.fillStyle = "#000";
+                this.ctx.textAlign = "right";
+                for (let i = 0; i <= 10; i++) {
+                    let value = min + (i * (max - min) / 10);
+                    let y = h - 30 - (i * (h - 60) / 10);
+                    this.ctx.fillText(Math.round(value), 50, y + 5);
+                }
+
+                // Draw X-axis labels (Time)
+                this.ctx.textAlign = "center";
+                for (let i = 0; i <= xRange; i += Math.ceil(xRange / 5)) {
+                    let x = 60 + (i * xScale);
+                    let timeValue = _s + i;
+                    this.ctx.fillText(timeValue, x, h - 10);
+                }
+            },
+            dataGas: function() {
+                let yRange = MMU[1][1] - MMU[1][0];
+                let yScale = (h - 60) / yRange;
+                let xRange = dataXG.length;
+
+                // Draw Y-axis labels (Gas Flow)
+                this.ctx.font = "12px Arial";
+                this.ctx.fillStyle = "#000";
+                this.ctx.textAlign = "right";
+                for (let i = 0; i <= 10; i++) {
+                    let value = MMU[1][0] + (i * (MMU[1][1] - MMU[1][0]) / 10);
+                    let y = h - 30 - (i * (h - 60) / 10);
+                    this.ctx.fillText(Math.round(value * 10) / 10, 50, y + 5);
+                }
+
+                // Draw X-axis labels (Time)
+                this.ctx.textAlign = "center";
+                for (let i = 0; i < xRange; i += Math.ceil(xRange / 5)) {
+                    let x = 60 + (i * (w - 80) / xRange);
+                    this.ctx.fillText(dataXG[i], x, h - 10);
+                }
+            },
+            circle: function(x, y) {
+                this.ctx.beginPath();
+                this.ctx.arc(x, y, 5, 0, 2 * Math.PI);
+                this.ctx.fill();
+            }
+        };
+    </script>
+</body>
+</html>
