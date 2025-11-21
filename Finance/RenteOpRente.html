@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>Rente-op-Rente Super Calculator</title>
+
+<style>
+    body { 
+        font-family: Arial, sans-serif; 
+        max-width: 900px; 
+        margin: 20px auto; 
+        padding: 10px;
+    }
+    h2 { margin-top: 0; }
+    label { display: block; margin-top: 10px; }
+    input { padding: 8px; width: 250px; }
+    button { padding: 10px 20px; margin-top: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    th { background-color: #f4f4f4; }
+    canvas { width: 100%; height: 300px; margin-top: 30px; }
+    .flex { display: flex; flex-wrap: wrap; gap: 20px; }
+    .box { flex: 1; min-width: 250px; }
+</style>
+</head>
+
+<body>
+
+<h2>Rente-op-Rente Super Calculator</h2>
+
+<div class="flex">
+    <div class="box">
+        <label>Startkapitaal (€):  
+            <input id="principal" type="number" value="1000">
+        </label>
+
+        <label>Maandelijkse inleg (€):  
+            <input id="monthly" type="number" value="100">
+        </label>
+
+        <label>Jaarlijkse rente (%):  
+            <input id="rate" type="number" step="0.1" value="5">
+        </label>
+
+        <label>Jaren (1–30):  
+            <input id="years" type="number" min="1" max="30" value="20">
+        </label>
+
+        <label>Jaarlijkse kosten (%):  
+            <input id="fee" type="number" step="0.1" value="0.0">
+        </label>
+
+        <button onclick="calculate()">Bereken</button>
+        <button onclick="downloadCSV()">Download CSV</button>
+    </div>
+</div>
+
+<h3>Resultaten</h3>
+<div id="summary"></div>
+
+<h3>Grafiek</h3>
+<canvas id="chart"></canvas>
+
+<h3>Jaarlijkse tabel</h3>
+<div id="yearTable"></div>
+
+<h3>Maandelijkse tabel</h3>
+<div id="monthTable"></div>
+
+<script>
+let monthlyData = [];
+
+function calculate() {
+    let P = parseFloat(document.getElementById("principal").value);
+    let M = parseFloat(document.getElementById("monthly").value);
+    let r = parseFloat(document.getElementById("rate").value) / 100;
+    let fee = parseFloat(document.getElementById("fee").value) / 100;
+    let years = parseInt(document.getElementById("years").value);
+
+    let balance = P;
+    let monthlyRate = r / 12;
+    let monthlyFeeRate = fee / 12;
+
+    monthlyData = [];
+    let yearRows = "";
+    let yearValues = [];
+
+    for (let y = 1; y <= years; y++) {
+        for (let m = 1; m <= 12; m++) {
+            balance = (balance * (1 + monthlyRate)) - (balance * monthlyFeeRate);
+            balance += M;
+            monthlyData.push({ year: y, month: m, balance: balance.toFixed(2) });
+        }
+
+        let totalInput = P + (M * y * 12);
+        let profit = balance - totalInput;
+
+        yearValues.push(balance);
+
+        yearRows += `
+        <tr>
+            <td>${y}</td>
+            <td>€${balance.toFixed(2)}</td>
+            <td>€${totalInput.toFixed(2)}</td>
+            <td>€${profit.toFixed(2)}</td>
+        </tr>`;
+    }
+
+    document.getElementById("summary").innerHTML = `
+        <p><strong>Eindwaarde:</strong> €${balance.toFixed(2)}</p>
+        <p><strong>Totaal ingelegd:</strong> €${(P + M * years * 12).toFixed(2)}</p>
+        <p><strong>Totaal winst:</strong> €${(balance - (P + M * years * 12)).toFixed(2)}</p>
+    `;
+
+    document.getElementById("yearTable").innerHTML = `
+        <table>
+            <tr>
+                <th>Jaar</th>
+                <th>Eindwaarde</th>
+                <th>Inleg totaal</th>
+                <th>Winst</th>
+            </tr>
+            ${yearRows}
+        </table>
+    `;
+
+    buildMonthTable();
+    drawChart(yearValues);
+}
+
+function buildMonthTable() {
+    let rows = "";
+    monthlyData.forEach((m) => {
+        rows += `
+        <tr>
+            <td>${m.year}</td>
+            <td>${m.month}</td>
+            <td>€${m.balance}</td>
+        </tr>`;
+    });
+
+    document.getElementById("monthTable").innerHTML = `
+        <table>
+            <tr>
+                <th>Jaar</th>
+                <th>Maand</th>
+                <th>Saldo</th>
+            </tr>
+            ${rows}
+        </table>
+    `;
+}
+
+function downloadCSV() {
+    let csv = "Jaar,Maand,Saldo\n";
+    monthlyData.forEach(r => {
+        csv += `${r.year},${r.month},${r.balance}\n`;
+    });
+
+    let blob = new Blob([csv], { type: "text/csv" });
+    let url = URL.createObjectURL(blob);
+
+    let a = document.createElement("a");
+    a.href = url;
+    a.download = "compound_interest.csv";
+    a.click();
+}
+
+function drawChart(values) {
+    const canvas = document.getElementById("chart");
+    const ctx = canvas.getContext("2d");
+
+    canvas.width = canvas.offsetWidth;
+    canvas.height = 300;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const maxVal = Math.max(...values);
+    const pad = 40;
+
+    ctx.beginPath();
+    ctx.moveTo(pad, canvas.height - pad);
+
+    values.forEach((v, i) => {
+        let x = pad + (i / (values.length - 1)) * (canvas.width - 2 * pad);
+        let y = canvas.height - pad - (v / maxVal) * (canvas.height - 2 * pad);
+        ctx.lineTo(x, y);
+    });
+
+    ctx.stroke();
+}
+</script>
+
+</body>
+</html>
