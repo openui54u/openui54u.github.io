@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Zendamateur Toolbox — Eén bestand (PWA)</title>
+<meta name="theme-color" content="#0b3d91">
+<style>
+:root{
+  --bg:#f6f8fb; --card:#fff; --text:#071129; --accent:#0b3d91; --muted:#6b7280;
+}
+[data-theme="dark"]{
+  --bg:#071129; --card:#071a2b; --text:#e6eef8; --accent:#4ea3ff; --muted:#9aa7b8;
+}
+*{box-sizing:border-box;font-family:Inter,Segoe UI,Arial,Helvetica,sans-serif}
+body{margin:0;background:var(--bg);color:var(--text);padding:14px}
+.header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.header h1{margin:0;font-size:1.05rem;color:var(--accent)}
+nav{display:flex;gap:6px;flex-wrap:wrap}
+nav button{padding:8px;border-radius:7px;border:1px solid rgba(11,13,20,0.08);background:transparent;cursor:pointer}
+main{max-width:1100px;margin:18px auto}
+.card{background:var(--card);padding:14px;border-radius:10px;box-shadow:0 6px 20px rgba(11,13,20,0.06);margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+label{display:block;font-size:0.9rem;color:var(--muted);margin-bottom:6px}
+input,select,button,textarea{padding:8px;border-radius:6px;border:1px solid #cfd8e3;width:100%}
+.small{font-size:0.85rem;color:var(--muted)}
+.results{background:rgba(11,61,145,0.04);padding:8px;border-radius:6px;margin-top:8px}
+footer{text-align:center;color:var(--muted);margin-top:8px}
+canvas{width:100%;height:200px;border-radius:6px;border:1px solid #eef2fb}
+.row{display:flex;gap:8px;align-items:center}
+.kv{font-weight:700;color:var(--accent)}
+pre.code{white-space:pre-wrap;background:#f4f8ff;padding:8px;border-radius:6px}
+.small-button{padding:6px;border-radius:6px}
+</style>
+</head>
+<body data-theme="light">
+<header class="header">
+  <h1>Zendamateur Toolbox — Eén bestand</h1>
+  <nav aria-label="hoofdmenu">
+    <button data-view="home">Home</button>
+    <button data-view="calc">Calculators</button>
+    <button data-view="ant">Antennes</button>
+    <button data-view="cable">Coax & Kabels</button>
+    <button data-view="match">Matching</button>
+    <button data-view="link">Linkbudget</button>
+    <button data-view="logs">Logs</button>
+    <button id="themeToggle">Donker/Light</button>
+    <button id="exportAll" title="Exporteer opgeslagen data">Exporteer</button>
+  </nav>
+</header>
+
+<main id="app">
+  <!-- views injected here -->
+</main>
+
+<footer>
+  <small>Offline-capable PWA (manifest & serviceworker dynamisch gemaakt). Gebruik localhost/HTTPS voor volledige PWA functionaliteit.</small>
+</footer>
+
+<script>
+/* ---------------------------
+   INITIALIZATION & ROUTER
+   --------------------------- */
+const app = document.getElementById('app');
+const themeBtn = document.getElementById('themeToggle');
+const exportBtn = document.getElementById('exportAll');
+const STORAGE_PREFIX = 'zend_tool_';
+function setTheme(t){ document.body.setAttribute('data-theme', t); localStorage.setItem(STORAGE_PREFIX+'theme', t); }
+themeBtn.addEventListener('click', ()=> setTheme(document.body.getAttribute('data-theme')==='dark' ? 'light' : 'dark'));
+const savedTheme = localStorage.getItem(STORAGE_PREFIX+'theme') || 'light'; setTheme(savedTheme);
+exportBtn.addEventListener('click', ()=> {
+  const out = {};
+  for(let i=0;i<localStorage.length;i++){ const k = localStorage.key(i); if(k.startsWith(STORAGE_PREFIX)) out[k]=localStorage.getItem(k); }
+  const b = new Blob([JSON.stringify(out,null,2)],{type:'application/json'}); const url = URL.createObjectURL(b);
+  const a=document.createElement('a'); a.href=url; a.download='zendamateur_export.json'; a.click(); URL.revokeObjectURL(url);
+});
+
+// simple router
+const views = {
+  home: renderHome,
+  calc: renderCalculators,
+  ant: renderAntennas,
+  cable: renderCables,
+  match: renderMatching,
+  link: renderLinkbudget,
+  logs: renderLogs
+};
+document.querySelectorAll('nav button[data-view]').forEach(b=>b.addEventListener('click', e=>{
+  const v=e.currentTarget.dataset.view; location.hash = '#/'+v;
+}));
+window.addEventListener('hashchange', ()=>loadFromHash());
+function loadFromHash(){
+  const h=(location.hash||'#/home').replace('#/','');
+  (views[h]||views.home)();
+}
+loadFromHash();
+
+/* ---------------------------
+   UTIL FUNCTIONS
+   --------------------------- */
+function el(html){ const d=document.createElement('div'); d.innerHTML=html.trim(); return d.firstChild; }
+function saveKey(key,obj){ localStorage.setItem(STORAGE_PREFIX+key, JSON.stringify(obj)); }
+function loadKey(key,def){ return JSON.parse(localStorage.getItem(STORAGE_PREFIX+key) || JSON.stringify(def)); }
+function downloadFile(name, content, mime='text/plain'){ const b=new Blob([content],{type:mime}); const u=URL.createObjectURL(b); const a=document.createElement('a'); a.href=u; a.download=name; a.click(); URL.revokeObjectURL(u); }
+
+/* ---------------------------
+   HOME
+   --------------------------- */
+function renderHome(){
+  app.innerHTML = '';
+  const node = el(`<section class="card">
+    <h2>Welkom</h2>
+    <p class="small">Deze single-file PWA bevat calculators voor zendamateurs, matching tools, coax-verlies interpolatie, een simpele Smith-plot, en een ADIF-log. Sla op als <code>index.html</code>. Voor volledige PWA/service-worker functionaliteit, serveer via <code>http://localhost</code> of HTTPS.</p>
+    <div class="grid">
+      <div class="card"><h3>Snelle start</h3><p class="small">Ga naar <strong>Calculators</strong> voor de rekenhulpen of <strong>Logs</strong> om QSOs op te slaan en als ADIF te exporteren.</p></div>
+      <div class="card"><h3>Opslaan</h3><p class="small">Scenario's en logs worden opgeslagen in je browser (localStorage).</p></div>
+    </div>
+  </section>`);
+  app.appendChild(node);
+}
+
+/* ---------------------------
+   CALCULATORS
+   --------------------------- */
+function renderCalculators(){
+  app.innerHTML='';
+  const node = el(`<section class="card">
+    <h2>Calculators</h2>
+    <div class="grid">
+      <div>
+        <h3>Golflengte ↔ Frequentie</h3>
+        <label>Frequentie (MHz) <input id="freq_mhz" type="number" value="14"></label>
+        <div class="row"><button id="calc_wl">Bereken λ (m)</button><button id="calc_f_from_wl">Bereken f van λ</button></div>
+        <div id="out_wl" class="results small"></div>
+      </div>
+      <div>
+        <h3>¼-, ½-, 5/8-Antenne</h3>
+        <label>Velocity factor (0.5-1) <input id="vf" type="number" step="0.01" value="0.98"></label>
+        <div class="row"><button id="calc_ants">Bereken</button></div>
+        <div id="out_ants" class="results small"></div>
+      </div>
+      <div>
+        <h3>dBm ↔ mW ↔ W</h3>
+        <label>dBm <input id="in_dbm" type="number" value="30"></label>
+        <div class="row"><button id="dbm2mw">→ mW</button><button id="dbm2w">→ W</button></div>
+        <div id="out_dbm" class="results small"></div>
+      </div>
+      <div>
+        <h3>FSPL (Free Space Path Loss)</h3>
+        <label>Afstand (km) <input id="fspl_d" type="number" value="1"></label>
+        <label>Frequentie (MHz) <input id="fspl_f" type="number" value="144"></label>
+        <div class="row"><button id="fspl_calc">Bereken FSPL</button></div>
+        <div id="out_fspl" class="results small"></div>
+      </div>
+    </div>
+  </section>`);
+  app.appendChild(node);
+
+  document.getElementById('calc_wl').addEventListener('click', ()=>{
+    const f = parseFloat(document.getElementById('freq_mhz').value)||0;
+    if(f<=0) { document.getElementById('out_wl').innerText='Voer geldige frequentie in.'; return; }
+    const lambda = 299792458/(f*1e6);
+    document.getElementById('out_wl').innerText = 'λ = ' + lambda.toFixed(4) + ' m';
+  });
+  document.getElementById('calc_f_from_wl').addEventListener('click', ()=>{
+    const w = parseFloat(prompt('Geef golflengte in meters'))||0;
+    if(w<=0){ alert('Ongeldige waarde'); return; }
+    const f = 299792458 / w / 1e6;
+    alert('≈ ' + f.toFixed(4) + ' MHz');
+  });
+  document.getElementById('calc_ants').addEventListener('click', ()=>{
+    const f = parseFloat(document.getElementById('freq_mhz').value)||14;
+    const vf = parseFloat(document.getElementById('vf').value)||1;
+    const lambda = 299792458/(f*1e6);
+    const q = lambda/4*vf, h=lambda/2*vf, fe=lambda*(5/8)*vf;
+    document.getElementById('out_ants').innerHTML = `¼λ: <span class="kv">${q.toFixed(3)} m</span><br>½λ: <span class="kv">${h.toFixed(3)} m</span><br>5/8λ: <span class="kv">${fe.toFixed(3)} m</span>`;
+  });
+  document.getElementById('dbm2mw').addEventListener('click', ()=>{
+    const dbm = parseFloat(document.getElementById('in_dbm').value)||0;
+    const mw = Math.pow(10, dbm/10);
+    document.getElementById('out_dbm').innerText = mw.toFixed(6) + ' mW';
+  });
+  document.getElementById('dbm2w').addEventListener('click', ()=>{
+    const dbm = parseFloat(document.getElementById('in_dbm').value)||0;
+    const w = Math.pow(10, dbm/10)/1000;
+    document.getElementById('out_dbm').innerText = w.toExponential(6) + ' W';
+  });
+  document.getElementById('fspl_calc').addEventListener('click', ()=>{
+    const d = parseFloat(document.getElementById('fspl_d').value)||0;
+    const f = parseFloat(document.getElementById('fspl_f').value)||0;
+    if(d<=0||f<=0){ document.getElementById('out_fspl').innerText='Voer geldige waarden in.'; return; }
+    const fspl = 20*Math.log10(d) + 20*Math.log10(f) + 92.45;
+    document.getElementById('out_fspl').innerText = fspl.toFixed(2) + ' dB';
+  });
+}
+
+/* ---------------------------
+   ANTENNA & COILS
+   --------------------------- */
+function renderAntennas(){
+  app.innerHTML='';
+  const node = el(`<section class="card">
+    <h2>Antennes & Spoelen</h2>
+    <div class="grid">
+      <div>
+        <h3>Wheeler (luchtspoel) benadering</h3>
+        <label>Diameter (mm) <input id="coil_d" type="number" value="20"></label>
+        <label>Lengte (mm) <input id="coil_l" type="number" value="20"></label>
+        <label>Aantal windingen <input id="coil_n" type="number" value="5"></label>
+        <div class="row"><button id="coil_calc">Bereken L (µH)</button></div>
+        <div id="coil_out" class="results small"></div>
+      </div>
+      <div>
+        <h3>Yagi basis (element suggereren)</h3>
+        <label>Design freq (MHz) <input id="yagi_f" type="number" value="144"></label>
+        <div class="row"><button id="yagi_calc">Suggereer</button></div>
+        <div id="yagi_out" class="results small"></div>
+      </div>
+      <div>
+        <h3>Balun / impedantie ratio</h3>
+        <label>Bron Π (Ω) <input id="bal_src" type="number" value="50"></label>
+        <label>Doel (Ω) <input id="bal_dst" type="number" value="200"></label>
+        <div class="row"><button id="bal_calc">Bereken ratio</button></div>
+        <div id="bal_out" class="results small"></div>
+      </div>
+    </div>
+  </section>`);
+  app.appendChild(node);
+
+  document.getElementById('coil_calc').addEventListener('click', ()=>{
+    const d = (parseFloat(document.getElementById('coil_d').value)||0)/10; // cm
+    const l = (parseFloat(document.getElementById('coil_l').value)||0)/10; // cm
+    const n = parseFloat(document.getElementById('coil_n').value)||0;
+    if(d<=0||n<=0){ document.getElementById('coil_out').innerText='Voer geldige waardes in.'; return; }
+    const L = (d*d * n*n) / (9*d + 10*l); // µH
+    document.getElementById('coil_out').innerText = L.toFixed(3) + ' µH (Wheeler benadering)';
+  });
+  document.getElementById('yagi_calc').addEventListener('click', ()=>{
+    const f = parseFloat(document.getElementById('yagi_f').value)||144;
+    const lambda = 299792458/(f*1e6);
+    const driven = lambda*0.5, dir = lambda*0.45, ref = lambda*0.52;
+    document.getElementById('yagi_out').innerHTML = `Driver: ${driven.toFixed(3)} m<br>Director: ${dir.toFixed(3)} m<br>Reflector: ${ref.toFixed(3)} m (basis)`;
+  });
+  document.getElementById('bal_calc').addEventListener('click', ()=>{
+    const s = parseFloat(document.getElementById('bal_src').value)||1;
+    const d = parseFloat(document.getElementById('bal_dst').value)||1;
+    const ratio = Math.sqrt(d/s);
+    document.getElementById('bal_out').innerText = `Wikkelverhouding ≈ ${ratio.toFixed(3)} (N2/N1). Vermogensratio ≈ ${(d/s).toFixed(3)}`;
+  });
+}
+
+/* ---------------------------
+   COAX & CABLES
+   --------------------------- */
+const COAX_DB = {
+  "RG-58":[{"f":10,"db":4.0},{"f":100,"db":10.0},{"f":400,"db":18.0},{"f":900,"db":30.0}],
+  "RG-213":[{"f":10,"db":1.5},{"f":100,"db":3.5},{"f":400,"db":6.0},{"f":900,"db":9.0}],
+  "LMR-400":[{"f":10,"db":0.5},{"f":100,"db":1.2},{"f":400,"db":2.8},{"f":900,"db":5.0}],
+  "LMR-600":[{"f":10,"db":0.3},{"f":100,"db":0.8},{"f":400,"db":1.6},{"f":900,"db":3.0}]
+};
+function interp(x,a,b){ return a + (b-a)*x; }
+function interpDB(freq, table){
+  // linear interpolate on nearest segment
+  table = table.slice().sort((a,b)=>a.f-b.f);
+  if(freq <= table[0].f) return table[0].db;
+  if(freq >= table[table.length-1].f) return table[table.length-1].db;
+  for(let i=0;i<table.length-1;i++){
+    const lo = table[i], hi = table[i+1];
+    if(freq>=lo.f && freq<=hi.f){
+      const t = (freq-lo.f)/(hi.f-lo.f);
+      return interp(t, lo.db, hi.db);
+    }
+  }
+  return table[0].db;
+}
+
+function renderCables(){
+  app.innerHTML='';
+  const node = el(`<section class="card">
+    <h2>Coax & Kabels</h2>
+    <div class="grid">
+      <div>
+        <h3>Coax verlies interpolatie</h3>
+        <label>Type <select id="coax_type"></select></label>
+        <label>Freq (MHz) <input id="coax_freq" type="number" value="144"></label>
+        <label>Lengte (m) <input id="coax_len" type="number" value="10"></label>
+        <div class="row"><button id="coax_calc">Bereken verlies</button></div>
+        <div id="coax_out" class="results small"></div>
+      </div>
+      <div>
+        <h3>Velocity factor & elektrische lengte</h3>
+        <label>VF <input id="vf_val" type="number" step="0.01" value="0.66"></label>
+        <label>Freq (MHz) <input id="vf_freq" type="number" value="144"></label>
+        <label>Lengte (m) <input id="vf_len" type="number" value="10"></label>
+        <div class="row"><button id="vf_calc">Bereken</button></div>
+        <div id="vf_out" class="results small"></div>
+      </div>
+    </div>
+  </section>`);
+  app.appendChild(node);
+
+  const select = document.getElementById('coax_type');
+  Object.keys(COAX_DB).forEach(k=>{ const o=document.createElement('option'); o.value=k; o.textContent=k; select.appendChild(o); });
+  document.getElementById('coax_calc').addEventListener('click', ()=>{
+    const t = document.getElementById('coax_type').value;
+    const f = parseFloat(document.getElementById('coax_freq').value)||100;
+    const len = parseFloat(document.getElementById('coax_len').value)||10;
+    const db100 = interpDB(f, COAX_DB[t]);
+    const loss = db100*(len/100);
+    document.getElementById('coax_out').innerText = `${t} ≈ ${loss.toFixed(3)} dB (${db100.toFixed(3)} dB/100m @ ${f} MHz)`;
+  });
+  document.getElementById('vf_calc').addEventListener('click', ()=>{
+    const vf = parseFloat(document.getElementById('vf_val').value)||1;
+    const f = parseFloat(document.getElementById('vf_freq').value)||144;
+    const L = parseFloat(document.getElementById('vf_len').value)||1;
+    const lambda = (299792458/(f*1e6))*vf;
+    const deg = (L / lambda) * 360;
+    document.getElementById('vf_out').innerText = `λ in kabel ≈ ${lambda.toFixed(3)} m — Elektrische lengte ≈ ${deg.toFixed(2)}°`;
+  });
+}
+
+/* ---------------------------
+   MATCHING & SMITH
+   --------------------------- */
+function renderMatching(){
+  app.innerHTML='';
+  const node = el(`<section class="card">
+    <h2>Impedantie & Matching</h2>
+    <div class="grid">
+      <div>
+        <h3>L-match (eenvoudig, resistive)</h3>
+        <label>Rs (Ω) <input id="lm_rs" type="number" value="50"></label>
+        <label>Rl (Ω) <input id="lm_rl" type="number" value="200"></label>
+        <label>Freq (MHz) <input id="lm_f" type="number" value="14"></label>
+        <div class="row"><button id="lm_calc">Bereken</button></div>
+        <div id="lm_out" class="results small"></div>
+      </div>
+      <div>
+        <h3>Smith-kaart (schematisch)</h3>
+        <canvas id="smith" width="600" height="440"></canvas>
+        <div id="smith_out" class="results small">Klik op de kaart om Γ te zetten.</div>
+      </div>
+    </div>
+  </section>`);
+  app.appendChild(node);
+
+  document.getElementById('lm_calc').addEventListener('click', ()=>{
+    const Rs = parseFloat(document.getElementById('lm_rs').value)||1;
+    const Rl = parseFloat(document.getElementById('lm_rl').value)||1;
+    const f = parseFloat(document.getElementById('lm_f').value)||14;
+    if(Rs<=0||Rl<=0){ document.getElementById('lm_out').innerText='Voer geldige impedanties in.'; return; }
+    // Q for L-match (Rl>Rs) approximation
+    const Q = Math.sqrt(Math.abs(Rl/Rs - 1));
+    const Xs = Rs * Q;
+    const Xp = Rl / Q;
+    const omega = 2*Math.PI*f*1e6;
+    const L = Math.abs(Xs)/omega;
+    const C = 1/(omega*Math.abs(Xp));
+    document.getElementById('lm_out').innerHTML = `Q≈${Q.toFixed(3)} — Serie Xs≈${Xs.toFixed(2)} Ω<br>L≈${(L*1e6).toFixed(3)} µH, C≈${(C*1e12).toFixed(3)} pF`;
+  });
+
+  // draw simple smith
+  const canvas = document.getElementById('smith');
+  const ctx = canvas.getContext('2d');
+  function drawSmith(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const cx=canvas.width/2, cy=canvas.height/2, r=Math.min(cx,cy)-20;
+    ctx.strokeStyle='#888'; ctx.beginPath(); ctx.arc(cx,cy,r,0,2*Math.PI); ctx.stroke();
+    ctx.fillStyle='#000'; ctx.font='13px monospace'; ctx.fillText('Smith chart (schematisch)',10,18);
+  }
+  drawSmith();
+  canvas.addEventListener('click', (ev)=>{
+    const rect = canvas.getBoundingClientRect();
+    const x = ev.clientX - rect.left, y = ev.clientY - rect.top;
+    const cx=canvas.width/2, cy=canvas.height/2, r=Math.min(cx,cy)-20;
+    const gx = (x-cx)/r, gy = (cy-y)/r;
+    const gamma = Math.sqrt(gx*gx + gy*gy);
+    document.getElementById('smith_out').innerText = `Γ mag ≈ ${gamma.toFixed(3)} — simulatie.`;
+    drawSmith();
+    ctx.beginPath(); ctx.fillStyle='red'; ctx.arc(x,y,4,0,2*Math.PI); ctx.fill();
+  });
+}
+
+/* ---------------------------
+   LINKBUDGET
+   --------------------------- */
+function renderLinkbudget(){
+  app.innerHTML='';
+  const node = el(`<section class="card">
+    <h2>Linkbudget</h2>
+    <div class="grid">
+      <div>
+        <label>Tx power (dBm) <input id="lb_ptx" type="number" value="30"></label>
+        <label>Tx gain (dBi) <input id="lb_gtx" type="number" value="2"></label>
+        <label>Rx gain (dBi) <input id="lb_grx" type="number" value="2"></label>
+        <label>Afstand (km) <input id="lb_d" type="number" value="1"></label>
+        <label>Freq (MHz) <input id="lb_f" type="number" value="144"></label>
+        <label>Extra verliezen (dB) <input id="lb_loss" type="number" value="2"></label>
+        <div class="row"><button id="lb_calc">Bereken Prx</button></div>
+        <div id="lb_out" class="results small"></div>
+      </div>
+    </div>
+  </section>`);
+  app.appendChild(node);
+
+  document.getElementById('lb_calc').addEventListener('click', ()=>{
+    const ptx = parseFloat(document.getElementById('lb_ptx').value)||0;
+    const gtx = parseFloat(document.getElementById('lb_gtx').value)||0;
+    const grx = parseFloat(document.getElementById('lb_grx').value)||0;
+    const d = parseFloat(document.getElementById('lb_d').value)||1;
+    const f = parseFloat(document.getElementById('lb_f').value)||144;
+    const loss = parseFloat(document.getElementById('lb_loss').value)||0;
+    const fspl = 20*Math.log10(d) + 20*Math.log10(f) + 92.45;
+    const prx = ptx + gtx + grx - fspl - loss;
+    document.getElementById('lb_out').innerHTML = `FSPL=${fspl.toFixed(2)} dB — Prx ≈ <span class="kv">${prx.toFixed(2)} dBm</span>`;
+  });
+}
+
+/* ---------------------------
+   LOGS (ADIF simple) & SCENARIOS
+   --------------------------- */
+function renderLogs(){
+  app.innerHTML='';
+  const logs = loadKey('logs',[]);
+  const node = el(`<section class="card">
+    <h2>Logs & Scenario's</h2>
+    <div class="grid">
+      <div>
+        <h3>Maak QSO</h3>
+        <label>Call <input id="qso_call" value="PA0ABC"></label>
+        <label>UTC (YYYYMMDD HHMM) <input id="qso_time" value=""></label>
+        <label>Freq (MHz) <input id="qso_freq" value="14"></label>
+        <label>Mode <input id="qso_mode" value="SSB"></label>
+        <div class="row"><button id="qso_save">Opslaan</button><button id="export_adif">Exporteer ADIF</button></div>
+        <div id="qso_out" class="results small"></div>
+      </div>
+      <div>
+        <h3>Scenario's</h3>
+        <label>Naam <input id="scenario_name" value="Mijn scenario"></label>
+        <div class="row"><button id="scenario_save">Opslaan</button><button id="scenario_list">Laad lijst</button></div>
+        <ul id="scenario_list_ul" class="small"></ul>
+      </div>
+    </div>
+  </section>`);
+  app.appendChild(node);
+
+  function getLogs(){ return loadKey('logs', []); }
+  function setLogs(v){ saveKey('logs', v); }
+
+  document.getElementById('qso_save').addEventListener('click', ()=>{
+    const call = document.getElementById('qso_call').value || '';
+    const time = document.getElementById('qso_time').value || new Date().toISOString().slice(0,16).replace('T',' ');
+    const freq = document.getElementById('qso_freq').value || '';
+    const mode = document.getElementById('qso_mode').value || '';
+    const arr = getLogs(); arr.push({call,time,freq,mode}); setLogs(arr);
+    document.getElementById('qso_out').innerText = 'QSO opgeslagen: ' + call;
+  });
+
+  document.getElementById('export_adif').addEventListener('click', ()=>{
+    const arr = getLogs();
+    let adif = '<?adif version="1.0"?>\\n';
+    arr.forEach(l=>{
+      const date = (l.time || '').replace(/[^0-9]/g,'').slice(0,8);
+      const time = (l.time || '').replace(/[^0-9]/g,'').slice(8,12);
+      const call = l.call || '';
+      const mode = l.mode || '';
+      const freq = l.freq || '';
+      adif += `<CALL:${call.length}>${call}<QSO_DATE:8>${date}<TIME_ON:4>${time}<BAND:5>${freq}<MODE:${mode.length}>${mode}<EOR>\\n`;
+    });
+    downloadFile('log.adif', adif, 'text/plain');
+  });
+
+  // scenarios
+  document.getElementById('scenario_save').addEventListener('click', ()=>{
+    const name = document.getElementById('scenario_name').value || 'unnamed';
+    const s = loadKey('scenarios', []);
+    s.push({name, savedAt: new Date().toISOString(), freq: document.getElementById('qso_freq').value});
+    saveKey('scenarios', s);
+    alert('Scenario opgeslagen: '+name);
+  });
+  document.getElementById('scenario_list').addEventListener('click', ()=>{
+    const ul = document.getElementById('scenario_list_ul'); ul.innerHTML='';
+    const s = loadKey('scenarios', []);
+    s.forEach((sc,i)=>{ const li=document.createElement('li'); li.innerHTML = `${sc.name} — ${sc.savedAt} <button data-i="${i}">Laad</button>`; ul.appendChild(li); });
+    ul.querySelectorAll('button').forEach(b=>b.addEventListener('click', e=>{
+      const i = e.currentTarget.dataset.i; const s = loadKey('scenarios',[])[i];
+      if(s) { document.getElementById('qso_freq').value = s.freq; alert('Scenario geladen: '+s.name); }
+    }));
+  });
+}
+
+/* ---------------------------
+   BOOTSTRAP: default view
+   --------------------------- */
+if(!location.hash) location.hash = '#/home';
+loadFromHash();
+
+/* ---------------------------
+   PWA: dynamic manifest + service worker via Blob
+   --------------------------- */
+(function registerPWA(){
+  try{
+    // create small icons (SVG data URLs)
+    const iconSvg = `<svg xmlns='http://www.w3.org/2000/svg' width='192' height='192'><rect width='100%' height='100%' fill='#0b3d91'/><text x='50%' y='55%' fill='#fff' font-size='56' font-family='sans-serif' text-anchor='middle'>ZA</text></svg>`;
+    const iconData = 'data:image/svg+xml;base64,'+btoa(iconSvg);
+
+    // create manifest dynamically
+    const manifest = {
+      name: "Zendamateur Toolbox — Eén bestand",
+      short_name: "Zendamateur",
+      start_url: ".",
+      display: "standalone",
+      background_color: "#0b3d91",
+      theme_color: "#0b3d91",
+      icons: [{src: iconData, sizes: "192x192", type: "image/svg+xml"}]
+    };
+    const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/manifest+json'});
+    const manifestURL = URL.createObjectURL(manifestBlob);
+    let link = document.querySelector('link[rel="manifest"]');
+    if(!link){ link = document.createElement('link'); link.rel='manifest'; document.head.appendChild(link); }
+    link.href = manifestURL;
+
+    // register a service worker from a blob (inline)
+    if('serviceWorker' in navigator){
+      const swCode = `
+      self.addEventListener('install', evt => {
+        const CACHE_NAME = 'zend-tool-v1';
+        const ASSETS = ['.','/','index.html'];
+        evt.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(ASSETS)).catch(()=>{}));
+        self.skipWaiting();
+      });
+      self.addEventListener('activate', evt => { evt.waitUntil(self.clients.claim()); });
+      self.addEventListener('fetch', evt => {
+        evt.respondWith(caches.match(evt.request).then(resp => resp || fetch(evt.request)));
+      });
+      `;
+      const swBlob = new Blob([swCode], {type: 'application/javascript'});
+      const swURL = URL.createObjectURL(swBlob);
+      navigator.serviceWorker.register(swURL).then(reg=> {
+        console.log('SW geregistreerd (blob):', reg.scope);
+      }).catch(err=>{
+        console.warn('SW registratie mislukt:', err);
+      });
+    }
+  }catch(err){
+    console.warn('PWA init error', err);
+  }
+})();
+
+/* ---------------------------
+   EOF
+   --------------------------- */
+</script>
+</body>
+</html>
