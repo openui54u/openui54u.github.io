@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Advanced Market Analyst — Multi-API TA & Backtester</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="manifest" href="manifest.json">
+</head>
+<body>
+<header class="top">
+  <h1>Advanced Market Analyst</h1>
+  <div class="note">Educational tool — geen financieel advies</div>
+</header>
+
+<main class="wrap">
+  <section class="controls card">
+    <h2>Data & instellingen</h2>
+    <label>Providers (prioriteit, comma-separated):
+      <input id="providers" value="finnhub,alpha" placeholder="finnhub,alpha">
+    </label>
+    <label>API key (use provider-specific keys separated by semicolon, e.g. finnhub=KEY;alpha=KEY):
+      <input id="keys" placeholder="finnhub=KEY;alpha=KEY">
+    </label>
+    <label>Symbols (comma-separated, use exchange suffix for Euronext e.g. ASML.AS):
+      <input id="symbols" value="ASML.AS,PHIA.AS" placeholder="AAPL,ASML.AS">
+    </label>
+    <label>Interval:
+      <select id="interval">
+        <option value="daily">Daily</option>
+        <option value="60min">60min</option>
+        <option value="15min">15min</option>
+      </select>
+    </label>
+    <div class="row">
+      <button id="loadAll" class="primary">Laad & analyseer alle symbolen</button>
+      <button id="backtestAll">Backtest SMA crossover (50/200)</button>
+    </div>
+    <div class="muted">Tip: voor realtime/intraday Finnhub is aanbevolen. Zet keys als: <code>finnhub=YOURKEY;alpha=YOURKEY</code>.</div>
+  </section>
+
+  <section class="panels">
+    <aside class="sidebar card" id="watchlist">
+      <h3>Watchlist</h3>
+      <ul id="list"></ul>
+    </aside>
+
+    <section class="main card">
+      <div id="charts"></div>
+      <div id="analysis"></div>
+      <div id="backtestResults"></div>
+    </section>
+  </section>
+</main>
+
+<footer class="footer card">
+  <small>Advanced Market Analyst — offline-capable PWA (optional). Built for analysis & backtesting.</small>
+</footer>
+
+<script src="app.js" defer></script>
+</body>
+</html>
