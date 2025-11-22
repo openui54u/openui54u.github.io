@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Market Analyst — multi-exchange TA tool</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  body{font-family:Inter,Arial,Helvetica,sans-serif;background:#f6fbff;color:#05263b;margin:0;padding:16px}
+  .wrap{max-width:1100px;margin:0 auto}
+  header{display:flex;align-items:center;justify-content:space-between;gap:16px}
+  h1{margin:0;font-size:20px}
+  .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  input,select,button{padding:8px;border-radius:8px;border:1px solid #dbeef7}
+  button.primary{background:#0b6a85;color:#fff;border:none}
+  .grid{display:grid;grid-template-columns:360px 1fr;gap:16px;margin-top:18px}
+  .card{background:#fff;padding:12px;border-radius:10px;box-shadow:0 6px 18px rgba(11,79,108,0.06)}
+  label{display:block;font-size:13px;color:#6b7f8a;margin-bottom:6px}
+  .small{font-size:13px;color:#6b7f8a}
+  #chartContainer{height:420px}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{padding:6px;border-bottom:1px solid #eef6fb;text-align:left}
+  pre{background:#0b2e3b;color:#dff6ff;padding:8px;border-radius:6px;overflow:auto}
+  footer{margin-top:18px;color:#6b7f8a;font-size:13px}
+  .suggest{padding:8px;border-radius:8px;margin-top:8px}
+  .buy{background:rgba(34,197,94,0.12);color:#166534}
+  .sell{background:rgba(239,68,68,0.08);color:#9b1c1c}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Market Analyst — Multi-exchange technical scanner</h1>
+      <div class="small">Candles, volume, SMA/EMA/RSI/MACD, strategy signals (long/short/daytrade)</div>
+    </div>
+    <div class="small">Not investment advice — educational tool</div>
+  </header>
+
+  <div class="controls">
+    <select id="provider">
+      <option value="alpha">Alpha Vantage (TIME_SERIES) — requires API key</option>
+      <option value="finnhub">Finnhub — requires API key</option>
+    </select>
+
+    <select id="exchange">
+      <option value="NASDAQ">NASDAQ</option>
+      <option value="NYSE">NYSE</option>
+      <option value="EURONEXT">EURONEXT</option>
+      <option value="LSE">LSE</option>
+      <option value="TSE">TSE</option>
+    </select>
+
+    <input id="symbol" placeholder="Symbol (e.g. ASML.AS or AAPL)" value="ASML.AS" style="min-width:180px"/>
+
+    <input id="apikey" placeholder="API key" style="min-width:180px"/>
+
+    <select id="interval">
+      <option value="daily">Daily (long-term)</option>
+      <option value="60min">Intraday 60min</option>
+      <option value="15min">Intraday 15min</option>
+      <option value="5min">Intraday 5min</option>
+    </select>
+
+    <button id="loadBtn" class="primary">Laad data & analyseer</button>
+  </div>
+
+  <div class="grid">
+    <aside class="card">
+      <h3>Instellingen & Strategieën</h3>
+      <label>Strategie keuzes</label>
+      <div>
+        <label><input type="checkbox" id="useSMA" checked> SMA cross (50/200)</label><br/>
+        <label><input type="checkbox" id="useEMA" checked> EMA cross (20/50)</label><br/>
+        <label><input type="checkbox" id="useRSI" checked> RSI (14) thresholds</label><br/>
+        <label><input type="checkbox" id="useMACD" checked> MACD cross</label><br/>
+        <label><input type="checkbox" id="useVolume" checked> Volume spikes</label>
+      </div>
+
+      <h4 style="margin-top:12px">Parameteren</h4>
+      <label>Short SMA days <input id="smaShort" type="number" value="50" min="1"/></label>
+      <label>Long SMA days <input id="smaLong" type="number" value="200" min="1"/></label>
+      <label>EMA fast <input id="emaFast" type="number" value="20" min="1"/></label>
+      <label>EMA slow <input id="emaSlow" type="number" value="50" min="1"/></label>
+      <label>RSI period <input id="rsiPeriod" type="number" value="14" min="1"/></label>
+
+      <h4 style="margin-top:12px">Output / Actions</h4>
+      <button id="backtestBtn">Snelle backtest (simple)</button>
+      <button id="alertBtn">Maak alert (browser notificatie)</button>
+
+      <h4 style="margin-top:12px">Data & limits</h4>
+      <div class="small">De app haalt data op via externe APIs. Voor Euronext-symbolen gebruik e.g. "ASML.AS" of "PHIA.AS". Je hebt een API-key nodig (Alpha Vantage / Finnhub).</div>
+    </aside>
+
+    <section class="card">
+      <div id="chartContainer">
+        <canvas id="chart" width="1000" height="420"></canvas>
+      </div>
+      <div id="analysis" style="margin-top:10px"></div>
+
+      <h4 style="margin-top:12px">Details</h4>
+      <div id="details"></div>
+    </section>
+  </div>
+
+  <footer>
+    <div>Advies: Om dit bruikbaar te maken als trading-tool voeg backtesting, slippage/cost-modelling, position sizing en alerts toe. Zie suggesties onderaan.</div>
+  </footer>
+</div>
+
+<!-- Chart.js and financial plugin from CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@3.0.0/dist/chartjs-chart-financial.min.js"></script>
+
+<script>
+// ---- Helper functions for indicators ----
+function sma(values, period){
+  const out=[];
+  for(let i=0;i<values.length;i++){
+    if(i<period-1) { out.push(null); continue; }
+    let sum=0;
+    for(let j=0;j<period;j++) sum+=values[i-j];
+    out.push(sum/period);
+  }
+  return out;
+}
+function ema(values, period){
+  const out=[];
+  const k = 2/(period+1);
+  let prev=null;
+  for(let i=0;i<values.length;i++){
+    const v = values[i];
+    if(i===0){ prev=v; out.push(v); continue; }
+    const cur = (v - prev)*k + prev;
+    out.push(cur);
+    prev = cur;
+  }
+  // pad initial with nulls to align like SMA
+  for(let i=0;i<period-1 && i<out.length;i++) out[i]=null;
+  return out;
+}
+function rsi(values, period=14){
+  const out=[];
+  let gains=0, losses=0;
+  for(let i=0;i<values.length;i++){
+    if(i===0){ out.push(null); continue; }
+    const change = values[i]-values[i-1];
+    const gain = Math.max(0,change);
+    const loss = Math.max(0,-change);
+    if(i<=period){
+      gains += gain; losses += loss;
+      if(i===period){
+        let avgG = gains/period, avgL = losses/period;
+        const rs = avgG/(avgL||1e-9);
+        out.push(100 - (100/(1+rs)));
+      } else out.push(null);
+    } else {
+      gains = (gains*(period-1) + gain)/period;
+      losses = (losses*(period-1) + loss)/period;
+      const rs = gains/(losses||1e-9);
+      out.push(100 - (100/(1+rs)));
+    }
+  }
+  return out;
+}
+function macd(values, fast=12, slow=26, signal=9){
+  const emaFast = ema(values, fast);
+  const emaSlow = ema(values, slow);
+  const macdLine = values.map((v,i)=> (emaFast[i]===null||emaSlow[i]===null)?null: emaFast[i]-emaSlow[i]);
+  const signalLine = ema(macdLine.map(x=>x===null?0:x), signal);
+  const hist = macdLine.map((m,i)=> m===null||signalLine[i]===null?null: m - signalLine[i]);
+  return {macdLine, signalLine, hist};
+}
+
+// ---- Fetching data ----
+async function fetchAlpha(symbol, interval, apikey){
+  const base = 'https://www.alphavantage.co/query?';
+  if(interval==='daily'){
+    const url = base + new URLSearchParams({function:'TIME_SERIES_DAILY_ADJUSTED',symbol:symbol,outputsize:'compact',apikey:apikey});
+    const res = await fetch(url); const j=await res.json();
+    if(j['Error Message']) throw new Error('Alpha Vantage returned error: ' + j['Error Message']);
+    const ts = j['Time Series (Daily)'] || j['Time Series (Daily)'];
+    const entries = Object.keys(ts).sort().map(date=>({date, open:+ts[date]['1. open'], high:+ts[date]['2. high'], low:+ts[date]['3. low'], close:+ts[date]['4. close'], volume:+ts[date]['6. volume']||+ts[date]['5. volume']}));
+    return entries;
+  } else {
+    const url = base + new URLSearchParams({function:'TIME_SERIES_INTRADAY',symbol:symbol,interval:interval,outputsize:'compact',apikey:apikey});
+    const res = await fetch(url); const j=await res.json();
+    const key = 'Time Series ('+interval+')';
+    const ts = j[key];
+    if(!ts) throw new Error('Alpha Vantage intraday returned no data or rate limited. Response keys: ' + Object.keys(j).join(','));
+    const entries = Object.keys(ts).sort().map(date=>({date, open:+ts[date]['1. open'], high:+ts[date]['2. high'], low:+ts[date]['3. low'], close:+ts[date]['4. close'], volume:+ts[date]['5. volume']}));
+    return entries;
+  }
+}
+
+async function fetchFinnhub(symbol, interval, apikey){
+  const base = 'https://finnhub.io/api/v1/';
+  const now = Math.floor(Date.now()/1000);
+  const days = interval==='daily'? 365 : 30;
+  const from = now - 3600*24*days;
+  const resolution = interval==='5min'?'5': interval==='15min'?'15': interval==='60min'?'60':'D';
+  const url = base + 'stock/candle?' + new URLSearchParams({symbol: symbol, resolution: resolution, from:from, to:now, token:apikey});
+  const res = await fetch(url); const j=await res.json();
+  if(j.s!=='ok') throw new Error('Finnhub error: ' + JSON.stringify(j));
+  const entries = j.t.map((t,i)=>({date:new Date(j.t[i]*1000).toISOString(), open:j.o[i], high:j.h[i], low:j.l[i], close:j.c[i], volume:j.v[i]}));
+  return entries;
+}
+
+// ---- UI & analysis ----
+const loadBtn = document.getElementById('loadBtn');
+const chartEl = document.getElementById('chart');
+let chart = null;
+
+loadBtn.addEventListener('click', async ()=>{
+  const provider = document.getElementById('provider').value;
+  const symbol = document.getElementById('symbol').value.trim();
+  const apikey = document.getElementById('apikey').value.trim();
+  const interval = document.getElementById('interval').value;
+  if(!symbol){ alert('Voer een symbool in'); return; }
+  if(!apikey){ if(!confirm('Je hebt geen API key ingevuld. Wil je doorgaan (beperkte/no data)?')) return; }
+  try{
+    document.getElementById('analysis').innerHTML = '<em>Data laden…</em>';
+    let raw = [];
+    if(provider==='alpha'){
+      raw = await fetchAlpha(symbol, interval, apikey);
+    } else {
+      raw = await fetchFinnhub(symbol, interval, apikey);
+    }
+    if(!raw || raw.length===0) throw new Error('Geen data ontvangen');
+    const closes = raw.map(r=>r.close);
+    const vols = raw.map(r=>r.volume);
+    const dates = raw.map(r=>r.date);
+    const smaShortDays = parseInt(document.getElementById('smaShort').value);
+    const smaLongDays = parseInt(document.getElementById('smaLong').value);
+    const emaFast = parseInt(document.getElementById('emaFast').value);
+    const emaSlow = parseInt(document.getElementById('emaSlow').value);
+    const rsiPeriod = parseInt(document.getElementById('rsiPeriod').value);
+    const smaShort = sma(closes, smaShortDays);
+    const smaLong = sma(closes, smaLongDays);
+    const emaFastA = ema(closes, emaFast);
+    const emaSlowA = ema(closes, emaSlow);
+    const rsiA = rsi(closes, rsiPeriod);
+    const macdA = macd(closes, 12, 26, 9);
+    const candleData = raw.map(r=>({t: new Date(r.date), o:r.open, h:r.high, l:r.low, c:r.close}));
+    drawCandles(candleData, closes, smaShort, smaLong, emaFastA, emaSlowA, rsiA, macdA, vols, dates, symbol);
+    const signals = analyzeSignals({closes, vols, smaShort, smaLong, emaFastA, emaSlowA, rsiA, macdA});
+    renderAnalysis(signals, closes[closes.length-1]);
+  }catch(e){
+    document.getElementById('analysis').innerHTML = '<pre>'+e.toString()+'</pre>';
+    console.error(e);
+  }
+});
+
+function drawCandles(candles, closes, smaShort, smaLong, emaFastA, emaSlowA, rsiA, macdA, vols, dates, symbol){
+  if(chart) chart.destroy();
+  const ctx = chartEl.getContext('2d');
+  const datasets = [
+    {label:'Candles', type:'candlestick', data:candles}
+  ];
+  const makeLine = (arr, label, color) => ({
+    label, data: arr.map((v,i)=>v===null?null:{x:new Date(dates[i]), y:v}), borderColor: color, borderWidth:1, pointRadius:0, spanGaps:true, parsing:false, order:2, type:'line'
+  });
+  datasets.push(makeLine(smaShort, `SMA ${document.getElementById('smaShort').value}`, '#0b6a85'));
+  datasets.push(makeLine(smaLong, `SMA ${document.getElementById('smaLong').value}`, '#0077a3'));
+  datasets.push(makeLine(emaFastA, `EMA ${document.getElementById('emaFast').value}`, '#00a8cc'));
+  datasets.push(makeLine(emaSlowA, `EMA ${document.getElementById('emaSlow').value}`, '#7bd389'));
+  chart = new Chart(ctx, {
+    type: 'candlestick',
+    data: {datasets},
+    options: {
+      plugins: {legend:{display:true,position:'bottom'}},
+      scales: {
+        x: {ticks:{maxRotation:0}, adapters: {date: {zone: 'UTC'}}},
+        y: {position:'right'}
+      }
+    }
+  });
+}
+
+function analyzeSignals({closes, vols, smaShort, smaLong, emaFastA, emaSlowA, rsiA, macdA}){
+  const last = closes.length-1;
+  const signals = [];
+  if(smaShort[last] && smaLong[last]){
+    if(smaShort[last] > smaLong[last]) signals.push({type:'long', reason:'SMA golden cross', weight:1});
+    else signals.push({type:'short', reason:'SMA death cross', weight:1});
+  }
+  if(emaFastA[last] && emaSlowA[last]){
+    if(emaFastA[last] > emaSlowA[last]) signals.push({type:'long', reason:'EMA fast > slow', weight:0.8});
+    else signals.push({type:'short', reason:'EMA fast < slow', weight:0.8});
+  }
+  if(rsiA[last]){
+    if(rsiA[last] < 30) signals.push({type:'long', reason:'RSI oversold (<30)', weight:0.9});
+    else if(rsiA[last] > 70) signals.push({type:'short', reason:'RSI overbought (>70)', weight:0.9});
+    else signals.push({type:'neutral', reason:`RSI ${rsiA[last].toFixed(1)}`, weight:0.2});
+  }
+  const macdLine = macdA.macdLine, signalLine = macdA.signalLine;
+  if(macdLine[last] && signalLine[last]){
+    if(macdLine[last] > signalLine[last]) signals.push({type:'long', reason:'MACD bullish crossover', weight:0.7});
+    else signals.push({type:'short', reason:'MACD bearish crossover', weight:0.7});
+  }
+  const avgVol = vols.slice(Math.max(0,vols.length-20)).reduce((a,b)=>a+b,0)/(Math.min(20,vols.length)||1);
+  if(vols[last] > avgVol*1.8) signals.push({type:'long', reason:'Volume spike (liquidity)', weight:0.6});
+  let score = 0;
+  signals.forEach(s=> score += (s.type==='long'? s.weight : s.type==='short'? -s.weight : 0));
+  return {signals, score};
+}
+
+function renderAnalysis(result, lastPrice){
+  const el = document.getElementById('analysis');
+  const s = result.signals;
+  let html = `<div><strong>Laatste koers: €${lastPrice.toFixed(2)}</strong></div>`;
+  html += '<div style="margin-top:6px">Signals:</div><ul>';
+  s.forEach(sig=> html += `<li>${sig.reason} — ${sig.type}</li>`);
+  html += '</ul>';
+  const score = result.score;
+  html += `<div style="margin-top:8px"><strong>Aggregated score:</strong> ${score.toFixed(2)}</div>`;
+  if(score>0.8) html += `<div class="suggest buy">Aanbeveling: KOOP (sterk positief signaal)</div>`;
+  else if(score>0.2) html += `<div class="suggest buy">Aanbeveling: Overweeg KOOP (licht positief)</div>`;
+  else if(score<-0.8) html += `<div class="suggest sell">Aanbeveling: VERKOOP (sterk negatief)</div>`;
+  else if(score<-0.2) html += `<div class="suggest sell">Aanbeveling: Overweeg VERKOOP (licht negatief)</div>`;
+  else html += `<div class="suggest">Aanbeveling: NEUTRAAL — geen sterke signaal</div>`;
+  el.innerHTML = html;
+  document.getElementById('details').innerHTML = `<table><tr><th>Metric</th><th>Value</th></tr><tr><td>Score</td><td>${score.toFixed(2)}</td></tr></table>`;
+}
+
+document.getElementById('backtestBtn').addEventListener('click', ()=>{
+  alert('Eenvoudige backtest: nog te implementeren - suggestie: simuleer SMA50/SMA200 cross met fixed position sizing en fees.');
+});
+document.getElementById('alertBtn').addEventListener('click', ()=>{
+  if(!('Notification' in window)){ alert('Browser ondersteunt geen notificaties'); return; }
+  Notification.requestPermission().then(p=>{
+    if(p==='granted') new Notification('Market Analyst', {body:'Alerts geactiveerd — voeg regels toe in toekomstige versie.'});
+    else alert('Notificaties geweigerd');
+  });
+});
+</script>
+
+</body>
+</html>
