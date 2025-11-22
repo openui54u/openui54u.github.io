@@ -1,0 +1,11 @@
+{
+  "name": "Super Compound",
+  "short_name": "Compound",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0b4f6c",
+  "theme_color": "#0b4f6c",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
+}
