@@ -1,93 +1,93 @@
-import time
-import csv
-import os
 import requests
 from bs4 import BeautifulSoup
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.common.by import By
+import csv
+import time
 
-# -----------------------
-# CONFIG
-# -----------------------
-BASE_URL = "https://versvoorthuis.nl/nl/maaltijden/"
-CSV_FILE = "versvoorthuis.csv"
+# ===============================
+# Configuratie
+# ===============================
+BASE_URL = "https://versvoorthuis.nl"
+MAALTIJDEN_URL = f"{BASE_URL}/nl/maaltijden/"
+CSV_FILE = "versvoorthuis_maaltijden.csv"
+OFFSET_STEP = 12  # aantal maaltijden per pagina
+MAX_OFFSET = 100  # optioneel, kan hoger
 
-# Chrome driver opties
-chrome_options = Options()
-chrome_options.add_argument("--user-data-dir=chrome_data")  # bewaart sessie/cookies
-chrome_options.add_argument("--profile-directory=Default")   # standaard profiel
-chrome_options.add_argument("--headless")                   # comment uit om browser zichtbaar te maken
-chrome_options.add_argument("--disable-gpu")
-chrome_options.add_argument("--window-size=1920,1080")
+# ===============================
+# Vraag gebruiker om cookiesessie
+# ===============================
+print("⚠️ Ga naar https://versvoorthuis.nl/nl/maaltijden/, voer je postcode in en accepteer cookies.")
+cookie_value = input("Plak hier de waarde van je sessie-cookie (bijv. PHPSESSID): ").strip()
 
-driver_path = "/path/to/chromedriver"  # <--- Pas dit aan
+# ===============================
+# Setup requests session met cookie
+# ===============================
+session = requests.Session()
+session.cookies.set("PHPSESSID", cookie_value, domain=".versvoorthuis.nl")
 
-# -----------------------
-# START CHROME EN LOGIN
-# -----------------------
-print("Start Chrome, log in en kies postcode. Druk daarna op Enter om verder te gaan...")
-driver = webdriver.Chrome(service=Service(driver_path), options=chrome_options)
-driver.get(BASE_URL)
-input("Druk op Enter als je bent ingelogd en postcode gekozen hebt...")
+# ===============================
+# Functie om maaltijd links op te halen
+# ===============================
+def get_maaltijd_links(offset=0):
+    url = f"{MAALTIJDEN_URL}?offset={offset}&limit={OFFSET_STEP}"
+    response = session.get(url)
+    soup = BeautifulSoup(response.text, "html.parser")
+    links = []
+    for card in soup.select("div.productCard a.image"):
+        href = card.get("href")
+        if href:
+            full_url = BASE_URL + href
+            links.append(full_url)
+    return links
 
-# -----------------------
-# DATA OPSLAAN
-# -----------------------
-all_data = []
+# ===============================
+# Functie om details per maaltijd op te halen
+# ===============================
+def get_maaltijd_details(url):
+    resp = session.get(url)
+    soup = BeautifulSoup(resp.text, "html.parser")
 
-offset = 0
-while True:
-    if offset == 0:
-        url = BASE_URL
-    else:
-        url = f"{BASE_URL}?limit=18&offset={offset}"
-    print("Scraping:", url)
-    driver.get(url)
-    time.sleep(3)  # even wachten tot pagina geladen
+    # Naam
+    name_tag = soup.select_one("h1")
+    name = name_tag.text.strip() if name_tag else ""
 
-    soup = BeautifulSoup(driver.page_source, "html.parser")
-    products = soup.select(".productCard")
-    if not products:
-        break  # geen producten meer, stop
+    # Categorieën
+    categories = [a.text.strip() for a in soup.select("div.productInCategoriesRow a")]
 
-    for p in products:
-        link_tag = p.select_one("a.image")
-        title_tag = p.select_one(".title")
-        if not link_tag or not title_tag:
-            continue
-        link = "https://versvoorthuis.nl" + link_tag['href']
-        title = title_tag.get_text(strip=True)
+    # Ingrediënten
+    ingredients_tag = soup.select_one("#collapse_4 .panel-body")
+    ingredients = ingredients_tag.text.strip() if ingredients_tag else ""
 
-        # Ga naar detailpagina
-        driver.get(link)
-        time.sleep(2)
-        detail_soup = BeautifulSoup(driver.page_source, "html.parser")
-        # Ingrediënten
-        ing_tag = detail_soup.select_one("#collapse_4 .panel-body")
-        ingredients = ing_tag.get_text(strip=True) if ing_tag else ""
-        # Categorie
-        cat_tag = detail_soup.select_one(".productInCategoriesRow")
-        categories = [a.get_text(strip=True) for a in cat_tag.select("a")] if cat_tag else []
-        all_data.append({
-            "Categorie": ", ".join(categories),
-            "Ingrediënten": ingredients,
-            "Link": link
-        })
+    return {
+        "name": name,
+        "categories": ", ".join(categories),
+        "ingredients": ingredients,
+        "url": url
+    }
 
-    offset += 18
+# ===============================
+# Scraper logica
+# ===============================
+all_maaltijden = []
 
-driver.quit()
+for offset in range(0, MAX_OFFSET, OFFSET_STEP):
+    print(f"📄 Ophalen van maaltijden, offset={offset}...")
+    links = get_maaltijd_links(offset)
+    if not links:
+        break
+    for link in links:
+        details = get_maaltijd_details(link)
+        all_maaltijden.append(details)
+        print(f"✅ {details['name']} toegevoegd.")
+    time.sleep(1)  # beleefdheidsvertraging
 
-# -----------------------
-# CSV OPSLAAN
-# -----------------------
-print("Opslaan naar CSV:", CSV_FILE)
+# ===============================
+# Opslaan in CSV
+# ===============================
+keys = ["name", "categories", "ingredients", "url"]
 with open(CSV_FILE, "w", newline="", encoding="utf-8") as f:
-    writer = csv.DictWriter(f, fieldnames=["Categorie", "Ingrediënten", "Link"])
+    writer = csv.DictWriter(f, fieldnames=keys)
     writer.writeheader()
-    for row in all_data:
-        writer.writerow(row)
+    for item in all_maaltijden:
+        writer.writerow(item)
 
-print("Klaar! Aantal maaltijden:", len(all_data))
+print(f"✅ Scraping voltooid. Resultaat opgeslagen in {CSV_FILE}")

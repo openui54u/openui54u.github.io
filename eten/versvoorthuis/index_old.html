@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>Vers Voor Thuis - Filter maaltijden</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; }
+h1 { color: #2E8B57; }
+.checkbox { margin-bottom: 5px; }
+.product { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+<h1>Vers Voor Thuis - Filter maaltijden</h1>
+
+<div id="filters"></div>
+<hr>
+<div id="results"></div>
+
+<script>
+// CSV laden (zelfde folder als HTML)
+fetch('versvoorthuis.csv')
+.then(response => response.text())
+.then(csvText => {
+    const rows = csvText.trim().split("\n").slice(1);
+    const data = rows.map(r => {
+        const [cat, ing, link] = r.split(",");
+        return {Categorie: cat, Ingrediënten: ing, Link: link};
+    });
+
+    // Unieke categorieën
+    const categories = [...new Set(data.flatMap(d => d.Categorie.split(", ")))];
+    const filtersDiv = document.getElementById("filters");
+    categories.forEach(c => {
+        const id = c.replace(/\s+/g, "_");
+        filtersDiv.innerHTML += `<div class="checkbox">
+            <label><input type="checkbox" value="${c}" onchange="applyFilter()">${c}</label>
+        </div>`;
+    });
+
+    window.allData = data;
+    applyFilter();
+});
+
+function applyFilter() {
+    const checked = Array.from(document.querySelectorAll('#filters input:checked')).map(i => i.value);
+    const resultsDiv = document.getElementById("results");
+    resultsDiv.innerHTML = "";
+
+    const filtered = window.allData.filter(d => {
+        if(checked.length === 0) return true;
+        return d.Categorie.split(", ").some(c => checked.includes(c));
+    });
+
+    filtered.forEach(d => {
+        resultsDiv.innerHTML += `<div class="product">
+            <strong>Categorie:</strong> ${d.Categorie}<br>
+            <strong>Ingrediënten:</strong> ${d.Ingrediënten}<br>
+            <a href="${d.Link}" target="_blank">Bekijk maaltijd</a>
+        </div>`;
+    });
+}
+</script>
+</body>
+</html>
