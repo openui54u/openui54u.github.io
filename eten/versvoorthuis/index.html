@@ -2,59 +2,24 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>VersvoorThuis Filter</title>
+<title>Versvoorthuis Maaltijden Filter</title>
 
 <style>
-    body {
-        font-family: Arial, sans-serif;<!DOCTYPE html>
-<html lang="nl">
-<head>
-<meta charset="UTF-8">
-<title>VersvoorThuis Filter</title>
-
-<style>
-    body {
-        font-family: Arial, sans-serif;
-        margin: 20px;
-        background: #fafafa;
-    }
-    h1 {
-        margin-bottom: 10px;
-    }
+    body { font-family: Arial, sans-serif; margin: 20px; background: #fafafa; }
+    h1 { margin-bottom: 10px; }
     .filter-box {
-        background: white;
-        padding: 15px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-        box-shadow: 0 0 5px rgba(0,0,0,0.15);
+        background: white; padding: 15px; border-radius: 8px;
+        margin-bottom: 20px; box-shadow: 0 0 5px rgba(0,0,0,0.15);
     }
-    .category-container {
-        columns: 3;
-        -webkit-columns: 3;
-        -moz-columns: 3;
-    }
+    .category-container { columns: 3; }
     table {
-        width: 100%;
-        border-collapse: collapse;
-        background: white;
+        width: 100%; border-collapse: collapse; background: white;
         box-shadow: 0 0 5px rgba(0,0,0,0.15);
     }
-    th, td {
-        padding: 8px;
-        border-bottom: 1px solid #ccc;
-    }
-    th {
-        background: #eee;
-        text-align: left;
-    }
-    tr:hover {
-        background: #f3f3f3;
-    }
-    .link a {
-        color: #0066cc;
-        text-decoration: none;
-        font-weight: bold;
-    }
+    th, td { padding: 8px; border-bottom: 1px solid #ccc; }
+    th { background: #eee; text-align: left; }
+    tr:hover { background: #f3f3f3; }
+    .link a { color: #0066cc; font-weight: bold; text-decoration: none; }
 </style>
 
 </head>
@@ -63,11 +28,11 @@
 <h1>Versvoorthuis Maaltijden Filter</h1>
 
 <div class="filter-box">
-    <h3>Categorieën</h3>
+    <h3>Keukens</h3>
     <div id="category-box" class="category-container"></div>
 
-    <h3>Ingrediënten uitsluiten (komma-gescheiden woorden):</h3>
-    <input id="exclude-input" type="text" placeholder="bijv: melk, paprika, knoflook" style="width:100%; padding:8px;">
+    <h3>Ingrediënten uitsluiten (komma-gescheiden):</h3>
+    <input id="exclude-input" type="text" placeholder="bijv: melk, paprika" style="width:100%; padding:8px;">
 
     <br><br>
     <button onclick="applyFilters()" style="padding:10px 20px;">Filter toepassen</button>
@@ -77,6 +42,7 @@
     <thead>
         <tr>
             <th>Categorie</th>
+            <th>Naam</th>
             <th>Ingrediënten</th>
             <th>Link</th>
         </tr>
@@ -85,208 +51,31 @@
 </table>
 
 <script>
-// ---- CSV Loader ----
-async function loadCSV() {
-    const response = await fetch("maaltijden.csv");
-    const text = await response.text();
-
-    const rows = text.split("\n").slice(1); // skip header
-
-    window.meals = rows
-        .map(r => r.split(/,(.+)/))   // split first comma only (categorie, rest)
-        .map((parts, index) => {
-            if (!parts || parts.length < 2) return null;
-
-            // parts[1] contains ingrediënten + link → split laatste komma
-            const secondSplit = parts[1].split(/,(?=[^,]*$)/);
-
-            return {
-                Categorie: parts[0]?.trim() || "",
-                Ingrediënten: secondSplit[0]?.trim() || "",
-                Link: secondSplit[1]?.trim() || ""
-            };
-        })
-        .filter(r => r && r.Categorie.length > 0);
-
-    populateTable();
-    buildCategoryFilters();
-}
-
-// ---- Tabel vullen ----
-function populateTable() {
-    const tbody = document.getElementById("table-body");
-    tbody.innerHTML = "";
-
-    window.meals.forEach(m => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-            <td class="cat">${m.Categorie}</td>
-            <td class="ing">${m.Ingrediënten}</td>
-            <td class="link"><a href="${m.Link}" target="_blank">Bekijk</a></td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-// ---- Categorie checkboxes ----
-function buildCategoryFilters() {
-    const categories = [...new Set(window.meals.map(m => m.Categorie))].sort();
-    const box = document.getElementById("category-box");
-
-    categories.forEach(cat => {
-        const id = "cat_" + cat.replace(/\s+/g, "_");
-
-        const div = document.createElement("div");
-        div.innerHTML = `
-            <label>
-                <input type="checkbox" class="category-checkbox" value="${cat}">
-                ${cat}
-            </label>
-        `;
-        box.appendChild(div);
-    });
-}
-
-// ---- Filters toepassen ----
-function applyFilters() {
-    const selectedCategories = Array.from(
-        document.querySelectorAll('.category-checkbox:checked')
-    ).map(cb => cb.value);
-
-    let excludedWords = document.getElementById("exclude-input").value
-        .toLowerCase()
-        .split(",")
-        .map(w => w.trim())
-        .filter(w => w.length > 0);
-
-    const rows = document.querySelectorAll("#table-body tr");
-
-    rows.forEach(row => {
-        const category = row.querySelector(".cat").textContent.trim();
-        const ingred = row.querySelector(".ing").textContent.toLowerCase();
-
-        let visible = true;
-
-        // Categorie filter
-        if (selectedCategories.length > 0 && !selectedCategories.includes(category)) {
-            visible = false;
-        }
-
-        // Uitsluit woorden
-        for (let word of excludedWords) {
-            if (word.length > 0 && ingred.includes(word)) {
-                visible = false;
-                break;
-            }
-        }
-
-        row.style.display = visible ? "" : "none";
-    });
-}
-
-loadCSV();
-</script>
-
-</body>
-</html>csvToObjects
-        margin: 20px;
-        background: #fafafa;
-    }
-    h1 {
-        margin-bottom: 10px;
-    }
-    .filter-box {
-        background: white;
-        padding: 15px;
-        border-radius: 8px;
-        margin-bottom: 20px;
-        box-shadow: 0 0 5px rgba(0,0,0,0.15);
-    }
-    .category-container {
-        columns: 3;
-        -webkit-columns: 3;
-        -moz-columns: 3;
-    }
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        background: white;
-        box-shadow: 0 0 5px rgba(0,0,0,0.15);
-    }
-    th, td {
-        padding: 8px;
-        border-bottom: 1px solid #ccc;
-    }
-    th {
-        background: #eee;
-        text-align: left;
-    }
-    tr:hover {
-        background: #f3f3f3;
-    }
-    .link a {
-        color: #0066cc;
-        text-decoration: none;
-        font-weight: bold;
-    }
-</style>
-
-</head>
-<body>
-
-<h1>Versvoorthuis Maaltijden Filter</h1>
-
-<div class="filter-box">
-    <h3>Categorieën</h3>
-    <div id="category-box" class="category-container"></div>
-
-    <h3>Ingrediënten uitsluiten (komma-gescheiden woorden):</h3>
-    <input id="exclude-input" type="text" placeholder="bijv: melk, paprika, knoflook" style="width:100%; padding:8px;">
-
-    <br><br>
-    <button onclick="applyFilters()" style="padding:10px 20px;">Filter toepassen</button>
-</div>
-
-<table>
-    <thead>
-        <tr>
-            <th>Categorie</th>
-            <th>Ingrediënten</th>
-            <th>Link</th>
-        </tr>
-    </thead>
-    <tbody id="table-body"></tbody>
-</table>
-
-<script>
-// ---- CSV Loader ----
+// ----------------- CSV LADEN -----------------
 async function loadCSV() {
     const response = await fetch("meals.csv");
     const text = await response.text();
 
-    const rows = text.split("\n").slice(1); // skip header
+    const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 0);
+    const header = lines.shift().split(",");
 
-    window.meals = rows
-        .map(r => r.split(/,(.+)/))   // split first comma only (categorie, rest)
-        .map((parts, index) => {
-            if (!parts || parts.length < 2) return null;
+    // Verwachte kolommen: name, categories, ingredients, url
+    window.meals = lines.map(line => {
+        const cols = line.split(",");
 
-            // parts[1] contains ingrediënten + link → split laatste komma
-            const secondSplit = parts[1].split(/,(?=[^,]*$)/);
-
-            return {
-                Categorie: parts[0]?.trim() || "",
-                Ingrediënten: secondSplit[0]?.trim() || "",
-                Link: secondSplit[1]?.trim() || ""
-            };
-        })
-        .filter(r => r && r.Categorie.length > 0);
+        return {
+            Naam: cols[0]?.trim() || "",
+            Categorie: cols[1]?.trim() || "",
+            Ingrediënten: cols[2]?.trim() || "",
+            Link: cols[3]?.trim() || ""
+        };
+    });
 
     populateTable();
     buildCategoryFilters();
 }
 
-// ---- Tabel vullen ----
+// ----------------- TABEL VULLEN -----------------
 function populateTable() {
     const tbody = document.getElementById("table-body");
     tbody.innerHTML = "";
@@ -295,6 +84,7 @@ function populateTable() {
         const tr = document.createElement("tr");
         tr.innerHTML = `
             <td class="cat">${m.Categorie}</td>
+            <td class="naam">${m.Naam}</td>
             <td class="ing">${m.Ingrediënten}</td>
             <td class="link"><a href="${m.Link}" target="_blank">Bekijk</a></td>
         `;
@@ -302,10 +92,16 @@ function populateTable() {
     });
 }
 
-// ---- Categorie checkboxes ----
+// ----------------- CATEGORIE-FILTER -----------------
 function buildCategoryFilters() {
-    const categories = [...new Set(window.meals.map(m => m.Categorie))].sort();
+    const categories = [...new Set(
+        window.meals
+            .filter(m => m.Categorie.toLowerCase().includes("keuken"))  // <— FIX
+            .map(m => m.Categorie)
+    )].sort();
+
     const box = document.getElementById("category-box");
+    box.innerHTML = "";
 
     categories.forEach(cat => {
         const id = "cat_" + cat.replace(/\s+/g, "_");
@@ -321,7 +117,7 @@ function buildCategoryFilters() {
     });
 }
 
-// ---- Filters toepassen ----
+// ----------------- FILTERS TOEPASSEN -----------------
 function applyFilters() {
     const selectedCategories = Array.from(
         document.querySelectorAll('.category-checkbox:checked')
@@ -333,32 +129,30 @@ function applyFilters() {
         .map(w => w.trim())
         .filter(w => w.length > 0);
 
-    const rows = document.querySelectorAll("#table-body tr");
-
-    rows.forEach(row => {
-        const category = row.querySelector(".cat").textContent.trim();
+    document.querySelectorAll("#table-body tr").forEach(row => {
+        const category = row.querySelector(".cat").textContent.toLowerCase();
         const ingred = row.querySelector(".ing").textContent.toLowerCase();
 
         let visible = true;
 
         // Categorie filter
-        if (selectedCategories.length > 0 && !selectedCategories.includes(category)) {
+        if (selectedCategories.length > 0 &&
+            !selectedCategories.includes(row.querySelector(".cat").textContent)) {
             visible = false;
         }
 
         // Uitsluit woorden
-        for (let word of excludedWords) {
-            if (word.length > 0 && ingred.includes(word)) {
-                visible = false;
-                break;
-            }
-        }
+        excludedWords.forEach(w => {
+            if (ingred.includes(w)) visible = false;
+        });
 
         row.style.display = visible ? "" : "none";
     });
 }
 
+// CSV inladen
 loadCSV();
+
 </script>
 
 </body>
