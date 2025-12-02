@@ -1,0 +1,24 @@
+# Python cache bestanden
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtuele omgeving
+.venv/
+venv/
+env/
+
+# MacOS bestanden
+.DS_Store
+
+# Logs
+*.log
+
+# CSV of output bestanden (optioneel, als je ze niet wilt pushen)
+*.csv
+
+# Editor bestanden
+.vscode/
+.idea/
+*.swp
