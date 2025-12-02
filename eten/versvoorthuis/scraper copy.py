@@ -42,28 +42,6 @@ def get_maaltijd_links(offset=0):
 # ===============================
 # Functie om details per maaltijd op te halen
 # ===============================
-# def get_maaltijd_details(url):
-#     resp = session.get(url)
-#     soup = BeautifulSoup(resp.text, "html.parser")
-#
-#     # Naam
-#     name_tag = soup.select_one("h1")
-#     name = name_tag.text.strip() if name_tag else ""
-#
-#     # Categorieën
-#     categories = [a.text.strip() for a in soup.select("div.productInCategoriesRow a")]
-#
-#     # Ingrediënten
-#     ingredients_tag = soup.select_one("#collapse_4 .panel-body")
-#     ingredients = ingredients_tag.text.strip() if ingredients_tag else ""
-#
-#     return {
-#         "name": name,
-#         "categories": ", ".join(categories),
-#         "ingredients": ingredients,
-#         "url": url
-#     }
-
 def get_maaltijd_details(url):
     resp = session.get(url)
     soup = BeautifulSoup(resp.text, "html.parser")
@@ -75,34 +53,9 @@ def get_maaltijd_details(url):
     # Categorieën
     categories = [a.text.strip() for a in soup.select("div.productInCategoriesRow a")]
 
-    # Ingrediënten - methode 1
+    # Ingrediënten
     ingredients_tag = soup.select_one("#collapse_4 .panel-body")
     ingredients = ingredients_tag.text.strip() if ingredients_tag else ""
-
-    # Fallback methode 2 als geen ingrediënten gevonden
-    if not ingredients:
-        # Zoek alle divs/p's met mogelijke ingrediënten
-        possible_divs = soup.find_all(["div", "p"])
-        for div in possible_divs:
-            text = div.get_text(separator=" ", strip=True)
-            if text.lower().startswith("ingredient") or "ingrediënten" in text.lower():
-                ingredients = text
-                break
-
-    # Extra fallback: kijken of er JSON data in scripts staat
-    if not ingredients:
-        scripts = soup.find_all("script")
-        for script in scripts:
-            if "ingredients" in script.text:
-                import re, json
-                match = re.search(r'"ingredients"\s*:\s*(\[[^\]]*\])', script.text)
-                if match:
-                    try:
-                        ingredients_list = json.loads(match.group(1))
-                        ingredients = ", ".join(ingredients_list)
-                        break
-                    except:
-                        pass
 
     return {
         "name": name,
@@ -110,7 +63,7 @@ def get_maaltijd_details(url):
         "ingredients": ingredients,
         "url": url
     }
-    
+
 # ===============================
 # Scraper logica
 # ===============================
