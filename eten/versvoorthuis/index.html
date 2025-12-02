@@ -2,114 +2,144 @@
 <html lang="nl">
 <head>
 <meta charset="UTF-8">
-<title>Vers voor Thuis Filter Tool</title>
+<title>VersvoorThuis Filter</title>
+
 <style>
-body { font-family: Arial, sans-serif; margin: 20px; }
-h1 { text-align: center; }
-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-th { background-color: #f5f5f5; }
-.filter-section { display: flex; justify-content: space-between; flex-wrap: wrap; margin-bottom: 20px; }
-.filter-group { margin: 5px; max-width: 45%; }
-.filter-group label { display: block; }
+    body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background: #fafafa;
+    }
+    h1 {
+        margin-bottom: 10px;
+    }
+    .filter-box {
+        background: white;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 0 5px rgba(0,0,0,0.15);
+    }
+    .category-container {
+        columns: 3;
+        -webkit-columns: 3;
+        -moz-columns: 3;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background: white;
+        box-shadow: 0 0 5px rgba(0,0,0,0.15);
+    }
+    th, td {
+        padding: 8px;
+        border-bottom: 1px solid #ccc;
+    }
+    th {
+        background: #eee;
+        text-align: left;
+    }
+    tr:hover {
+        background: #f3f3f3;
+    }
+    .link a {
+        color: #0066cc;
+        text-decoration: none;
+        font-weight: bold;
+    }
 </style>
+
 </head>
 <body>
 
-<h1>Vers voor Thuis Filter Tool</h1>
+<h1>Versvoorthuis Maaltijden Filter</h1>
 
-<div class="filter-section">
-    <div class="filter-group" id="category-filters">
-        <h3>Categorieën</h3>
-    </div>
-    <div class="filter-group" id="exclude-ingredients">
-        <h3>Ingrediënten uitsluiten</h3>
-    </div>
+<div class="filter-box">
+    <h3>Categorieën</h3>
+    <div id="category-box" class="category-container"></div>
+
+    <h3>Ingrediënten uitsluiten (komma-gescheiden woorden):</h3>
+    <input id="exclude-input" type="text" placeholder="bijv: melk, paprika, knoflook" style="width:100%; padding:8px;">
+
+    <br><br>
+    <button onclick="applyFilters()" style="padding:10px 20px;">Filter toepassen</button>
 </div>
 
-<table id="meals-table">
+<table>
     <thead>
         <tr>
-            <th>Naam</th>
-            <th>Categorieën</th>
+            <th>Categorie</th>
             <th>Ingrediënten</th>
             <th>Link</th>
         </tr>
     </thead>
-    <tbody>
-    </tbody>
+    <tbody id="table-body"></tbody>
 </table>
 
-<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script>
-// =============================
-// CSV bestand lezen
-// =============================
-fetch('meals.csv')
-.then(response => response.text())
-.then(csvText => {
-    const data = Papa.parse(csvText, {header: true, skipEmptyLines: true}).data;
-    // const meals = data.map(row => ({
-    //     name: row['name'],
-    //     categories: row['categories'].split(';').map(s=>s.trim()),
-    //     ingredients: row['ingredients'].split(';').map(s=>s.trim()),
-    //     url: row['url']
-    // }));
-    const meals = data.map(row => ({
-    name: row['name'],
-    categories: row['categories'].split(';').map(s=>s.trim()),
-    ingredients: row['ingredients'].split(';').map(s=>s.trim()),
-    url: row['url']
-}));
-    initializeFilters(meals);
-    displayMeals(meals);
-});
+// ---- CSV Loader ----
+async function loadCSV() {
+    const response = await fetch("maaltijden.csv");
+    const text = await response.text();
 
-// =============================
-// Filters genereren
-// =============================
-function initializeFilters(meals) {
-    const categorySet = new Set();
-    const ingredientSet = new Set();
-    meals.forEach(meal => {
-        meal.categories.forEach(c => categorySet.add(c));
-        meal.ingredients.forEach(i => ingredientSet.add(i));
-    });
+    const rows = text.split("\n").slice(1); // skip header
 
-    const catContainer = document.getElementById('category-filters');
-    categorySet.forEach(cat => {
-        const label = document.createElement('label');
-        label.innerHTML = `<input type="checkbox" value="${cat}" onchange="applyFilters()"> ${cat}`;
-        catContainer.appendChild(label);
-    });
+    window.meals = rows
+        .map(r => r.split(/,(.+)/))   // split first comma only (categorie, rest)
+        .map((parts, index) => {
+            if (!parts || parts.length < 2) return null;
 
-    const ingContainer = document.getElementById('exclude-ingredients');
-    ingredientSet.forEach(ing => {
-        const label = document.createElement('label');
-        label.innerHTML = `<input type="checkbox" value="${ing}" onchange="applyFilters()"> ${ing}`;
-        ingContainer.appendChild(label);
-    });
+            // parts[1] contains ingrediënten + link → split laatste komma
+            const secondSplit = parts[1].split(/,(?=[^,]*$)/);
 
-    window.allMeals = meals; // Globaal voor filtering
+            return {
+                Categorie: parts[0]?.trim() || "",
+                Ingrediënten: secondSplit[0]?.trim() || "",
+                Link: secondSplit[1]?.trim() || ""
+            };
+        })
+        .filter(r => r && r.Categorie.length > 0);
+
+    populateTable();
+    buildCategoryFilters();
 }
 
-// =============================
-// Filter functie
-// =============================
-// function applyFilters() {
-//     const selectedCategories = Array.from(document.querySelectorAll("#category-filters input:checked")).map(i=>i.value);
-//     const excludedIngredients = Array.from(document.querySelectorAll("#exclude-ingredients input:checked")).map(i=>i.value);
-//
-//     const filteredMeals = window.allMeals.filter(meal => {
-//         // Controleer categorieën
-//         const catMatch = selectedCategories.every(cat => meal.categories.includes(cat));
-//         // Controleer uitgesloten ingrediënten
-//         const ingMatch = !excludedIngredients.some(ing => meal.ingredients.includes(ing));
-//         return catMatch && ingMatch;
-//     });
-//
-//     displayMeals(filteredMeals);
-// }
+// ---- Tabel vullen ----
+function populateTable() {
+    const tbody = document.getElementById("table-body");
+    tbody.innerHTML = "";
+
+    window.meals.forEach(m => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td class="cat">${m.Categorie}</td>
+            <td class="ing">${m.Ingrediënten}</td>
+            <td class="link"><a href="${m.Link}" target="_blank">Bekijk</a></td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// ---- Categorie checkboxes ----
+function buildCategoryFilters() {
+    const categories = [...new Set(window.meals.map(m => m.Categorie))].sort();
+    const box = document.getElementById("category-box");
+
+    categories.forEach(cat => {
+        const id = "cat_" + cat.replace(/\s+/g, "_");
+
+        const div = document.createElement("div");
+        div.innerHTML = `
+            <label>
+                <input type="checkbox" class="category-checkbox" value="${cat}">
+                ${cat}
+            </label>
+        `;
+        box.appendChild(div);
+    });
+}
+
+// ---- Filters toepassen ----
 function applyFilters() {
     const selectedCategories = Array.from(
         document.querySelectorAll('.category-checkbox:checked')
@@ -129,14 +159,14 @@ function applyFilters() {
 
         let visible = true;
 
-        // categorie filter
-        if (selectedCategories.length > 0 && !selectedCategories.some(cat => category.includes(cat))) {
+        // Categorie filter
+        if (selectedCategories.length > 0 && !selectedCategories.includes(category)) {
             visible = false;
         }
 
-        // uitsluit woorden
+        // Uitsluit woorden
         for (let word of excludedWords) {
-            if (ingred.includes(word)) {
+            if (word.length > 0 && ingred.includes(word)) {
                 visible = false;
                 break;
             }
@@ -146,23 +176,7 @@ function applyFilters() {
     });
 }
 
-// =============================
-// Tabel vullen
-// =============================
-function displayMeals(meals) {
-    const tbody = document.querySelector("#meals-table tbody");
-    tbody.innerHTML = "";
-    meals.forEach(meal => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${meal.name}</td>
-            <td>${meal.categories.join(', ')}</td>
-            <td>${meal.ingredients.join(', ')}</td>
-            <td><a href="${meal.url}" target="_blank">Link</a></td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
+loadCSV();
 </script>
 
 </body>
