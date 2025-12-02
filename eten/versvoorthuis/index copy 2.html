@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<title>Versvoorthuis Maaltijden Filter</title>
+
+<style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #fafafa; }
+    .filter-box {
+        background: white; padding: 15px; border-radius: 8px;
+        margin-bottom: 20px; box-shadow: 0 0 5px rgba(0,0,0,0.15);
+    }
+    .category-container { columns: 3; }
+    table {
+        width: 100%; border-collapse: collapse; background: white;
+        box-shadow: 0 0 5px rgba(0,0,0,0.15);
+    }
+    th, td { padding: 8px; border-bottom: 1px solid #ccc; }
+    th { background: #eee; text-align: left; }
+    tr:hover { background: #f3f3f3; }
+    .link a { color: #0066cc; font-weight: bold; text-decoration: none; }
+</style>
+
+</head>
+<body>
+
+<h1>Versvoorthuis Maaltijden Filter</h1>
+
+<div class="filter-box">
+    <h3>Keukens</h3>
+    <div id="category-box" class="category-container"></div>
+
+    <h3>Ingrediënten uitsluiten (komma-gescheiden):</h3>
+    <input id="exclude-input" type="text" placeholder="bijv: melk, paprika" style="width:100%; padding:8px;">
+
+    <br><br>
+    <button onclick="applyFilters()" style="padding:10px 20px;">Filter toepassen</button>
+</div>
+
+<table>
+    <thead>
+        <tr>
+            <th>Categorie</th>
+            <th>Naam</th>
+            <th>Ingrediënten</th>
+            <th>Link</th>
+        </tr>
+    </thead>
+    <tbody id="table-body"></tbody>
+</table>
+
+<script>
+// ----------------- CSV LADEN (TAB-GESEPAREERD) -----------------
+async function loadCSV() {
+    const response = await fetch("meals.csv");
+    const text = await response.text();
+
+    const lines = text.split("\n").filter(l => l.trim().length > 0);
+
+    const header = lines.shift().split("\t");
+
+    window.meals = lines.map(line => {
+        const cols = line.split("\t");
+
+        return {
+            Naam: cols[0]?.trim() || "",
+            Categorie: cols[1]?.trim() || "",
+            Ingrediënten: cols[2]?.trim() || "",
+            Link: cols[3]?.trim() || ""
+        };
+    });
+
+    populateTable();
+    buildCategoryFilters();
+}
+
+// ----------------- TABEL VULLEN -----------------
+function populateTable() {
+    const tbody = document.getElementById("table-body");
+    tbody.innerHTML = "";
+
+    window.meals.forEach(m => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td class="cat">${m.Categorie}</td>
+            <td class="naam">${m.Naam}</td>
+            <td class="ing">${m.Ingrediënten}</td>
+            <td class="link"><a href="${m.Link}" target="_blank">Bekijk</a></td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+// ----------------- CATEGORIE-FILTER -----------------
+function buildCategoryFilters() {
+    const categories = [...new Set(
+        window.meals
+            .filter(m => m.Categorie.toLowerCase().includes("keuken"))
+            .map(m => m.Categorie)
+    )].sort();
+
+    const box = document.getElementById("category-box");
+    box.innerHTML = "";
+
+    categories.forEach(cat => {
+        const div = document.createElement("div");
+        div.innerHTML = `
+            <label>
+                <input type="checkbox" class="category-checkbox" value="${cat}">
+                ${cat}
+            </label>
+        `;
+        box.appendChild(div);
+    });
+}
+
+// ----------------- FILTERS -----------------
+function applyFilters() {
+    const selected = Array.from(
+        document.querySelectorAll('.category-checkbox:checked')
+    ).map(cb => cb.value);
+
+    let excluded = document.getElementById("exclude-input").value
+        .toLowerCase()
+        .split(",")
+        .map(w => w.trim())
+        .filter(w => w.length > 0);
+
+    document.querySelectorAll("#table-body tr").forEach(row => {
+        const cat = row.querySelector(".cat").textContent;
+        const ing = row.querySelector(".ing").textContent.toLowerCase();
+
+        let visible = true;
+
+        if (selected.length > 0 && !selected.includes(cat)) {
+            visible = false;
+        }
+
+        excluded.forEach(w => {
+            if (w && ing.includes(w)) visible = false;
+        });
+
+        row.style.display = visible ? "" : "none";
+    });
+}
+
+loadCSV();
+</script>
+
+</body>
+</html>
