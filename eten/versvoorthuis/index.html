@@ -5,152 +5,90 @@
     <title>Vers Voor Thuis - Filter maaltijden</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
-        .filterGroup { margin-bottom: 20px; }
-        .filterGroup strong { display: block; margin-bottom: 5px; }
-        .checkbox { margin-bottom: 5px; }
+        h1 { text-align: center; }
+        .filterSection { margin-bottom: 20px; }
+        .checkbox { margin: 5px 0; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; vertical-align: top; }
-        th { background-color: #f0f0f0; }
-        img.productImage { width: 100px; height: auto; }
+        th, td { border: 1px solid #ddd; padding: 8px; }
+        th { background-color: #f4f4f4; }
+        a { color: #007bff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
+    <h1>Vers Voor Thuis - Filter maaltijden</h1>
 
-<h2>Filter maaltijden - Vers Voor Thuis</h2>
+    <div class="filterSection">
+        <h3>Filter op categorie</h3>
+        <div id="categoryFilters"></div>
+        <button onclick="applyFilter()">Filter toepassen</button>
+        <button onclick="resetFilter()">Reset</button>
+    </div>
 
-<!-- FILTERS -->
-<div class="filterGroup" id="filterKeukens">
-    <strong>Keukens</strong>
-</div>
+    <table id="resultsTable">
+        <thead>
+            <tr>
+                <th>Categorie</th>
+                <th>Ingrediënten</th>
+                <th>Link</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
 
-<div class="filterGroup" id="filterSoorten">
-    <strong>Soort / Extra kenmerken</strong>
-</div>
+    <script>
+        // --- CSV data ---
+        const data = [
+            // voorbeeld data, dit komt uit de CSV
+            {"Categorie":"Oosters, Gevogelte","Ingrediënten":"rijst (49%), kippenvlees (11%), ...","Link":"https://versvoorthuis.nl/nl/gerecht/166-paella-met-vis-en-kip/"},
+            {"Categorie":"Hollands, Vegetarisch","Ingrediënten":"aardappelen, wortel, ui, ...","Link":"https://versvoorthuis.nl/nl/gerecht/182-groente-stamppot/"},
+            // Voeg hier alle rijen uit je CSV toe als JSON objecten
+        ];
 
-<div class="filterGroup" id="filterAllergenen">
-    <strong>Allergenen</strong>
-</div>
+        // --- Unieke categorieën ---
+        const categories = [...new Set(data.flatMap(d => d.Categorie.split(", ").map(c => c.trim())))];
 
-<hr>
-
-<!-- TABEL -->
-<table id="maaltijdenTable">
-    <thead>
-        <tr>
-            <th>Titel</th>
-            <th>Keuken</th>
-            <th>Soort</th>
-            <th>Ingrediënten</th>
-            <th>Allergenen</th>
-            <th>Gewicht</th>
-            <th>Prijs</th>
-            <th>Voedingswaarden</th>
-            <th>Afbeelding</th>
-        </tr>
-    </thead>
-    <tbody></tbody>
-</table>
-
-<script>
-    const csvFile = 'maaltijden.csv'; // hier je CSV-bestand naam
-
-    // Functie om CSV in te lezen en tabel te vullen
-    function loadCSV(file) {
-        fetch(file)
-        .then(response => response.text())
-        .then(text => {
-            const rows = text.trim().split('\n');
-            const headers = rows.shift().split(';'); // CSV met ; als scheiding
-            const tbody = document.querySelector('#maaltijdenTable tbody');
-
-            let keukensSet = new Set();
-            let soortenSet = new Set();
-            let allergenenSet = new Set();
-
-            rows.forEach(row => {
-                const cols = row.split(';');
-                let tr = document.createElement('tr');
-
-                headers.forEach((header, i) => {
-                    let td = document.createElement('td');
-                    td.innerText = cols[i];
-
-                    // Special handling voor voedingswaarden en afbeelding
-                    if(header === 'Voedingswaarden') td.innerHTML = cols[i].replace(/,/g,'<br>');
-                    if(header === 'Afbeelding') td.innerHTML = `<img src="${cols[i]}" class="productImage">`;
-
-                    tr.appendChild(td);
-                });
-
-                // data attributes voor filters
-                const rowData = {};
-                headers.forEach((h, i) => { rowData[h] = cols[i]; });
-
-                tr.dataset.keuken = rowData.Keuken || '';
-                tr.dataset.soort = rowData.Soort || '';
-                tr.dataset.allergenen = rowData.Allergenen || '';
-
-                // Verzamel unieke filters
-                if(rowData.Keuken) rowData.Keuken.split(',').forEach(k => keukensSet.add(k.trim()));
-                if(rowData.Soort) rowData.Soort.split(',').forEach(s => soortenSet.add(s.trim()));
-                if(rowData.Allergenen) rowData.Allergenen.split(',').forEach(a => allergenenSet.add(a.trim()));
-
-                tbody.appendChild(tr);
-            });
-
-            // Genereer checkboxes
-            const filterKeukensDiv = document.getElementById('filterKeukens');
-            keukensSet.forEach(k => {
-                const div = document.createElement('div');
-                div.classList.add('checkbox');
-                div.innerHTML = `<label><input type="checkbox" data-filter="keuken" value="${k}"> ${k}</label>`;
-                filterKeukensDiv.appendChild(div);
-            });
-
-            const filterSoortenDiv = document.getElementById('filterSoorten');
-            soortenSet.forEach(s => {
-                const div = document.createElement('div');
-                div.classList.add('checkbox');
-                div.innerHTML = `<label><input type="checkbox" data-filter="soort" value="${s}"> ${s}</label>`;
-                filterSoortenDiv.appendChild(div);
-            });
-
-            const filterAllergenenDiv = document.getElementById('filterAllergenen');
-            allergenenSet.forEach(a => {
-                const div = document.createElement('div');
-                div.classList.add('checkbox');
-                div.innerHTML = `<label><input type="checkbox" data-filter="allergenen" value="${a}"> ${a}</label>`;
-                filterAllergenenDiv.appendChild(div);
-            });
-
-            // Voeg event listeners toe
-            document.querySelectorAll('input[type=checkbox]').forEach(cb => cb.addEventListener('change', applyFilters));
+        const filtersDiv = document.getElementById("categoryFilters");
+        categories.forEach(cat => {
+            const div = document.createElement("div");
+            div.className = "checkbox";
+            div.innerHTML = `<label><input type="checkbox" value="${cat}"> ${cat}</label>`;
+            filtersDiv.appendChild(div);
         });
-    }
 
-    function applyFilters() {
-        const rows = document.querySelectorAll('#maaltijdenTable tbody tr');
-        rows.forEach(row => {
-            let show = true;
-            const keukenFilters = Array.from(document.querySelectorAll('input[data-filter="keuken"]:checked')).map(cb => cb.value);
-            const soortFilters = Array.from(document.querySelectorAll('input[data-filter="soort"]:checked')).map(cb => cb.value);
-            const allergenenFilters = Array.from(document.querySelectorAll('input[data-filter="allergenen"]:checked')).map(cb => cb.value);
+        // --- Resultaten tonen ---
+        const tbody = document.querySelector("#resultsTable tbody");
 
-            const rowKeuken = row.dataset.keuken.split(',').map(x => x.trim());
-            const rowSoort = row.dataset.soort.split(',').map(x => x.trim());
-            const rowAllergenen = row.dataset.allergenen.split(',').map(x => x.trim());
+        function showResults(filteredData) {
+            tbody.innerHTML = "";
+            filteredData.forEach(d => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${d.Categorie}</td>
+                    <td>${d.Ingrediënten}</td>
+                    <td><a href="${d.Link}" target="_blank">Bekijk gerecht</a></td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
 
-            if(keukenFilters.length && !keukenFilters.some(f => rowKeuken.includes(f))) show = false;
-            if(soortFilters.length && !soortFilters.some(f => rowSoort.includes(f))) show = false;
-            if(allergenenFilters.length && !allergenenFilters.some(f => rowAllergenen.includes(f))) show = false;
+        function applyFilter() {
+            const checked = Array.from(filtersDiv.querySelectorAll("input:checked")).map(i => i.value);
+            if (checked.length === 0) {
+                showResults(data);
+                return;
+            }
+            const filtered = data.filter(d => checked.some(c => d.Categorie.includes(c)));
+            showResults(filtered);
+        }
 
-            row.style.display = show ? '' : 'none';
-        });
-    }
+        function resetFilter() {
+            filtersDiv.querySelectorAll("input").forEach(i => i.checked = false);
+            showResults(data);
+        }
 
-    // Start CSV laden
-    loadCSV(csvFile);
-</script>
-
+        // --- Init ---
+        showResults(data);
+    </script>
 </body>
 </html>
