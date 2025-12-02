@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Vers aan Tafel Filter</title>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input, select { width: 300px; padding: 5px; margin-top: 5px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<h1>Versa aan Tafel - Filter maaltijden</h1>
+
+<label for="categorySelect">Categorie:</label>
+<select id="categorySelect">
+    <option value="">-- Alle categorieën --</option>
+</select>
+
+<label for="excludeInput">Uitsluiten ingrediënten (komma gescheiden):</label>
+<input type="text" id="excludeInput" placeholder="bv. knoflook, tarwe, melk">
+
+<button id="filterBtn">Filteren</button>
+
+<table id="resultsTable" class="hidden">
+    <thead>
+        <tr>
+            <th>Categorie</th>
+            <th>Naam</th>
+            <th>Ingrediënten</th>
+            <th>Link</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
+
+<script>
+let mealsData = [];
+
+// CSV inlezen
+Papa.parse("meals.csv", {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: function(results) {
+        mealsData = results.data;
+        populateCategories();
+        displayResults(mealsData);
+    }
+});
+
+// Vul categorie-select
+function populateCategories() {
+    const categories = [...new Set(mealsData.map(m => m.Categorie))].sort();
+    const select = document.getElementById("categorySelect");
+    categories.forEach(cat => {
+        const option = document.createElement("option");
+        option.value = cat;
+        option.textContent = cat;
+        select.appendChild(option);
+    });
+}
+
+// Filter functie
+function filterMeals() {
+    const selectedCat = document.getElementById("categorySelect").value;
+    const excludeText = document.getElementById("excludeInput").value.toLowerCase();
+    const excludeWords = excludeText.split(",").map(w => w.trim()).filter(w => w);
+
+    const filtered = mealsData.filter(m => {
+        // Filter op categorie
+        if (selectedCat && m.Categorie !== selectedCat) return false;
+        // Filter op uitgesloten ingrediënten
+        if (excludeWords.length > 0) {
+            const ingredientsLower = m.Ingrediënten.toLowerCase();
+            for (let word of excludeWords) {
+                if (ingredientsLower.includes(word)) return false;
+            }
+        }
+        return true;
+    });
+
+    displayResults(filtered);
+}
+
+// Resultaten tonen
+function displayResults(data) {
+    const table = document.getElementById("resultsTable");
+    const tbody = table.querySelector("tbody");
+    tbody.innerHTML = "";
+    if (data.length === 0) {
+        tbody.innerHTML = "<tr><td colspan='4'>Geen resultaten</td></tr>";
+    } else {
+        data.forEach(m => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td>${m.Categorie}</td>
+                <td>${m.Naam}</td>
+                <td>${m.Ingrediënten}</td>
+                <td><a href="${m.URL}" target="_blank">Bekijk</a></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+    table.classList.remove("hidden");
+}
+
+// Event listener
+document.getElementById("filterBtn").addEventListener("click", filterMeals);
+</script>
+
+</body>
+</html>
