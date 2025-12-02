@@ -9,46 +9,31 @@
         .filterGroup strong { display: block; margin-bottom: 5px; }
         .checkbox { margin-bottom: 5px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; vertical-align: top; }
         th { background-color: #f0f0f0; }
+        img.productImage { width: 100px; height: auto; }
     </style>
 </head>
 <body>
 
 <h2>Filter maaltijden - Vers Voor Thuis</h2>
 
+<!-- FILTERS -->
 <div class="filterGroup" id="filterKeukens">
     <strong>Keukens</strong>
-    <div class="checkbox"><label><input type="checkbox" data-filter="keuken" value="Hollands"> Hollands</label></div>
-    <div class="checkbox"><label><input type="checkbox" data-filter="keuken" value="Vegetarisch"> Vegetarisch</label></div>
-    <div class="checkbox"><label><input type="checkbox" data-filter="keuken" value="Wereldgerechten"> Wereldgerechten</label></div>
-    <div class="checkbox"><label><input type="checkbox" data-filter="keuken" value="Italiaans"> Italiaans</label></div>
-    <div class="checkbox"><label><input type="checkbox" data-filter="keuken" value="Oosters"> Oosters</label></div>
 </div>
 
 <div class="filterGroup" id="filterSoorten">
     <strong>Soort / Extra kenmerken</strong>
-    <div class="checkbox"><label><input type="checkbox" data-filter="soort" value="Gevogelte"> Gevogelte</label></div>
-    <div class="checkbox"><label><input type="checkbox" data-filter="soort" value="Rundvlees"> Rundvlees</label></div>
-    <div class="checkbox"><label><input type="checkbox" data-filter="soort" value="Varkensvlees"> Varkensvlees</label></div>
-    <div class="checkbox"><label><input type="checkbox" data-filter="soort" value="Vis"> Vis</label></div>
-    <div class="checkbox"><label><input type="checkbox" data-filter="soort" value="Lamsvlees"> Lamsvlees</label></div>
-    <div class="checkbox"><label><input type="checkbox" data-filter="soort" value="Halal"> Halal</label></div>
-    <div class="checkbox"><label><input type="checkbox" data-filter="soort" value="Natriumarm"> Natriumarm</label></div>
-    <div class="checkbox"><label><input type="checkbox" data-filter="soort" value="Gluten- en lactosevrij"> Gluten- en lactosevrij</label></div>
-    <div class="checkbox"><label><input type="checkbox" data-filter="soort" value="Gemalen"> Gemalen</label></div>
 </div>
 
 <div class="filterGroup" id="filterAllergenen">
     <strong>Allergenen</strong>
-    <div class="checkbox"><label><input type="checkbox" data-filter="allergenen" value="Schaaldieren"> Schaaldieren</label></div>
-    <div class="checkbox"><label><input type="checkbox" data-filter="allergenen" value="Selderij"> Selderij</label></div>
-    <div class="checkbox"><label><input type="checkbox" data-filter="allergenen" value="Mosterd"> Mosterd</label></div>
-    <div class="checkbox"><label><input type="checkbox" data-filter="allergenen" value="Weekdieren"> Weekdieren</label></div>
 </div>
 
 <hr>
 
+<!-- TABEL -->
 <table id="maaltijdenTable">
     <thead>
         <tr>
@@ -63,15 +48,85 @@
             <th>Afbeelding</th>
         </tr>
     </thead>
-    <tbody>
-        <!-- Hier komt data uit de CSV -->
-    </tbody>
+    <tbody></tbody>
 </table>
 
 <script>
-    // Filter script: toon/verberg rijen afhankelijk van checkbox selectie
-    const checkboxes = document.querySelectorAll('input[type=checkbox]');
-    checkboxes.forEach(cb => cb.addEventListener('change', applyFilters));
+    const csvFile = 'maaltijden.csv'; // hier je CSV-bestand naam
+
+    // Functie om CSV in te lezen en tabel te vullen
+    function loadCSV(file) {
+        fetch(file)
+        .then(response => response.text())
+        .then(text => {
+            const rows = text.trim().split('\n');
+            const headers = rows.shift().split(';'); // CSV met ; als scheiding
+            const tbody = document.querySelector('#maaltijdenTable tbody');
+
+            let keukensSet = new Set();
+            let soortenSet = new Set();
+            let allergenenSet = new Set();
+
+            rows.forEach(row => {
+                const cols = row.split(';');
+                let tr = document.createElement('tr');
+
+                headers.forEach((header, i) => {
+                    let td = document.createElement('td');
+                    td.innerText = cols[i];
+
+                    // Special handling voor voedingswaarden en afbeelding
+                    if(header === 'Voedingswaarden') td.innerHTML = cols[i].replace(/,/g,'<br>');
+                    if(header === 'Afbeelding') td.innerHTML = `<img src="${cols[i]}" class="productImage">`;
+
+                    tr.appendChild(td);
+                });
+
+                // data attributes voor filters
+                const rowData = {};
+                headers.forEach((h, i) => { rowData[h] = cols[i]; });
+
+                tr.dataset.keuken = rowData.Keuken || '';
+                tr.dataset.soort = rowData.Soort || '';
+                tr.dataset.allergenen = rowData.Allergenen || '';
+
+                // Verzamel unieke filters
+                if(rowData.Keuken) rowData.Keuken.split(',').forEach(k => keukensSet.add(k.trim()));
+                if(rowData.Soort) rowData.Soort.split(',').forEach(s => soortenSet.add(s.trim()));
+                if(rowData.Allergenen) rowData.Allergenen.split(',').forEach(a => allergenenSet.add(a.trim()));
+
+                tbody.appendChild(tr);
+            });
+
+            // Genereer checkboxes
+            const filterKeukensDiv = document.getElementById('filterKeukens');
+            keukensSet.forEach(k => {
+                const div = document.createElement('div');
+                div.classList.add('checkbox');
+                div.innerHTML = `<label><input type="checkbox" data-filter="keuken" value="${k}"> ${k}</label>`;
+                filterKeukensDiv.appendChild(div);
+            });
+
+            const filterSoortenDiv = document.getElementById('filterSoorten');
+            soortenSet.forEach(s => {
+                const div = document.createElement('div');
+                div.classList.add('checkbox');
+                div.innerHTML = `<label><input type="checkbox" data-filter="soort" value="${s}"> ${s}</label>`;
+                filterSoortenDiv.appendChild(div);
+            });
+
+            const filterAllergenenDiv = document.getElementById('filterAllergenen');
+            allergenenSet.forEach(a => {
+                const div = document.createElement('div');
+                div.classList.add('checkbox');
+                div.innerHTML = `<label><input type="checkbox" data-filter="allergenen" value="${a}"> ${a}</label>`;
+                filterAllergenenDiv.appendChild(div);
+            });
+
+            // Voeg event listeners toe
+            document.querySelectorAll('input[type=checkbox]').forEach(cb => cb.addEventListener('change', applyFilters));
+        });
+    }
 
     function applyFilters() {
         const rows = document.querySelectorAll('#maaltijdenTable tbody tr');
@@ -81,17 +136,20 @@
             const soortFilters = Array.from(document.querySelectorAll('input[data-filter="soort"]:checked')).map(cb => cb.value);
             const allergenenFilters = Array.from(document.querySelectorAll('input[data-filter="allergenen"]:checked')).map(cb => cb.value);
 
-            const rowKeuken = row.dataset.keuken?.split(',') || [];
-            const rowSoort = row.dataset.soort?.split(',') || [];
-            const rowAllergenen = row.dataset.allergenen?.split(',') || [];
+            const rowKeuken = row.dataset.keuken.split(',').map(x => x.trim());
+            const rowSoort = row.dataset.soort.split(',').map(x => x.trim());
+            const rowAllergenen = row.dataset.allergenen.split(',').map(x => x.trim());
 
-            if (keukenFilters.length && !keukenFilters.some(f => rowKeuken.includes(f))) show = false;
-            if (soortFilters.length && !soortFilters.some(f => rowSoort.includes(f))) show = false;
-            if (allergenenFilters.length && !allergenenFilters.some(f => rowAllergenen.includes(f))) show = false;
+            if(keukenFilters.length && !keukenFilters.some(f => rowKeuken.includes(f))) show = false;
+            if(soortFilters.length && !soortFilters.some(f => rowSoort.includes(f))) show = false;
+            if(allergenenFilters.length && !allergenenFilters.some(f => rowAllergenen.includes(f))) show = false;
 
             row.style.display = show ? '' : 'none';
         });
     }
+
+    // Start CSV laden
+    loadCSV(csvFile);
 </script>
 
 </body>
