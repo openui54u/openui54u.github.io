@@ -8,7 +8,7 @@ import time
 # ===============================
 BASE_URL = "https://versvoorthuis.nl"
 MAALTIJDEN_URL = f"{BASE_URL}/nl/maaltijden/"
-CSV_FILE = "versvoorthuis_maaltijden.csv"
+CSV_FILE = "meals.csv"
 OFFSET_STEP = 12  # aantal maaltijden per pagina
 MAX_OFFSET = 100  # optioneel, kan hoger
 
@@ -110,7 +110,7 @@ def get_maaltijd_details(url):
         "ingredients": ingredients,
         "url": url
     }
-    
+
 # ===============================
 # Scraper logica
 # ===============================
