@@ -96,19 +96,54 @@ function initializeFilters(meals) {
 // =============================
 // Filter functie
 // =============================
+// function applyFilters() {
+//     const selectedCategories = Array.from(document.querySelectorAll("#category-filters input:checked")).map(i=>i.value);
+//     const excludedIngredients = Array.from(document.querySelectorAll("#exclude-ingredients input:checked")).map(i=>i.value);
+//
+//     const filteredMeals = window.allMeals.filter(meal => {
+//         // Controleer categorieën
+//         const catMatch = selectedCategories.every(cat => meal.categories.includes(cat));
+//         // Controleer uitgesloten ingrediënten
+//         const ingMatch = !excludedIngredients.some(ing => meal.ingredients.includes(ing));
+//         return catMatch && ingMatch;
+//     });
+//
+//     displayMeals(filteredMeals);
+// }
 function applyFilters() {
-    const selectedCategories = Array.from(document.querySelectorAll("#category-filters input:checked")).map(i=>i.value);
-    const excludedIngredients = Array.from(document.querySelectorAll("#exclude-ingredients input:checked")).map(i=>i.value);
+    const selectedCategories = Array.from(
+        document.querySelectorAll('.category-checkbox:checked')
+    ).map(cb => cb.value);
 
-    const filteredMeals = window.allMeals.filter(meal => {
-        // Controleer categorieën
-        const catMatch = selectedCategories.every(cat => meal.categories.includes(cat));
-        // Controleer uitgesloten ingrediënten
-        const ingMatch = !excludedIngredients.some(ing => meal.ingredients.includes(ing));
-        return catMatch && ingMatch;
+    let excludedWords = document.getElementById("exclude-input").value
+        .toLowerCase()
+        .split(",")
+        .map(w => w.trim())
+        .filter(w => w.length > 0);
+
+    const rows = document.querySelectorAll("#table-body tr");
+
+    rows.forEach(row => {
+        const category = row.querySelector(".cat").textContent.trim();
+        const ingred = row.querySelector(".ing").textContent.toLowerCase();
+
+        let visible = true;
+
+        // categorie filter
+        if (selectedCategories.length > 0 && !selectedCategories.some(cat => category.includes(cat))) {
+            visible = false;
+        }
+
+        // uitsluit woorden
+        for (let word of excludedWords) {
+            if (ingred.includes(word)) {
+                visible = false;
+                break;
+            }
+        }
+
+        row.style.display = visible ? "" : "none";
     });
-
-    displayMeals(filteredMeals);
 }
 
 // =============================
