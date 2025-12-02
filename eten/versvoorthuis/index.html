@@ -50,31 +50,58 @@
 </table>
 
 <script>
-// ----------------- CSV LADEN (TAB-GESEPAREERD) -----------------
+// ---------------------- CSV PARSER ----------------------
+function parseCSV(text) {
+    const rows = [];
+    let current = '';
+    let insideQuotes = false;
+    let row = [];
+
+    for (let char of text) {
+        if (char === '"' && !insideQuotes) {
+            insideQuotes = true;
+        } else if (char === '"' && insideQuotes) {
+            insideQuotes = false;
+        } else if (char === ',' && !insideQuotes) {
+            row.push(current.trim());
+            current = '';
+        } else if (char === '\n' && !insideQuotes) {
+            row.push(current.trim());
+            rows.push(row);
+            row = [];
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+
+    if (current.length > 0) row.push(current.trim());
+    if (row.length > 0) rows.push(row);
+
+    return rows;
+}
+
+// ---------------------- CSV LADEN ----------------------
 async function loadCSV() {
     const response = await fetch("meals.csv");
     const text = await response.text();
 
-    const lines = text.split("\n").filter(l => l.trim().length > 0);
+    const rows = parseCSV(text);
 
-    const header = lines.shift().split("\t");
+    const header = rows.shift();
 
-    window.meals = lines.map(line => {
-        const cols = line.split("\t");
-
-        return {
-            Naam: cols[0]?.trim() || "",
-            Categorie: cols[1]?.trim() || "",
-            Ingrediënten: cols[2]?.trim() || "",
-            Link: cols[3]?.trim() || ""
-        };
-    });
+    window.meals = rows.map(cols => ({
+        Naam: cols[0] || "",
+        Categorie: cols[1] || "",
+        Ingrediënten: cols[2] || "",
+        Link: cols[3] || ""
+    }));
 
     populateTable();
     buildCategoryFilters();
 }
 
-// ----------------- TABEL VULLEN -----------------
+// ---------------------- TABEL ----------------------
 function populateTable() {
     const tbody = document.getElementById("table-body");
     tbody.innerHTML = "";
@@ -91,7 +118,7 @@ function populateTable() {
     });
 }
 
-// ----------------- CATEGORIE-FILTER -----------------
+// ---------------------- CATEGORIE BOX ----------------------
 function buildCategoryFilters() {
     const categories = [...new Set(
         window.meals
@@ -103,18 +130,13 @@ function buildCategoryFilters() {
     box.innerHTML = "";
 
     categories.forEach(cat => {
-        const div = document.createElement("div");
-        div.innerHTML = `
-            <label>
-                <input type="checkbox" class="category-checkbox" value="${cat}">
-                ${cat}
-            </label>
+        box.innerHTML += `
+            <label><input type="checkbox" class="category-checkbox" value="${cat}"> ${cat}</label><br>
         `;
-        box.appendChild(div);
     });
 }
 
-// ----------------- FILTERS -----------------
+// ---------------------- FILTERING ----------------------
 function applyFilters() {
     const selected = Array.from(
         document.querySelectorAll('.category-checkbox:checked')
