@@ -49,12 +49,18 @@ fetch('meals.csv')
 .then(response => response.text())
 .then(csvText => {
     const data = Papa.parse(csvText, {header: true, skipEmptyLines: true}).data;
+    // const meals = data.map(row => ({
+    //     name: row['name'],
+    //     categories: row['categories'].split(';').map(s=>s.trim()),
+    //     ingredients: row['ingredients'].split(';').map(s=>s.trim()),
+    //     url: row['url']
+    // }));
     const meals = data.map(row => ({
-        name: row['name'],
-        categories: row['categories'].split(';').map(s=>s.trim()),
-        ingredients: row['ingredients'].split(';').map(s=>s.trim()),
-        url: row['url']
-    }));
+    name: row['name'],
+    categories: row['categories'].split(';').map(s=>s.trim()),
+    ingredients: row['ingredients'].split(';').map(s=>s.trim()),
+    url: row['url']
+}));
     initializeFilters(meals);
     displayMeals(meals);
 });
