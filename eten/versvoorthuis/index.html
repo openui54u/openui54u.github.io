@@ -1,94 +1,65 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-    <meta charset="UTF-8">
-    <title>Vers Voor Thuis - Filter maaltijden</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        h1 { text-align: center; }
-        .filterSection { margin-bottom: 20px; }
-        .checkbox { margin: 5px 0; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ddd; padding: 8px; }
-        th { background-color: #f4f4f4; }
-        a { color: #007bff; text-decoration: none; }
-        a:hover { text-decoration: underline; }
-    </style>
+<meta charset="UTF-8">
+<title>Vers Voor Thuis - Filter maaltijden</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; }
+h1 { color: #2E8B57; }
+.checkbox { margin-bottom: 5px; }
+.product { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; }
+</style>
 </head>
 <body>
-    <h1>Vers Voor Thuis - Filter maaltijden</h1>
+<h1>Vers Voor Thuis - Filter maaltijden</h1>
 
-    <div class="filterSection">
-        <h3>Filter op categorie</h3>
-        <div id="categoryFilters"></div>
-        <button onclick="applyFilter()">Filter toepassen</button>
-        <button onclick="resetFilter()">Reset</button>
-    </div>
+<div id="filters"></div>
+<hr>
+<div id="results"></div>
 
-    <table id="resultsTable">
-        <thead>
-            <tr>
-                <th>Categorie</th>
-                <th>Ingrediënten</th>
-                <th>Link</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
+<script>
+// CSV laden (zelfde folder als HTML)
+fetch('versvoorthuis.csv')
+.then(response => response.text())
+.then(csvText => {
+    const rows = csvText.trim().split("\n").slice(1);
+    const data = rows.map(r => {
+        const [cat, ing, link] = r.split(",");
+        return {Categorie: cat, Ingrediënten: ing, Link: link};
+    });
 
-    <script>
-        // --- CSV data ---
-        const data = [
-            // voorbeeld data, dit komt uit de CSV
-            {"Categorie":"Oosters, Gevogelte","Ingrediënten":"rijst (49%), kippenvlees (11%), ...","Link":"https://versvoorthuis.nl/nl/gerecht/166-paella-met-vis-en-kip/"},
-            {"Categorie":"Hollands, Vegetarisch","Ingrediënten":"aardappelen, wortel, ui, ...","Link":"https://versvoorthuis.nl/nl/gerecht/182-groente-stamppot/"},
-            // Voeg hier alle rijen uit je CSV toe als JSON objecten
-        ];
+    // Unieke categorieën
+    const categories = [...new Set(data.flatMap(d => d.Categorie.split(", ")))];
+    const filtersDiv = document.getElementById("filters");
+    categories.forEach(c => {
+        const id = c.replace(/\s+/g, "_");
+        filtersDiv.innerHTML += `<div class="checkbox">
+            <label><input type="checkbox" value="${c}" onchange="applyFilter()">${c}</label>
+        </div>`;
+    });
 
-        // --- Unieke categorieën ---
-        const categories = [...new Set(data.flatMap(d => d.Categorie.split(", ").map(c => c.trim())))];
+    window.allData = data;
+    applyFilter();
+});
 
-        const filtersDiv = document.getElementById("categoryFilters");
-        categories.forEach(cat => {
-            const div = document.createElement("div");
-            div.className = "checkbox";
-            div.innerHTML = `<label><input type="checkbox" value="${cat}"> ${cat}</label>`;
-            filtersDiv.appendChild(div);
-        });
+function applyFilter() {
+    const checked = Array.from(document.querySelectorAll('#filters input:checked')).map(i => i.value);
+    const resultsDiv = document.getElementById("results");
+    resultsDiv.innerHTML = "";
 
-        // --- Resultaten tonen ---
-        const tbody = document.querySelector("#resultsTable tbody");
+    const filtered = window.allData.filter(d => {
+        if(checked.length === 0) return true;
+        return d.Categorie.split(", ").some(c => checked.includes(c));
+    });
 
-        function showResults(filteredData) {
-            tbody.innerHTML = "";
-            filteredData.forEach(d => {
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>${d.Categorie}</td>
-                    <td>${d.Ingrediënten}</td>
-                    <td><a href="${d.Link}" target="_blank">Bekijk gerecht</a></td>
-                `;
-                tbody.appendChild(row);
-            });
-        }
-
-        function applyFilter() {
-            const checked = Array.from(filtersDiv.querySelectorAll("input:checked")).map(i => i.value);
-            if (checked.length === 0) {
-                showResults(data);
-                return;
-            }
-            const filtered = data.filter(d => checked.some(c => d.Categorie.includes(c)));
-            showResults(filtered);
-        }
-
-        function resetFilter() {
-            filtersDiv.querySelectorAll("input").forEach(i => i.checked = false);
-            showResults(data);
-        }
-
-        // --- Init ---
-        showResults(data);
-    </script>
+    filtered.forEach(d => {
+        resultsDiv.innerHTML += `<div class="product">
+            <strong>Categorie:</strong> ${d.Categorie}<br>
+            <strong>Ingrediënten:</strong> ${d.Ingrediënten}<br>
+            <a href="${d.Link}" target="_blank">Bekijk maaltijd</a>
+        </div>`;
+    });
+}
+</script>
 </body>
 </html>
